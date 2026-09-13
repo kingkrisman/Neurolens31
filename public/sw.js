@@ -16,7 +16,18 @@
  * strictly alone.
  */
 
-const VERSION = "nl-v1";
+/*
+ * Bump this on any release whose CSS or markup must reach people who already
+ * have the app cached. `activate` deletes every cache whose name is not built
+ * from the current VERSION, which is the only thing that evicts a stale shell.
+ *
+ * It matters because the two strategies below compound: a navigation that
+ * fails falls back to the cached shell, and that old HTML names old hashed
+ * assets, which are served cache-first without ever consulting the network.
+ * A device that once fell back on a flaky connection therefore keeps rendering
+ * that entire old build — not for a session, but until VERSION changes.
+ */
+const VERSION = "nl-v2";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const CONTENT = `${VERSION}-content`;
