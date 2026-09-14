@@ -8,6 +8,8 @@ export interface ProcessedDocument {
   metadata: {
     format: string;
     pageCount?: number;
+    /** Pages that could not be parsed at all, so the reader can be told. */
+    unreadablePages?: number;
     wordCount: number;
     estimatedReadTime: number;
   };
@@ -195,6 +197,10 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     try {
       pdf = await pdfjs.getDocument({
         data,
+        // Nothing is rendered during extraction, so building real font objects
+        // is pure cost — and font construction is one of the places a parse
+        // fails on a phone.
+        disableFontFace: true,
         useWasm: false,
         useWorkerFetch: false,
         isOffscreenCanvasSupported: false,
@@ -205,7 +211,7 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
       if (/password/i.test(detail)) {
         throw new Error("That PDF is password-protected. Paste the text instead.");
       }
-      throw new Error("Could not read that PDF. Try a text file, or paste the contents.");
+      throw new Error("Could not open that PDF. It may be damaged. Try a text file, or paste the contents.");
     }
 
     // Every page. A book is not less of a book past some page number, and a
@@ -214,32 +220,63 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     const pages = pdf.numPages;
     const pageTexts: string[] = [];
     let textlessPages = 0;
+    let unreadablePages = 0;
     onProgress?.(0, pages);
-    try {
-      for (let i = 1; i <= pages; i += 1) {
+
+    for (let i = 1; i <= pages; i += 1) {
+      let text = "";
+      try {
         const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        // Rebuilt from the runs' own geometry. Joining them with a space and
-        // flattening the whitespace put spaces inside words and ran headings
-        // into the paragraph beneath them.
-        // `items` also carries marked-content markers, which hold no text.
-        pageTexts.push(textFromItems(content.items.flatMap((item) => ("str" in item ? [item] : []))));
-        // Hand back the page's parsed operators and fonts now that its text
-        // has been taken. Without this pdf.js holds every page it has touched,
-        // so memory climbs with the length of the book — which is the thing
-        // that actually decides whether a long one can be opened on a phone.
-        if (!pageTexts[pageTexts.length - 1]!.trim()) textlessPages += 1;
-        page.cleanup();
-        // Every few pages, hand the thread back so the progress label can
-        // actually draw. A three-hundred-page book otherwise parses behind a
-        // frozen screen, which reads as a broken upload rather than a slow one.
-        if (i % 5 === 0 || i === pages) {
-          onProgress?.(i, pages);
-          await nextFrame();
+        try {
+          const content = await page.getTextContent();
+          // Rebuilt from the runs' own geometry. Joining them with a space and
+          // flattening the whitespace put spaces inside words and ran headings
+          // into the paragraph beneath them.
+          // `items` also carries marked-content markers, which hold no text.
+          text = textFromItems(content.items.flatMap((item) => ("str" in item ? [item] : [])));
+        } finally {
+          // Hand back the page's parsed operators and fonts now that its text
+          // has been taken. Without this pdf.js holds every page it has
+          // touched, so memory climbs with the length of the book — which is
+          // what actually decides whether a long one opens on a phone.
+          page.cleanup();
+        }
+      } catch {
+        // One page that will not parse is one page, not the book.
+        //
+        // This whole loop used to sit inside a single try, so the first page
+        // that failed threw away the other two hundred and seventy-four and
+        // reported that the PDF could not be read. A long book on a phone will
+        // occasionally lose a page to memory pressure or to a font the engine
+        // cannot build, and that is not a reason to refuse the rest of it.
+        unreadablePages += 1;
+      }
+
+      pageTexts.push(text);
+      if (!text.trim()) textlessPages += 1;
+
+      // Every few pages, hand the thread back so the progress label can
+      // actually draw. A three-hundred-page book otherwise parses behind a
+      // frozen screen, which reads as a broken upload rather than a slow one.
+      if (i % 5 === 0 || i === pages) {
+        onProgress?.(i, pages);
+        await nextFrame();
+      }
+      // Document-level font and image caches grow across pages regardless of
+      // per-page cleanup, so they are dropped periodically too.
+      if (i % 40 === 0) {
+        try {
+          await pdf.cleanup();
+        } catch {
+          /* a cache that will not clear is not a reason to stop reading */
         }
       }
-    } catch {
-      throw new Error("Could not read that PDF. Try a text file, or paste the contents.");
+    }
+
+    // Only a total loss is a failure. Anything less is a book with holes in
+    // it, which is worth far more to the reader than a refusal.
+    if (unreadablePages === pages) {
+      throw new Error("Could not read the pages of that PDF. Try a text file, or paste the contents.");
     }
 
     // The page images are only drawn for pages that yielded no text. When
@@ -264,6 +301,7 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
       content: joined,
       metadata: {
         ...summary.metadata,
+        unreadablePages,
         wordCount: words,
         estimatedReadTime: Math.max(1, Math.ceil((words || pages * 80) / 200)),
       },

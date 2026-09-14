@@ -184,7 +184,16 @@ export function Landing() {
         wordCount: doc.metadata.wordCount,
         readTime: doc.metadata.estimatedReadTime,
       });
-      toast.success("Document ready");
+      const skipped = doc.metadata.unreadablePages ?? 0;
+      if (skipped > 0) {
+        // Said plainly rather than hidden: the reader will meet the gaps, and
+        // meeting them unannounced reads as the app having lost something.
+        toast.warning(
+          `Document ready — ${skipped} of ${doc.metadata.pageCount} pages could not be read and are blank.`,
+        );
+      } else {
+        toast.success("Document ready");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read that file.");
       toast.error(err instanceof Error ? err.message : "Could not read that file");
