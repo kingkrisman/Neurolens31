@@ -17,6 +17,7 @@ import {
 import { PREFERENCE_WEIGHT, readPreference } from "./adaptive/preference.ts";
 import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
+import { fitSessions } from "./session-storage.ts";
 import { DEFAULT_HIGHLIGHT_COLOR, colorById, type HighlightColorId } from "./highlight-colors.ts";
 import { inkColorById, strokeId, toolById, trimStrokes, type InkStroke, type InkToolId } from "./ink.ts";
 import type { NeuralEvent } from "./neural.ts";
@@ -263,10 +264,17 @@ function persistAndApply(profile: ReadingProfile, mode: ReadingMode) {
 }
 
 function writeLocal(key: string, value: string) {
+  tryWriteLocal(key, value);
+}
+
+/** A write that reports whether the browser actually took it. */
+function tryWriteLocal(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch {
     /* private mode or quota */
+    return false;
   }
 }
 
@@ -278,28 +286,8 @@ function forgetLocal(keys: string[]) {
   }
 }
 
-/** Roughly the ceiling browsers put on one localStorage origin, minus headroom
- *  for the other keys this app writes. */
-const SESSIONS_BUDGET = 3_500_000;
-
-/**
- * Persist history, shedding the oldest entries until it fits.
- *
- * Sessions carry their full text so reading can resume, so a shelf of novels
- * runs into the storage quota. `writeLocal` swallows that failure, which meant
- * the real behaviour was worse than it looked: one oversized history and
- * *nothing* saved after it, newest included. Dropping whole old sessions keeps
- * recent books resumable, and keeps the invariant that a session either
- * restores completely or is not offered at all.
- */
 function persistSessions(sessions: Session[]) {
-  let kept = sessions;
-  let payload = JSON.stringify(kept);
-  while (payload.length > SESSIONS_BUDGET && kept.length > 1) {
-    kept = kept.slice(0, -1);
-    payload = JSON.stringify(kept);
-  }
-  writeLocal(SESSIONS_KEY, payload);
+  fitSessions(sessions, (payload) => tryWriteLocal(SESSIONS_KEY, payload));
 }
 
 function persistAdaptiveMemory(memory: AdaptiveMemory) {
