@@ -17,6 +17,7 @@ import {
 import { PREFERENCE_WEIGHT, readPreference } from "./adaptive/preference.ts";
 import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
+import { DEFAULT_HIGHLIGHT_COLOR, colorById, type HighlightColorId } from "./highlight-colors.ts";
 import type { NeuralEvent } from "./neural.ts";
 import { applyColorScheme, isThemeId } from "./scheme";
 import { resolveRhythmCurve } from "./rhythm";
@@ -48,6 +49,7 @@ const LOCKS_KEY = "neurolens-locks";
 const SAVED_KEY = "neurolens-saved-profiles";
 const BOOKMARKS_KEY = "neurolens-bookmarks";
 const HIGHLIGHTS_KEY = "neurolens-highlights";
+const MARKER_KEY = "neurolens-marker-color";
 const CVD_KEY = "neurolens-cvd";
 const LOOKUP_MIGRATION = "neurolens-lookup-v2";
 
@@ -126,6 +128,8 @@ interface AppState {
   savedProfiles: SavedProfile[];
   bookmarks: Bookmark[];
   highlights: Record<string, Highlight[]>;
+  /** The marker new highlights are made with, remembered between sessions. */
+  markerColor: HighlightColorId;
   readingFeel: ReadingFeel | null;
   cvdPreview: CvdKind;
   pdfPage: number;
@@ -174,6 +178,8 @@ interface AppState {
   addHighlight: (mark: Omit<Highlight, "at">) => void;
   removeHighlight: (lineIdx: number, section: number, start: number) => void;
   annotateHighlight: (lineIdx: number, section: number, start: number, note: string) => void;
+  setMarkerColor: (color: HighlightColorId) => void;
+  recolorHighlight: (lineIdx: number, section: number, start: number, color: HighlightColorId) => void;
   toggleBookmark: () => void;
   removeBookmark: (id: string) => void;
   submitReadingFeel: (feel: ReadingFeel) => void;
@@ -424,6 +430,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   savedProfiles: [],
   bookmarks: [],
   highlights: {},
+  markerColor: DEFAULT_HIGHLIGHT_COLOR,
   readingFeel: null,
   cvdPreview: "none",
   pdfPage: 0,
@@ -455,6 +462,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       const savedProfiles = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]") as SavedProfile[];
       const bookmarks = JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || "[]") as Bookmark[];
       const highlights = JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY) || "{}") as Record<string, number[]>;
+      // colorById settles an unknown or absent value, so a palette that changes
+      // later cannot strand someone on a colour that no longer exists.
+      const markerColor = colorById(localStorage.getItem(MARKER_KEY) ?? undefined).id;
       if (!localStorage.getItem(LOOKUP_MIGRATION)) {
         profile.lookup = true;
         localStorage.setItem(LOOKUP_MIGRATION, "1");
@@ -471,6 +481,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         savedProfiles: Array.isArray(savedProfiles) ? savedProfiles : [],
         bookmarks: Array.isArray(bookmarks) ? bookmarks : [],
         highlights: readHighlights(highlights),
+        markerColor,
         cvdPreview,
         hydrated: true,
       });
@@ -928,6 +939,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     // about this passage, and the passage is still here.
     const note = touching.find((item) => item.note)?.note;
 
+    // Colour comes from the marker in hand unless the caller named one. When a
+    // drag swallows earlier marks, the new colour wins: re-marking a passage in
+    // green after marking it yellow is how someone changes their mind about it.
+    const color = mark.color ?? get().markerColor;
+
     const merged: Highlight = {
       lineIdx: mark.lineIdx,
       section: mark.section,
@@ -935,6 +951,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       end,
       text: mark.text.slice(0, 400),
       note,
+      color,
       at: Date.now(),
     };
 
@@ -965,6 +982,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       [key]: current.map((item) =>
         item.lineIdx === lineIdx && item.section === section && item.start === start
           ? { ...item, note: note.trim() ? note.trim().slice(0, 600) : undefined }
+          : item,
+      ),
+    };
+    writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    set({ highlights });
+  },
+
+  /**
+   * Choose the marker.
+   *
+   * Persisted on its own key rather than inside the profile: a reader who
+   * colour-codes wants the same marker in hand next time regardless of which
+   * reading profile they opened the book under.
+   */
+  setMarkerColor: (color) => {
+    const next = colorById(color).id;
+    writeLocal(MARKER_KEY, next);
+    set({ markerColor: next });
+  },
+
+  /** Change the colour of a mark already made, without disturbing its note. */
+  recolorHighlight: (lineIdx, section, start, color) => {
+    const key = textKey(get().text);
+    const current = get().highlights[key];
+    if (!current) return;
+    const next = colorById(color).id;
+    const highlights = {
+      ...get().highlights,
+      [key]: current.map((item) =>
+        item.lineIdx === lineIdx && item.section === section && item.start === start
+          ? { ...item, color: next }
           : item,
       ),
     };
@@ -1067,6 +1115,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       savedProfiles: [],
       bookmarks: [],
       highlights: {},
+      markerColor: DEFAULT_HIGHLIGHT_COLOR,
       pdfPage: 0,
       pdfPageCount: 0,
       chapterIndex: 0,

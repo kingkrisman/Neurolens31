@@ -1,3 +1,4 @@
+import type { HighlightColorId } from "./highlight-colors.ts";
 import type { ReadingPatternId } from "./reading-patterns.ts";
 
 export type ReadingMode =
@@ -112,6 +113,14 @@ export interface Highlight {
   text: string;
   /** An optional thought attached to this passage. */
   note?: string;
+  /**
+   * Which marker this was made with.
+   *
+   * Optional because every highlight saved before the palette existed has no
+   * colour, and those marks are not rewritten on read — they simply paint in
+   * the default. See `colorById`, which is the one place that decides.
+   */
+  color?: HighlightColorId;
   at: number;
 }
 

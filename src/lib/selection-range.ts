@@ -1,3 +1,5 @@
+import { paletteStyle } from "./highlight-colors.ts";
+
 /**
  * Turning a live text selection into something storable, and back again.
  *
@@ -170,9 +172,11 @@ export function customHighlightsSupported(): boolean {
  * painted, because the stylesheet had no rule to paint with. A constructed
  * sheet goes straight to the document and never passes the build.
  *
- * Colours are read from the same custom properties the rest of the app uses, so
- * a scheme change is picked up by re-running this rather than by duplicating
- * the palette here.
+ * One rule is written per marker colour, because `::highlight()` takes its
+ * paint from the rule rather than from the range — so a colour on the page is a
+ * separate registry entry, not an attribute of the mark. The whole palette is
+ * rewritten together on a scheme change; repainting only the colours in use
+ * would leave the previous scheme's wash on the rest.
  */
 let sheet: CSSStyleSheet | null = null;
 
@@ -192,12 +196,8 @@ export function ensureHighlightStyle() {
   // to mud. Kept light enough either way that the letterforms stay fully
   // readable through it, which is the whole point of marking a passage.
   const scheme = document.documentElement.dataset.scheme ?? "paper";
-  const dark = ["night", "ink", "dusk", "forest"].includes(scheme);
-  const strength = dark ? 38 : 30;
   try {
-    sheet.replaceSync(
-      `::highlight(nl-mark){background-color:color-mix(in oklab, var(--color-accent) ${strength}%, transparent);color:var(--color-fg);}`,
-    );
+    sheet.replaceSync(paletteStyle(scheme));
   } catch {
     /* a highlight that cannot be styled still exists in the list */
   }

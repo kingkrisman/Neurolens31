@@ -66,6 +66,8 @@ import {
   rangeFromOffsets,
   readSelection,
 } from "@/lib/selection-range";
+import { allRegistryNames, colorById, registryName } from "@/lib/highlight-colors";
+import { MarkerDot, MarkerPalette } from "@/components/marker-palette";
 import { Icon } from "@iconify/react";
 import {
   bookmarkSimple,
@@ -137,6 +139,9 @@ export function Reader() {
   const highlights = useAppStore((s) => s.highlights);
   const elapsedActiveMs = useAppStore((s) => s.reading.elapsedActiveMs);
   const addHighlight = useAppStore((s) => s.addHighlight);
+  const markerColor = useAppStore((s) => s.markerColor);
+  const setMarkerColor = useAppStore((s) => s.setMarkerColor);
+  const recolorHighlight = useAppStore((s) => s.recolorHighlight);
   const removeHighlight = useAppStore((s) => s.removeHighlight);
   const annotateHighlight = useAppStore((s) => s.annotateHighlight);
   const pendingJump = useAppStore((s) => s.pendingJump);
@@ -661,22 +666,32 @@ export function Reader() {
     // rule is cheaper than watching the theme separately.
     ensureHighlightStyle();
 
-    const ranges: Range[] = [];
+    // Grouped by colour, because `::highlight()` takes its paint from the rule
+    // and a rule is bound to a registry name — so a colour on the page is a
+    // separate entry, not a property of the range.
+    const byColor = new Map<string, Range[]>();
     for (const mark of marksHere) {
       const line = node.querySelector(`#line-${mark.lineIdx}`);
       if (!line) continue;
       const range = rangeFromOffsets(line, mark.start, mark.end);
-      if (range) ranges.push(range);
+      if (!range) continue;
+      const name = registryName(colorById(mark.color).id);
+      const bucket = byColor.get(name);
+      if (bucket) bucket.push(range);
+      else byColor.set(name, [range]);
     }
 
     const registry = (CSS as unknown as { highlights: Map<string, unknown> }).highlights;
-    if (!ranges.length) {
-      registry.delete("nl-mark");
-      return;
-    }
-    registry.set("nl-mark", new (window as unknown as { Highlight: new (...r: Range[]) => unknown }).Highlight(...ranges));
+    const Ctor = (window as unknown as { Highlight: new (...r: Range[]) => unknown }).Highlight;
+
+    // Every name is cleared first, not just the ones being rewritten: a colour
+    // whose last mark was deleted or recoloured has to stop painting, and it
+    // has no entry in `byColor` to drive that.
+    for (const name of allRegistryNames()) registry.delete(name);
+    for (const [name, ranges] of byColor) registry.set(name, new Ctor(...ranges));
+
     return () => {
-      registry.delete("nl-mark");
+      for (const name of allRegistryNames()) registry.delete(name);
     };
   }, [marksHere, viewText, profile.fontSize, profile.lineHeight, profile.bionicStrength, profile.fontFamily, profile.theme]);
 
@@ -1275,25 +1290,54 @@ export function Reader() {
                 Find in book <Kbd>⌘F</Kbd>
               </TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className={dockButton}
-                  onClick={() => setMarksOpen(true)}
-                  disabled={bookHighlights.length === 0}
-                  aria-label={`Highlights (${bookHighlights.length})`}
-                >
-                  <Icon icon={phHighlighter} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {bookHighlights.length > 0
-                  ? `Highlights · ${bookHighlights.length}`
-                  : "No highlights yet"}
-              </TooltipContent>
-            </Tooltip>
+            {/* The marker. Opening it is how a colour gets chosen, so unlike
+                the old button it is live before anything has been marked —
+                choosing the pen comes first. */}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={cn(dockButton, "relative")}
+                      aria-label={`Highlighter — ${colorById(markerColor).label}${
+                        bookHighlights.length ? `, ${bookHighlights.length} marked` : ""
+                      }`}
+                    >
+                      <Icon icon={phHighlighter} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                      {/* The ink currently loaded, so the marker in hand is
+                          readable without opening anything. */}
+                      <MarkerDot
+                        value={markerColor}
+                        className="absolute right-1 bottom-1 sm:right-0.5 sm:bottom-0.5"
+                      />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {`Highlighter · ${colorById(markerColor).label}`}
+                  {bookHighlights.length > 0 ? ` · ${bookHighlights.length} marked` : ""}
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent side="top" align="center" className="w-auto p-2">
+                <p className="px-1 pb-2 text-[11px] font-medium tracking-wide text-muted uppercase">
+                  Marker
+                </p>
+                <MarkerPalette value={markerColor} onChange={setMarkerColor} className="px-1 pb-1" />
+                <div className="mt-2 border-t border-fg/10 pt-1">
+                  <DropdownMenuItem
+                    onSelect={() => setMarksOpen(true)}
+                    disabled={bookHighlights.length === 0}
+                  >
+                    <Icon icon={phHighlighter} width={14} height={14} aria-hidden />
+                    {bookHighlights.length > 0
+                      ? `Show highlights · ${bookHighlights.length}`
+                      : "No highlights yet"}
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1697,8 +1741,17 @@ export function Reader() {
                 return (
                   <div
                     key={`${mark.section}:${mark.lineIdx}:${mark.start}`}
-                    className="relative rounded-md bg-bg px-3 py-2.5 shadow-border"
+                    className="relative overflow-hidden rounded-md bg-bg px-3 py-2.5 pl-4 shadow-border"
                   >
+                    {/* The marker this was made with, carried into the list.
+                        Without it the colours only exist on the page, and the
+                        sorting they were made for falls apart once the reader
+                        is looking at the marks away from the text. */}
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 w-1.5"
+                      style={{ backgroundColor: colorById(mark.color).hex }}
+                    />
                     <button
                       type="button"
                       className="icon-group flex w-full flex-col items-start gap-1 text-left"
@@ -1739,6 +1792,14 @@ export function Reader() {
                         annotateHighlight(mark.lineIdx, mark.section, mark.start, event.target.value);
                       }}
                       className="mt-2 min-h-9 w-full resize-y rounded-sm bg-surface px-2 py-1.5 text-xs leading-relaxed"
+                    />
+                    <MarkerPalette
+                      size="sm"
+                      className="mt-2"
+                      value={colorById(mark.color).id}
+                      onChange={(color) =>
+                        recolorHighlight(mark.lineIdx, mark.section, mark.start, color)
+                      }
                     />
                   </div>
                 );
