@@ -120,6 +120,20 @@ const WORKER_SRC = "/pdf.worker.min.mjs";
  */
 async function workerUsable(): Promise<boolean> {
   if (typeof Worker === "undefined") return false;
+
+  // Is the file even served, and served as JavaScript? A module worker is
+  // refused outright for the wrong content type, and that refusal is
+  // asynchronous — late enough that merely constructing one and waiting a
+  // moment reports success for a worker that is already doomed.
+  try {
+    const head = await fetch(WORKER_SRC, { method: "GET", cache: "force-cache" });
+    if (!head.ok) return false;
+    const type = (head.headers.get("content-type") ?? "").toLowerCase();
+    if (type && !/javascript|ecmascript|^text\/plain/.test(type)) return false;
+  } catch {
+    return false;
+  }
+
   return new Promise<boolean>((resolve) => {
     let worker: Worker | null = null;
     let settled = false;
@@ -140,9 +154,10 @@ async function workerUsable(): Promise<boolean> {
     try {
       worker = new Worker(WORKER_SRC, { type: "module" });
       worker.onerror = () => finish(false);
-      // Construction succeeding is the signal — the pdf.js worker sends nothing
-      // until it is spoken to, so there is no message to wait for.
-      setTimeout(() => finish(true), 250);
+      // A module worker's import failure arrives asynchronously, so this waits
+      // long enough for that error to land rather than declaring success the
+      // instant the constructor returns.
+      setTimeout(() => finish(true), 900);
     } catch {
       finish(false);
     }
@@ -221,6 +236,15 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     const pageTexts: string[] = [];
     let textlessPages = 0;
     let unreadablePages = 0;
+    /**
+     * Why the first page failed.
+     *
+     * Kept because when *every* page fails the cause is one thing happening
+     * repeatedly — a worker that died, a buffer that was detached — and a
+     * message that describes the symptom without naming it cannot be acted on
+     * by whoever reads it. This is the sentence that ends the guessing.
+     */
+    let firstFailure = "";
     onProgress?.(0, pages);
 
     for (let i = 1; i <= pages; i += 1) {
@@ -241,7 +265,10 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
           // what actually decides whether a long one opens on a phone.
           page.cleanup();
         }
-      } catch {
+      } catch (err) {
+        if (!firstFailure) {
+          firstFailure = err instanceof Error ? err.message : String(err ?? "");
+        }
         // One page that will not parse is one page, not the book.
         //
         // This whole loop used to sit inside a single try, so the first page
@@ -276,7 +303,10 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     // Only a total loss is a failure. Anything less is a book with holes in
     // it, which is worth far more to the reader than a refusal.
     if (unreadablePages === pages) {
-      throw new Error("Could not read the pages of that PDF. Try a text file, or paste the contents.");
+      const reason = firstFailure ? ` (${firstFailure.slice(0, 140)})` : "";
+      throw new Error(
+        `Could not read the pages of that PDF${reason}. Try a text file, or paste the contents.`,
+      );
     }
 
     // The page images are only drawn for pages that yielded no text. When
