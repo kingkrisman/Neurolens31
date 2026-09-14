@@ -25,7 +25,20 @@ export type GrokProvider = {
   label: string;
 };
 
+/**
+ * Ordered by how most readers will sign in, because the first button is the one
+ * a tired reader presses.
+ *
+ * Apple is listed because this app is used on iPhones, where "Sign in with
+ * Apple" is what people expect and, for an app distributed through the App
+ * Store, what Apple requires alongside other social sign-in. It only works once
+ * the broker holds Apple credentials and accepts `idp: "apple"` — the secrets
+ * live there, not here, so nothing in this repository can complete that. Until
+ * it does, the button reaches the broker and the broker refuses; the entry is
+ * kept so enabling it upstream is the only step left.
+ */
 export const GROK_PROVIDERS: readonly GrokProvider[] = [
   { providerId: "grok-google", idp: "google", label: "Google" },
+  { providerId: "grok-apple", idp: "apple", label: "Apple" },
   { providerId: "grok-x", idp: "twitter", label: "X" },
 ];

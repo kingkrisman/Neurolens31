@@ -1,5 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { CircleHelp, UserRound } from "lucide-react";
 import { TABS } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { list, x } from "@/lib/ph-icons";
@@ -153,6 +155,27 @@ export function NavMenu() {
                 </button>
               );
             })}
+
+            {/* Below the rule: the pages that leave the reader. Kept apart from
+                the tabs so the primary four stay the primary four. */}
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-fg/10 pt-2">
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-fg/6 hover:text-fg"
+              >
+                <UserRound size={16} aria-hidden className="icon-motion icon-lift" />
+                Account
+              </Link>
+              <Link
+                to="/help"
+                onClick={() => setOpen(false)}
+                className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-fg/6 hover:text-fg"
+              >
+                <CircleHelp size={16} aria-hidden className="icon-motion icon-lift" />
+                Help
+              </Link>
+            </div>
           </div>
         </>
       ) : null}

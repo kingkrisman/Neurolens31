@@ -413,11 +413,22 @@ export function AppShell() {
             <span className="hidden opacity-40 sm:inline" aria-hidden>
               ·
             </span>
-            <nav aria-label="Legal" className="flex items-center gap-3">
+            {/* Help and Support come first: on a narrow screen the row can only
+                hold a few, and someone stuck needs those before the legal ones. */}
+            <nav aria-label="More" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <Link to="/help" className="hover:text-fg">
+                Help
+              </Link>
+              <Link to="/support" className="hover:text-fg">
+                Support
+              </Link>
               <Link to="/privacy" className="hover:text-fg">
                 Privacy
               </Link>
-              <Link to="/thank-you" className="hover:text-fg">
+              <Link to="/terms" className="hover:text-fg">
+                Terms
+              </Link>
+              <Link to="/thank-you" className="hidden hover:text-fg sm:inline">
                 Thank you
               </Link>
             </nav>
