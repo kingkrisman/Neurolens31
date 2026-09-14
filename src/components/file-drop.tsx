@@ -19,11 +19,20 @@ const ACCEPT = ".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/*";
 export function FileDrop({
   onFile,
   busy = false,
+  busyLabel,
   compact = false,
   children,
 }: {
   onFile: (file: File) => void;
   busy?: boolean;
+  /**
+   * What the wait is for, while it is happening.
+   *
+   * A long book can take a minute on a phone, and a spinner that says only
+   * "Parsing" for that long is indistinguishable from one that has hung —
+   * which is how a working upload gets reported as a broken one.
+   */
+  busyLabel?: string;
   compact?: boolean;
   children?: ReactNode;
 }) {
@@ -82,7 +91,7 @@ export function FileDrop({
           onClick={() => inputRef.current?.click()}
         >
           {busy ? (
-            <LensLoader label="Parsing" />
+            <LensLoader label={busyLabel ?? "Parsing"} />
           ) : (
             <>
               <Upload size={14} className="icon-motion icon-rise" />
@@ -107,7 +116,7 @@ export function FileDrop({
           )}
         >
           {busy ? (
-            <LensLoader label="Parsing" />
+            <LensLoader label={busyLabel ?? "Parsing"} />
           ) : (
             children ?? "Drop a PDF or text file here"
           )}

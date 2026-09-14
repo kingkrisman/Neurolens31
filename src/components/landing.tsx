@@ -88,6 +88,7 @@ export function Landing() {
   const sessions = useAppStore((s) => s.sessions);
   const [input, setInput] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [meta, setMeta] = useState<{ title: string; format: string; wordCount: number; readTime: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const targetWpm = useAppStore((s) => s.targetWpm);
@@ -170,8 +171,12 @@ export function Landing() {
     if (!file) return;
     setError(null);
     setUploading(true);
+    setProgress(null);
     try {
-      const doc = await processDocument(file);
+      const doc = await processDocument(file, (done, total) => {
+        // Only worth showing for a book long enough that the wait is noticed.
+        if (total > 20) setProgress({ done, total });
+      });
       setInput(doc.content);
       setMeta({
         title: doc.title,
@@ -185,6 +190,7 @@ export function Landing() {
       toast.error(err instanceof Error ? err.message : "Could not read that file");
     } finally {
       setUploading(false);
+      setProgress(null);
     }
   }
 
@@ -367,7 +373,12 @@ export function Landing() {
         >
           <div className="mb-4 flex items-center justify-between gap-3">
             <span className="font-serif text-sm text-accent italic">Source</span>
-            <FileDrop compact busy={uploading} onFile={(file) => void onUpload(file)} />
+            <FileDrop
+              compact
+              busy={uploading}
+              busyLabel={progress ? `Page ${progress.done} of ${progress.total}` : undefined}
+              onFile={(file) => void onUpload(file)}
+            />
           </div>
           <Textarea
             value={input}

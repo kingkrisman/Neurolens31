@@ -98,7 +98,63 @@ async function withPdfErrorsSilenced<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-async function processPdf(file: File): Promise<ProcessedDocument> {
+/** How far into a long book the reader has got, for the progress label. */
+export type ProgressFn = (done: number, total: number) => void;
+
+const WORKER_SRC = "/pdf.worker.min.mjs";
+
+/**
+ * Whether a real worker can be started.
+ *
+ * If it cannot, pdf.js quietly substitutes a "fake worker" that parses on the
+ * main thread. On a desktop that is merely slow; on a phone, parsing a few
+ * hundred pages with the main thread blocked means nothing paints, no progress
+ * shows, and the tab is eventually killed — which is indistinguishable from
+ * the upload not working, and is what this used to do. Worse, the fallback
+ * announces itself through an error this module deliberately silences, so the
+ * one clue was being thrown away.
+ *
+ * Checked up front instead, so the failure is a sentence rather than a freeze.
+ */
+async function workerUsable(): Promise<boolean> {
+  if (typeof Worker === "undefined") return false;
+  return new Promise<boolean>((resolve) => {
+    let worker: Worker | null = null;
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try {
+        worker?.terminate();
+      } catch {
+        /* already gone */
+      }
+      resolve(ok);
+    };
+    // Long enough for a cold fetch of the worker on a phone, short enough not
+    // to be its own hang.
+    const timer = setTimeout(() => finish(false), 6000);
+    try {
+      worker = new Worker(WORKER_SRC, { type: "module" });
+      worker.onerror = () => finish(false);
+      // Construction succeeding is the signal — the pdf.js worker sends nothing
+      // until it is spoken to, so there is no message to wait for.
+      setTimeout(() => finish(true), 250);
+    } catch {
+      finish(false);
+    }
+  });
+}
+
+/** Let the browser paint. Awaiting pdf.js alone never yields to rendering. */
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
+async function processPdf(file: File, onProgress?: ProgressFn): Promise<ProcessedDocument> {
   if (typeof window === "undefined") {
     throw new Error("PDF parsing is only available in the reader.");
   }
@@ -112,7 +168,12 @@ async function processPdf(file: File): Promise<ProcessedDocument> {
 
   // Always the public worker — Vite `?url` paths 404 behind the preview proxy
   // and then pdf.js throws outside React's try/catch.
-  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  pdfjs.GlobalWorkerOptions.workerSrc = WORKER_SRC;
+  if (!(await workerUsable())) {
+    throw new Error(
+      "This browser could not start the PDF reader in the background. Reload the page and try again, or paste the text instead.",
+    );
+  }
 
   let raw: ArrayBuffer;
   try {
@@ -152,6 +213,8 @@ async function processPdf(file: File): Promise<ProcessedDocument> {
     // been given a worse thing than an error.
     const pages = pdf.numPages;
     const pageTexts: string[] = [];
+    let textlessPages = 0;
+    onProgress?.(0, pages);
     try {
       for (let i = 1; i <= pages; i += 1) {
         const page = await pdf.getPage(i);
@@ -165,13 +228,31 @@ async function processPdf(file: File): Promise<ProcessedDocument> {
         // has been taken. Without this pdf.js holds every page it has touched,
         // so memory climbs with the length of the book — which is the thing
         // that actually decides whether a long one can be opened on a phone.
+        if (!pageTexts[pageTexts.length - 1]!.trim()) textlessPages += 1;
         page.cleanup();
+        // Every few pages, hand the thread back so the progress label can
+        // actually draw. A three-hundred-page book otherwise parses behind a
+        // frozen screen, which reads as a broken upload rather than a slow one.
+        if (i % 5 === 0 || i === pages) {
+          onProgress?.(i, pages);
+          await nextFrame();
+        }
       }
     } catch {
       throw new Error("Could not read that PDF. Try a text file, or paste the contents.");
     }
 
-    rememberPdfDocument(pdf);
+    // The page images are only drawn for pages that yielded no text. When
+    // every page has text — which is every ordinary book — nothing will ask
+    // for them, and holding a parsed document of several hundred pages is the
+    // single largest thing this app can keep in memory. Let it go.
+    if (textlessPages > 0) {
+      rememberPdfDocument(pdf);
+    } else {
+      // `loadingTask.destroy()` is the one that frees the worker's side too;
+      // `cleanup()` on the proxy only releases per-page caches.
+      void pdf.loadingTask.destroy();
+    }
 
     const extracted = pageTexts.join("\n\n").trim();
     const name = fileName(file);
@@ -190,7 +271,7 @@ async function processPdf(file: File): Promise<ProcessedDocument> {
   });
 }
 
-export async function processDocument(file: File): Promise<ProcessedDocument> {
+export async function processDocument(file: File, onProgress?: ProgressFn): Promise<ProcessedDocument> {
   if (!file) throw new Error("No file selected.");
   if (typeof file.size === "number" && file.size > MAX_UPLOAD_BYTES) {
     throw new Error("That file is larger than 20 MB. Try a shorter document, or paste the text.");
@@ -200,7 +281,7 @@ export async function processDocument(file: File): Promise<ProcessedDocument> {
   const mime = fileMime(file);
 
   try {
-    if (isPdfFile(name, mime)) return await processPdf(file);
+    if (isPdfFile(name, mime)) return await processPdf(file, onProgress);
 
     if (isTextFile(name, mime)) {
       let content: string;
