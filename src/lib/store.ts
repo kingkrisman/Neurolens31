@@ -18,6 +18,7 @@ import { PREFERENCE_WEIGHT, readPreference } from "./adaptive/preference.ts";
 import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { DEFAULT_HIGHLIGHT_COLOR, colorById, type HighlightColorId } from "./highlight-colors.ts";
+import { inkColorById, strokeId, toolById, trimStrokes, type InkStroke, type InkToolId } from "./ink.ts";
 import type { NeuralEvent } from "./neural.ts";
 import { applyColorScheme, isThemeId } from "./scheme";
 import { resolveRhythmCurve } from "./rhythm";
@@ -50,6 +51,9 @@ const SAVED_KEY = "neurolens-saved-profiles";
 const BOOKMARKS_KEY = "neurolens-bookmarks";
 const HIGHLIGHTS_KEY = "neurolens-highlights";
 const MARKER_KEY = "neurolens-marker-color";
+const INK_KEY = "neurolens-ink";
+const INK_TOOL_KEY = "neurolens-ink-tool";
+const INK_COLOR_KEY = "neurolens-ink-color";
 const CVD_KEY = "neurolens-cvd";
 const LOOKUP_MIGRATION = "neurolens-lookup-v2";
 
@@ -130,6 +134,18 @@ interface AppState {
   highlights: Record<string, Highlight[]>;
   /** The marker new highlights are made with, remembered between sessions. */
   markerColor: HighlightColorId;
+  /** Freehand strokes, keyed by book the way highlights are. */
+  ink: Record<string, InkStroke[]>;
+  inkTool: InkToolId;
+  inkColor: string;
+  /**
+   * Whether a mouse or finger draws instead of selecting.
+   *
+   * A stylus never needs this — a pen that touches the page is drawing, the
+   * way it is on paper. This is for everyone reading without one, where the
+   * same drag has to mean either select or draw and only a mode can say which.
+   */
+  inkMode: boolean;
   readingFeel: ReadingFeel | null;
   cvdPreview: CvdKind;
   pdfPage: number;
@@ -180,6 +196,13 @@ interface AppState {
   annotateHighlight: (lineIdx: number, section: number, start: number, note: string) => void;
   setMarkerColor: (color: HighlightColorId) => void;
   recolorHighlight: (lineIdx: number, section: number, start: number, color: HighlightColorId) => void;
+  addStroke: (stroke: Omit<InkStroke, "id" | "at">) => void;
+  eraseStrokes: (ids: string[]) => void;
+  undoStroke: (section: number) => void;
+  clearInk: (section: number) => void;
+  setInkTool: (tool: InkToolId) => void;
+  setInkColor: (color: string) => void;
+  setInkMode: (on: boolean) => void;
   toggleBookmark: () => void;
   removeBookmark: (id: string) => void;
   submitReadingFeel: (feel: ReadingFeel) => void;
@@ -431,6 +454,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   bookmarks: [],
   highlights: {},
   markerColor: DEFAULT_HIGHLIGHT_COLOR,
+  ink: {},
+  inkTool: "pen",
+  inkColor: "graphite",
+  inkMode: false,
   readingFeel: null,
   cvdPreview: "none",
   pdfPage: 0,
@@ -465,6 +492,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       // colorById settles an unknown or absent value, so a palette that changes
       // later cannot strand someone on a colour that no longer exists.
       const markerColor = colorById(localStorage.getItem(MARKER_KEY) ?? undefined).id;
+      const ink = JSON.parse(localStorage.getItem(INK_KEY) || "{}") as Record<string, InkStroke[]>;
+      const inkTool = toolById(localStorage.getItem(INK_TOOL_KEY) ?? undefined).id;
+      const inkColor = inkColorById(localStorage.getItem(INK_COLOR_KEY) ?? undefined).id;
       if (!localStorage.getItem(LOOKUP_MIGRATION)) {
         profile.lookup = true;
         localStorage.setItem(LOOKUP_MIGRATION, "1");
@@ -482,6 +512,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         bookmarks: Array.isArray(bookmarks) ? bookmarks : [],
         highlights: readHighlights(highlights),
         markerColor,
+        ink: ink && typeof ink === "object" ? ink : {},
+        inkTool,
+        inkColor,
         cvdPreview,
         hydrated: true,
       });
@@ -1020,6 +1053,71 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ highlights });
   },
 
+  addStroke: (stroke) => {
+    const key = textKey(get().text);
+    const current = get().ink[key] ?? [];
+    const next = trimStrokes([...current, { ...stroke, id: strokeId(), at: Date.now() }]);
+    const ink = { ...get().ink, [key]: next };
+    writeLocal(INK_KEY, JSON.stringify(ink));
+    set({ ink });
+  },
+
+  eraseStrokes: (ids) => {
+    if (!ids.length) return;
+    const key = textKey(get().text);
+    const current = get().ink[key] ?? [];
+    const gone = new Set(ids);
+    const next = current.filter((stroke) => !gone.has(stroke.id));
+    if (next.length === current.length) return;
+    const ink = { ...get().ink, [key]: next };
+    writeLocal(INK_KEY, JSON.stringify(ink));
+    set({ ink });
+  },
+
+  /** Take back the last stroke drawn on this section, not on the whole book. */
+  undoStroke: (section) => {
+    const key = textKey(get().text);
+    const current = get().ink[key] ?? [];
+    let lastIndex = -1;
+    for (let i = current.length - 1; i >= 0; i -= 1) {
+      if (current[i]!.section === section) {
+        lastIndex = i;
+        break;
+      }
+    }
+    if (lastIndex === -1) return;
+    const next = current.filter((_, i) => i !== lastIndex);
+    const ink = { ...get().ink, [key]: next };
+    writeLocal(INK_KEY, JSON.stringify(ink));
+    set({ ink });
+  },
+
+  clearInk: (section) => {
+    const key = textKey(get().text);
+    const current = get().ink[key] ?? [];
+    const next = current.filter((stroke) => stroke.section !== section);
+    if (next.length === current.length) return;
+    const ink = { ...get().ink, [key]: next };
+    writeLocal(INK_KEY, JSON.stringify(ink));
+    set({ ink });
+  },
+
+  setInkTool: (tool) => {
+    const next = toolById(tool).id;
+    writeLocal(INK_TOOL_KEY, next);
+    // Reaching for a tool is reaching to draw, so picking one arms the surface.
+    // The eraser is included: it is a thing you do to the page, not to text.
+    set({ inkTool: next, inkMode: true });
+  },
+
+  setInkColor: (color) => {
+    const next = inkColorById(color).id;
+    writeLocal(INK_COLOR_KEY, next);
+    set({ inkColor: next });
+  },
+
+  setInkMode: (on) => set({ inkMode: on }),
+
   toggleBookmark: () => {
     const { text, reading, bookmarks, sourceKind, sourceId, pdfPage, chapterIndex, sessions } = get();
     if (!text) return;
@@ -1116,6 +1214,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       bookmarks: [],
       highlights: {},
       markerColor: DEFAULT_HIGHLIGHT_COLOR,
+      ink: {},
+      inkMode: false,
       pdfPage: 0,
       pdfPageCount: 0,
       chapterIndex: 0,

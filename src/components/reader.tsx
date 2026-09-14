@@ -12,6 +12,7 @@ import {
   Focus,
   HelpCircle,
   Highlighter,
+  PenLine,
   Languages,
   MoreHorizontal,
   Pause,
@@ -68,6 +69,8 @@ import {
 } from "@/lib/selection-range";
 import { allRegistryNames, colorById, registryName } from "@/lib/highlight-colors";
 import { MarkerDot, MarkerPalette } from "@/components/marker-palette";
+import { InkLayer } from "@/components/ink-layer";
+import { InkToolbar } from "@/components/ink-toolbar";
 import { Icon } from "@iconify/react";
 import {
   bookmarkSimple,
@@ -142,6 +145,17 @@ export function Reader() {
   const markerColor = useAppStore((s) => s.markerColor);
   const setMarkerColor = useAppStore((s) => s.setMarkerColor);
   const recolorHighlight = useAppStore((s) => s.recolorHighlight);
+  const ink = useAppStore((s) => s.ink);
+  const inkTool = useAppStore((s) => s.inkTool);
+  const inkColor = useAppStore((s) => s.inkColor);
+  const inkMode = useAppStore((s) => s.inkMode);
+  const addStroke = useAppStore((s) => s.addStroke);
+  const eraseStrokes = useAppStore((s) => s.eraseStrokes);
+  const undoStroke = useAppStore((s) => s.undoStroke);
+  const clearInk = useAppStore((s) => s.clearInk);
+  const setInkTool = useAppStore((s) => s.setInkTool);
+  const setInkColor = useAppStore((s) => s.setInkColor);
+  const setInkMode = useAppStore((s) => s.setInkMode);
   const removeHighlight = useAppStore((s) => s.removeHighlight);
   const annotateHighlight = useAppStore((s) => s.annotateHighlight);
   const pendingJump = useAppStore((s) => s.pendingJump);
@@ -596,6 +610,11 @@ export function Reader() {
   );
 
   const bookHighlights = useMemo(() => highlights[markKey] ?? [], [highlights, markKey]);
+  const bookInk = useMemo(() => ink[markKey] ?? [], [ink, markKey]);
+  const inkHere = useMemo(
+    () => bookInk.filter((stroke) => stroke.section === section),
+    [bookInk, section],
+  );
   /**
    * Whether the reader has reached the end of this part, and what to say.
    *
@@ -906,7 +925,9 @@ export function Reader() {
           <article
           aria-labelledby="reading-title"
           className={cn(
-            "mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
+            // `relative` so the ink surface can cover exactly this column, and
+            // scroll with it rather than with the viewport.
+            "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
             FONT_CLASS[profile.fontFamily] ?? "font-sans",
             "break-words",
             profile.wordGuide && "word-guide-on",
@@ -920,6 +941,19 @@ export function Reader() {
             wordSpacing: `${profile.wordSpacing}em`,
           }}
         >
+          <InkLayer
+            strokes={bookInk}
+            section={section}
+            tool={inkTool}
+            color={inkColor}
+            inkMode={inkMode}
+            containerRef={scrollRef}
+            layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}`}
+            onCommit={({ lineIdx, points }) =>
+              addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points })
+            }
+            onErase={eraseStrokes}
+          />
           <h1 id="reading-title" className="sr-only">
             {readingTitle}
           </h1>
@@ -1136,6 +1170,22 @@ export function Reader() {
               <WordCard word={lookup} onClose={() => setLookup(null)} />
             </div>
           ) : null}
+          {inkMode ? (
+            <InkToolbar
+              tool={inkTool}
+              color={inkColor}
+              onTool={setInkTool}
+              onColor={setInkColor}
+              onUndo={() => undoStroke(section)}
+              onClear={() => {
+                clearInk(section);
+                feedback("bad", { message: "Drawing cleared" });
+              }}
+              onClose={() => setInkMode(false)}
+              canUndo={inkHere.length > 0}
+              hasInk={inkHere.length > 0}
+            />
+          ) : null}
           <div
             ref={toolbarRef}
             role="toolbar"
@@ -1326,6 +1376,10 @@ export function Reader() {
                 </p>
                 <MarkerPalette value={markerColor} onChange={setMarkerColor} className="px-1 pb-1" />
                 <div className="mt-2 border-t border-fg/10 pt-1">
+                  <DropdownMenuItem onSelect={() => setInkMode(true)}>
+                    <PenLine size={14} aria-hidden className="icon-motion icon-lift" />
+                    Draw on the page
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => setMarksOpen(true)}
                     disabled={bookHighlights.length === 0}
