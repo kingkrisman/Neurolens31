@@ -24,8 +24,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-export const SOURCE = "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs";
-export const TARGET = "public/pdf.worker.min.mjs";
+export const SOURCE = "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.js";
+export const TARGET = "public/pdf.worker.min.js";
 
 /** The pdf.js version a build announces, so a mismatch can be named. */
 export function versionOf(source) {

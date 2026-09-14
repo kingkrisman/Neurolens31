@@ -51,8 +51,9 @@ export async function renderPdfPage(
   context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
 
   renderTask?.cancel();
+  // The context and the viewport are the whole contract in this build; the
+  // canvas is reached through the context.
   const task = page.render({
-    canvas,
     canvasContext: context,
     viewport,
   });

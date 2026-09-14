@@ -15,6 +15,9 @@ export default tseslint.config(
       ".nitro/**",
       "node_modules/**",
       "src/routeTree.gen.ts",
+      // Vendored and minified: copied in from pdfjs-dist by
+      // scripts/sync-pdf-worker.mjs, and not ours to fix.
+      "public/pdf.worker.min.js",
     ],
   },
   js.configs.recommended,

@@ -146,7 +146,7 @@ async function withPdfErrorsSilenced<T>(work: () => Promise<T>): Promise<T> {
 /** How far into a long book the reader has got, for the progress label. */
 export type ProgressFn = (done: number, total: number) => void;
 
-const WORKER_SRC = "/pdf.worker.min.mjs";
+const WORKER_SRC = "/pdf.worker.min.js";
 
 /**
  * Whether a real worker can be started.
@@ -195,11 +195,13 @@ async function workerUsable(): Promise<boolean> {
     // to be its own hang.
     const timer = setTimeout(() => finish(false), 6000);
     try {
-      worker = new Worker(WORKER_SRC, { type: "module" });
+      // A classic worker, deliberately: a module worker needs support this
+      // reader cannot assume, and the build used here does not require one.
+      worker = new Worker(WORKER_SRC);
       worker.onerror = () => finish(false);
-      // A module worker's import failure arrives asynchronously, so this waits
-      // long enough for that error to land rather than declaring success the
-      // instant the constructor returns.
+      // A failure to load arrives asynchronously, so this waits long enough for
+      // that error to land rather than declaring success the instant the
+      // constructor returns.
       setTimeout(() => finish(true), 900);
     } catch {
       finish(false);
@@ -219,9 +221,17 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     throw new Error("PDF parsing is only available in the reader.");
   }
 
-  let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs");
+  type Pdfjs = typeof import("pdfjs-dist");
+  let pdfjs: Pdfjs;
   try {
-    pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    // The legacy build, which is the one compiled for browsers that are not
+    // the newest. It is a UMD bundle, so the namespace can arrive either
+    // directly or under `default` depending on the bundler's interop.
+    const loaded = (await import("pdfjs-dist/legacy/build/pdf.min.js")) as unknown as {
+      default?: Pdfjs;
+    } & Pdfjs;
+    pdfjs = (loaded.default ?? loaded) as Pdfjs;
+    if (!pdfjs?.getDocument) throw new Error("no getDocument");
   } catch {
     throw new Error("Could not load the PDF reader. Paste the text instead.");
   }
@@ -259,7 +269,6 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
         // is pure cost — and font construction is one of the places a parse
         // fails on a phone.
         disableFontFace: true,
-        useWasm: false,
         useWorkerFetch: false,
         isOffscreenCanvasSupported: false,
         verbosity: 0,
