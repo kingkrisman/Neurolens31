@@ -219,9 +219,9 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
     throw new Error("PDF parsing is only available in the reader.");
   }
 
-  let pdfjs: typeof import("pdfjs-dist");
+  let pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs");
   try {
-    pdfjs = await import("pdfjs-dist");
+    pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   } catch {
     throw new Error("Could not load the PDF reader. Paste the text instead.");
   }
