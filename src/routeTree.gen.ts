@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
@@ -17,6 +18,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
+import { Route as WhatsNewRouteImport } from './routes/whats-new'
 import { Route as ApiDictionaryRouteImport } from './routes/api/dictionary'
 import { Route as ApiGutenbergRouteImport } from './routes/api/gutenberg'
 import { Route as ApiGutendexSplatRouteImport } from './routes/api/gutendex.$'
@@ -25,6 +27,11 @@ import { Route as ApiOpenlibrarySplatRouteImport } from './routes/api/openlibrar
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessibilityRoute = AccessibilityRouteImport.update({
+  id: '/accessibility',
+  path: '/accessibility',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountRoute = AccountRouteImport.update({
@@ -62,6 +69,11 @@ const ThankYouRoute = ThankYouRouteImport.update({
   path: '/thank-you',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WhatsNewRoute = WhatsNewRouteImport.update({
+  id: '/whats-new',
+  path: '/whats-new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDictionaryRoute = ApiDictionaryRouteImport.update({
   id: '/api/dictionary',
   path: '/api/dictionary',
@@ -85,6 +97,7 @@ const ApiOpenlibrarySplatRoute = ApiOpenlibrarySplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -92,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/whats-new': typeof WhatsNewRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -99,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -106,6 +121,7 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/whats-new': typeof WhatsNewRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -114,6 +130,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -121,6 +138,7 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
+  '/whats-new': typeof WhatsNewRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -130,6 +148,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accessibility'
     | '/account'
     | '/help'
     | '/login'
@@ -137,6 +156,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/thank-you'
+    | '/whats-new'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -144,6 +164,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accessibility'
     | '/account'
     | '/help'
     | '/login'
@@ -151,6 +172,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/thank-you'
+    | '/whats-new'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -158,6 +180,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/accessibility'
     | '/account'
     | '/help'
     | '/login'
@@ -165,6 +188,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/thank-you'
+    | '/whats-new'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -173,6 +197,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccessibilityRoute: typeof AccessibilityRoute
   AccountRoute: typeof AccountRoute
   HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
@@ -180,6 +205,7 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
+  WhatsNewRoute: typeof WhatsNewRoute
   ApiDictionaryRoute: typeof ApiDictionaryRoute
   ApiGutenbergRoute: typeof ApiGutenbergRoute
   ApiGutendexSplatRoute: typeof ApiGutendexSplatRoute
@@ -193,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accessibility': {
+      id: '/accessibility'
+      path: '/accessibility'
+      fullPath: '/accessibility'
+      preLoaderRoute: typeof AccessibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -244,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ThankYouRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/whats-new': {
+      id: '/whats-new'
+      path: '/whats-new'
+      fullPath: '/whats-new'
+      preLoaderRoute: typeof WhatsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/dictionary': {
       id: '/api/dictionary'
       path: '/api/dictionary'
@@ -277,6 +317,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccessibilityRoute: AccessibilityRoute,
   AccountRoute: AccountRoute,
   HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
@@ -284,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
+  WhatsNewRoute: WhatsNewRoute,
   ApiDictionaryRoute: ApiDictionaryRoute,
   ApiGutenbergRoute: ApiGutenbergRoute,
   ApiGutendexSplatRoute: ApiGutendexSplatRoute,

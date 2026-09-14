@@ -428,6 +428,12 @@ export function AppShell() {
               <Link to="/terms" className="hover:text-fg">
                 Terms
               </Link>
+              <Link to="/accessibility" className="hidden hover:text-fg sm:inline">
+                Accessibility
+              </Link>
+              <Link to="/whats-new" className="hidden hover:text-fg sm:inline">
+                What's new
+              </Link>
               <Link to="/thank-you" className="hidden hover:text-fg sm:inline">
                 Thank you
               </Link>

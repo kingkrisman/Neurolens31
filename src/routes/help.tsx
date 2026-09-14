@@ -179,6 +179,17 @@ function Help() {
 
       <Section id="still" title="Still stuck?">
         <p>
+          See{" "}
+          <Link to="/whats-new" className="text-fg underline underline-offset-2">
+            what changed recently
+          </Link>{" "}
+          — a tool may have moved. The{" "}
+          <Link to="/accessibility" className="text-fg underline underline-offset-2">
+            accessibility statement
+          </Link>{" "}
+          also lists the things the app cannot do yet, which is sometimes the answer.
+        </p>
+        <p>
           If something is not working the way this page describes,{" "}
           <Link to="/support" className="text-fg underline underline-offset-2">
             tell us about it
