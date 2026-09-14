@@ -1,4 +1,15 @@
+import { unzipSync, strFromU8 } from "fflate";
 import { joinPdfPages } from "./pdf-pages.ts";
+import {
+  epubTitle,
+  opfPathFrom,
+  resolveHref,
+  spineOrder,
+  textFromDocxXml,
+  textFromHtml,
+  textFromRtf,
+  tidy,
+} from "./formats.ts";
 import { textFromItems } from "./pdf-text.ts";
 import { rememberPdfDocument } from "./pdf-session.ts";
 
@@ -57,11 +68,43 @@ function isPdfFile(name: string, mime: string): boolean {
   return extensionOf(name) === "pdf" || mime === "application/pdf" || mime === "application/x-pdf";
 }
 
-function isTextFile(name: string, mime: string): boolean {
+/**
+ * Plain-text-ish extensions.
+ *
+ * Listed rather than inferred because a phone often reports no MIME type at
+ * all for a file picked out of Files, so the extension is the only thing left
+ * to go on.
+ */
+const TEXT_EXTENSIONS = new Set([
+  "txt", "text", "md", "markdown", "mdown", "mkd", "rst", "org", "tex",
+  "log", "csv", "tsv", "json", "yaml", "yml", "toml", "ini", "srt", "vtt",
+  "adoc", "asciidoc", "nfo", "me", "readme",
+]);
+
+function isEpubFile(name: string, mime: string): boolean {
+  return extensionOf(name) === "epub" || mime === "application/epub+zip";
+}
+
+function isDocxFile(name: string, mime: string): boolean {
+  return (
+    extensionOf(name) === "docx" ||
+    mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  );
+}
+
+function isHtmlFile(name: string, mime: string): boolean {
   const ext = extensionOf(name);
-  if (ext === "txt" || ext === "md" || ext === "markdown") return true;
+  return ext === "html" || ext === "htm" || ext === "xhtml" || mime === "text/html" || mime === "application/xhtml+xml";
+}
+
+function isRtfFile(name: string, mime: string): boolean {
+  return extensionOf(name) === "rtf" || mime === "application/rtf" || mime === "text/rtf";
+}
+
+function isTextFile(name: string, mime: string): boolean {
+  if (TEXT_EXTENSIONS.has(extensionOf(name))) return true;
   if (mime.startsWith("text/")) return true;
-  if (mime === "application/markdown" || mime === "text/markdown") return true;
+  if (mime === "application/markdown" || mime === "application/json") return true;
   return false;
 }
 
@@ -339,6 +382,113 @@ async function processPdf(file: File, onProgress?: ProgressFn): Promise<Processe
   });
 }
 
+/** Unpack a zip in memory. EPUB and DOCX are both zips with a convention. */
+function unzip(data: Uint8Array): Record<string, Uint8Array> {
+  try {
+    return unzipSync(data);
+  } catch {
+    throw new Error("That file could not be unpacked. It may be damaged.");
+  }
+}
+
+function zipText(files: Record<string, Uint8Array>, path: string): string {
+  const entry = files[path];
+  return entry ? strFromU8(entry) : "";
+}
+
+async function bytesOf(file: File): Promise<Uint8Array> {
+  try {
+    return new Uint8Array(await file.arrayBuffer());
+  } catch {
+    throw new Error(
+      "Could not open that file. If it is stored in the cloud, download it to this device first.",
+    );
+  }
+}
+
+/**
+ * An EPUB, in its own reading order.
+ *
+ * The spine decides the order; the zip's own listing is meaningless. A chapter
+ * that will not parse is skipped rather than fatal, for the same reason a PDF
+ * page is: losing one chapter is better than losing the book.
+ */
+async function processEpub(file: File, onProgress?: ProgressFn): Promise<ProcessedDocument> {
+  const files = unzip(await bytesOf(file));
+
+  const opfPath = opfPathFrom(zipText(files, "META-INF/container.xml"));
+  const opf = opfPath ? zipText(files, opfPath) : "";
+  const chapters = opf
+    ? spineOrder(opf).map((href) => resolveHref(opfPath!, href))
+    : // No package document is not necessarily a broken book — some are built
+      // badly. Fall back to every document in the zip, sorted, which at least
+      // reads in a stable order.
+      Object.keys(files)
+        .filter((name) => /\.x?html?$/i.test(name))
+        .sort();
+
+  if (!chapters.length) {
+    throw new Error("That EPUB has no readable chapters. Try a PDF or paste the text.");
+  }
+
+  const parts: string[] = [];
+  for (let i = 0; i < chapters.length; i += 1) {
+    const raw = zipText(files, chapters[i]!);
+    if (raw) {
+      const text = textFromHtml(raw);
+      if (text) parts.push(text);
+    }
+    if (i % 5 === 0 || i === chapters.length - 1) {
+      onProgress?.(i + 1, chapters.length);
+      await nextFrame();
+    }
+  }
+
+  const content = tidy(parts.join("\n\n"));
+  if (!content) throw new Error("That EPUB had no text in it.");
+
+  const name = fileName(file);
+  const title = epubTitle(opf) ?? titleFrom(name, /\.epub$/i);
+  return summarize(content, title, "EPUB", chapters.length);
+}
+
+/** A Word document. Only the body: headers, footers and notes are not the text. */
+async function processDocx(file: File): Promise<ProcessedDocument> {
+  const files = unzip(await bytesOf(file));
+  const xml = zipText(files, "word/document.xml");
+  if (!xml) throw new Error("That Word file has no document in it. Try saving it again.");
+  const content = textFromDocxXml(xml);
+  if (!content) throw new Error("That Word file had no text in it.");
+  return summarize(content, titleFrom(fileName(file), /\.docx$/i), "DOCX");
+}
+
+async function processHtml(file: File): Promise<ProcessedDocument> {
+  let raw: string;
+  try {
+    raw = await file.text();
+  } catch {
+    throw new Error("Could not read that page.");
+  }
+  const content = textFromHtml(raw);
+  if (!content) throw new Error("That page had no text in it.");
+  // A page's own <title> beats its filename, which is often a slug.
+  const titled = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(raw)?.[1];
+  const title = (titled ? tidy(titled) : "") || titleFrom(fileName(file), /\.(x?html?)$/i);
+  return summarize(content, title, "HTML");
+}
+
+async function processRtf(file: File): Promise<ProcessedDocument> {
+  let raw: string;
+  try {
+    raw = await file.text();
+  } catch {
+    throw new Error("Could not read that file.");
+  }
+  const content = textFromRtf(raw);
+  if (!content) throw new Error("That file had no text in it.");
+  return summarize(content, titleFrom(fileName(file), /\.rtf$/i), "RTF");
+}
+
 export async function processDocument(file: File, onProgress?: ProgressFn): Promise<ProcessedDocument> {
   if (!file) throw new Error("No file selected.");
   if (typeof file.size === "number" && file.size > MAX_UPLOAD_BYTES) {
@@ -350,6 +500,10 @@ export async function processDocument(file: File, onProgress?: ProgressFn): Prom
 
   try {
     if (isPdfFile(name, mime)) return await processPdf(file, onProgress);
+    if (isEpubFile(name, mime)) return await processEpub(file, onProgress);
+    if (isDocxFile(name, mime)) return await processDocx(file);
+    if (isRtfFile(name, mime)) return await processRtf(file);
+    if (isHtmlFile(name, mime)) return await processHtml(file);
 
     if (isTextFile(name, mime)) {
       let content: string;
@@ -365,7 +519,30 @@ export async function processDocument(file: File, onProgress?: ProgressFn): Prom
       return summarize(trimmed.slice(0, MAX_EXTRACT_CHARS), titleFrom(name, /\.(txt|md|markdown)$/i), format);
     }
 
-    throw new Error(`Unsupported file format: ${extensionOf(name) || mime || "unknown"}. Use PDF, .txt, or .md.`);
+    // Last resort before refusing: a great many things are text with an
+    // unfamiliar extension, and reading one is harmless — it either produces
+    // prose or it produces nothing, and nothing is caught just below.
+    try {
+      const guess = tidy(await file.text());
+      // Binary read as text is mostly control characters and replacement
+      // marks; prose is not.
+      let junk = 0;
+      for (let i = 0; i < guess.length; i += 1) {
+        const code = guess.charCodeAt(i);
+        // C0 controls other than tab/newline/carriage return, plus the
+        // replacement character a failed decode leaves behind.
+        if ((code < 9 || (code > 13 && code < 32)) || code === 0xfffd) junk += 1;
+      }
+      if (guess.length > 40 && junk / guess.length < 0.02) {
+        return summarize(guess.slice(0, MAX_EXTRACT_CHARS), titleFrom(name, /\.[^.]+$/), "TEXT");
+      }
+    } catch {
+      /* fall through to the refusal below */
+    }
+
+    throw new Error(
+      `NeuroLens cannot read a ${extensionOf(name) || mime || "file"} yet. It reads PDF, EPUB, Word, HTML, RTF, Markdown and plain text — or paste the contents.`,
+    );
   } catch (err) {
     if (err instanceof Error) throw err;
     throw new Error("Could not read that file. Paste the text instead.");

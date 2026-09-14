@@ -29,9 +29,26 @@ describe("processDocument", () => {
     assert.equal(doc.content, "just words");
   });
 
-  it("rejects unsupported formats with a clear error", async () => {
-    const file = new File(["PK"], "slides.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-    await assert.rejects(() => processDocument(file), /Unsupported file format/);
+  it("says what it can read when it meets something it cannot", async () => {
+    // Binary, and not a format with a reader: the refusal has to name the
+    // alternatives rather than only the failure.
+    const bytes = new Uint8Array([0x00, 0x01, 0x02, 0xff, 0xfe, 0x00, 0x03]);
+    const file = new File([bytes], "photo.psd", { type: "image/vnd.adobe.photoshop" });
+    await assert.rejects(() => processDocument(file), /cannot read a psd yet[\s\S]*PDF, EPUB, Word, HTML, RTF/);
+  });
+
+  it("reads an unfamiliar extension as text rather than refusing it", async () => {
+    // A great many things are prose under a name nobody listed.
+    const file = new File(["A note written in some editor nobody has heard of."], "notes.zzz");
+    const doc = await processDocument(file);
+    assert.match(doc.content, /A note written/);
+  });
+
+  it("reports a damaged zip as damaged, not as an unknown format", async () => {
+    const file = new File(["PK"], "slides.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    await assert.rejects(() => processDocument(file), /could not be unpacked|damaged/i);
   });
 
   it("does not crash when File.type is missing on a .txt name", async () => {

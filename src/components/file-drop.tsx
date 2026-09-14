@@ -9,12 +9,24 @@ import { cn } from "@/lib/utils";
  *
  * iOS resolves each token to a UTI and greys out every file it cannot map, so
  * `text/markdown` — which has no UTI — could leave a phone showing a Files
- * browser where nothing is selectable. Extensions first, then the two MIME
- * types iOS actually knows, then `text/*` as the catch-all for the plain-text
- * formats it reports under various names. The processor validates properly
- * once a file arrives; this list only decides what can be tapped.
+ * browser where nothing is selectable. Extensions first, because a phone often
+ * reports no MIME type at all; then the types iOS does know; then `text/*` as
+ * the catch-all.
+ *
+ * This list only decides what can be tapped. The processor decides what can be
+ * read, and it will try an unfamiliar extension as text rather than refuse it
+ * outright — so a file missing from here is still worth dragging in.
  */
-const ACCEPT = ".pdf,.txt,.md,.markdown,application/pdf,text/plain,text/*";
+const ACCEPT = [
+  // Extensions first: a phone often reports no MIME type for a file picked
+  // out of Files, and the extension is then the only thing to match on.
+  ".pdf,.epub,.docx,.rtf,.html,.htm,.xhtml",
+  ".txt,.text,.md,.markdown,.rst,.org,.tex,.log,.csv,.tsv,.json,.yaml,.yml,.srt,.vtt",
+  // Then the MIME types iOS can actually map to a UTI.
+  "application/pdf,application/epub+zip,application/rtf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/html,text/plain,text/*",
+].join(",");
 
 export function FileDrop({
   onFile,
