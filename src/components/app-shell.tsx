@@ -14,6 +14,7 @@ import { Landing } from "@/components/landing";
 import { Mark } from "@/components/mark";
 import { Segmented } from "@/components/segmented";
 import { NavMenu } from "@/components/nav-menu";
+import { HeaderAccount } from "@/components/auth/header-account";
 import { GlassHeader } from "@/components/glass-header";
 import { Neuro } from "@/components/neuro";
 import { MotionCues } from "@/components/motion-cues";
@@ -344,6 +345,9 @@ export function AppShell() {
                 </Button>
               </>
             )}
+            {/* Hidden while reading, like Search: the page is the point then,
+                and the badge is one tap away in the menu. */}
+            {reading ? null : <HeaderAccount />}
             <NavMenu />
           </div>
           </GlassHeader>

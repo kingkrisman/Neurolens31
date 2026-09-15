@@ -4,21 +4,17 @@ import { Download, LogOut, Trash2, BookOpen, Clock, Highlighter } from "lucide-r
 import { Mark } from "@/components/mark";
 import { Card } from "@/components/ui/surfaces";
 import { PageEnter } from "@/components/gsap-motion";
-import { ProviderMark } from "@/components/auth/provider-mark";
-import { authEnabled, signOut } from "@/lib/auth/client";
-import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { UserAvatar } from "@/components/auth/user-avatar";
+import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/account")({ component: Account });
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((part) => part.charAt(0).toUpperCase()).join("") || "?";
-}
-
 function Account() {
-  const { user, isPending } = useCurrentUserState();
+  // The same session the header badge reads, so the two can never disagree.
+  const user = useAuthUser();
+  const isPending = false;
   const sessions = useAppStore((s) => s.sessions);
   const highlights = useAppStore((s) => s.highlights);
   const clearData = useAppStore((s) => s.clearData);
@@ -48,7 +44,7 @@ function Account() {
     const payload = {
       exportedAt: new Date().toISOString(),
       app: "NeuroLens",
-      account: user ? { name: user.displayName, email: user.primaryEmail } : null,
+      account: user ? { name: user.name, email: user.email, provider: user.provider } : null,
       profile: useAppStore.getState().profile,
       sessions: useAppStore.getState().sessions,
       highlights: useAppStore.getState().highlights,
@@ -70,7 +66,7 @@ function Account() {
     setSignOutError(null);
     setSigningOut(true);
     try {
-      await signOut("/");
+      await signOut();
     } catch (err) {
       // Deployed, only the server can end the session — so a failure here means
       // the reader is still signed in, and saying otherwise would be a lie.
@@ -79,7 +75,7 @@ function Account() {
     }
   }
 
-  const name = user?.displayName ?? user?.primaryEmail ?? "Reader";
+  const name = user?.name ?? "Your account";
 
   return (
     <div className="min-h-dvh bg-bg text-fg">
@@ -126,21 +122,14 @@ function Account() {
             <>
               <div data-enter>
                 <Card className="mt-8 flex items-center gap-4 p-5">
-                  {user.profileImageUrl ? (
-                    <img src={user.profileImageUrl} alt="" className="size-14 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <span className="grid size-14 shrink-0 place-items-center rounded-full bg-fg/8 font-serif text-lg">
-                      {initials(name)}
-                    </span>
-                  )}
+                  <UserAvatar seed={user.avatarSeed} size={56} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{user.displayName ?? "Reader"}</p>
-                    {user.primaryEmail ? (
-                      <p className="truncate text-xs text-muted">{user.primaryEmail}</p>
-                    ) : null}
-                    {user.isDevFallback ? (
-                      <p className="mt-1 text-[11px] text-subtle">Demo account — sign-in is off in this build.</p>
-                    ) : null}
+                    <p className="truncate text-sm font-medium">{user.name}</p>
+                    <p className="truncate text-xs text-muted">{user.email}</p>
+                    <p className="mt-1 text-[11px] text-subtle">
+                      Signed in with {PROVIDER_LABEL[user.provider]} · since{" "}
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </Card>
               </div>
@@ -193,7 +182,7 @@ function Account() {
                 secondary={confirmingClear ? { label: "Cancel", onAction: () => setConfirmingClear(false) } : undefined}
               />
 
-              {user && authEnabled && !user.isDevFallback ? (
+              {user ? (
                 <Row
                   icon={LogOut}
                   title="Sign out"
