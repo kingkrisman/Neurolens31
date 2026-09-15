@@ -5,6 +5,8 @@ import { Mark } from "@/components/mark";
 import { Card } from "@/components/ui/surfaces";
 import { PageEnter } from "@/components/gsap-motion";
 import { UserAvatar } from "@/components/auth/user-avatar";
+import { AvatarPicker } from "@/components/auth/avatar-picker";
+import { AnalyticsSettings } from "@/components/analytics-settings";
 import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -135,6 +137,18 @@ function Account() {
               </div>
 
               <div data-enter>
+                <section id="avatar" className="scroll-mt-24">
+                  <h2 className="mt-10 font-serif text-xl italic">Your avatar</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    Pick a style and shuffle until it feels like you. It is drawn on your device — no photo.
+                  </p>
+                  <Card className="mt-4 p-5">
+                    <AvatarPicker seed={user.avatarSeed} />
+                  </Card>
+                </section>
+              </div>
+
+              <div data-enter>
                 <h2 className="mt-10 font-serif text-xl italic">Your reading</h2>
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   <Stat icon={BookOpen} value={stats.books} label={stats.books === 1 ? "book" : "books"} />
@@ -151,6 +165,10 @@ function Account() {
               Your books, highlights, drawings and settings live in this browser. Nothing here is
               uploaded.
             </p>
+
+            <div className="mt-4">
+              <AnalyticsSettings />
+            </div>
 
             <div className="mt-4 space-y-2">
               <Row

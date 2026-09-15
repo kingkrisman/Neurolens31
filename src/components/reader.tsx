@@ -69,6 +69,7 @@ import {
 } from "@/lib/selection-range";
 import { allRegistryNames, colorById, registryName } from "@/lib/highlight-colors";
 import { MarkerDot, MarkerPalette } from "@/components/marker-palette";
+import { track } from "@/lib/analytics";
 import { InkLayer } from "@/components/ink-layer";
 import { InkToolbar } from "@/components/ink-toolbar";
 import { Icon } from "@iconify/react";
@@ -297,9 +298,9 @@ export function Reader() {
           list.push({
             text: full,
             html:
-              profile.bionicStrength > 0
-                ? processBionicText(full, profile.bionicStrength, profile.rhythmOptimization)
-                : full,
+              // Escaped even with fixation off: this becomes innerHTML, and the
+              // raw sentence from an uploaded file is not safe to put there.
+              processBionicText(full, profile.bionicStrength, profile.rhythmOptimization),
             lineIdx: blockIndex * 1000 + itemIndex * 40 + index,
             blockIndex,
             itemIndex,
@@ -740,6 +741,8 @@ export function Reader() {
       end: picked.end,
       text: picked.text,
     });
+    // The colour only — never the text that was marked.
+    track("highlight_added", { color: useAppStore.getState().markerColor });
     feedback("good", { message: `Highlighted: ${picked.text.slice(0, 60)}` });
     // The selection is cleared after marking, not kept. Leaving it in place
     // meant the browser's own selection sat on top of the stroke that had just
@@ -949,9 +952,10 @@ export function Reader() {
             inkMode={inkMode}
             containerRef={scrollRef}
             layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}`}
-            onCommit={({ lineIdx, points }) =>
-              addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points })
-            }
+            onCommit={({ lineIdx, points }) => {
+              addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points });
+              track("ink_stroke", { tool: inkTool });
+            }}
             onErase={eraseStrokes}
           />
           <h1 id="reading-title" className="sr-only">

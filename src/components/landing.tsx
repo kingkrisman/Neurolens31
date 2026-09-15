@@ -18,6 +18,7 @@ import { HeroTitle } from "@/components/hero-title";
 import { ParallaxHero } from "@/components/parallax-hero";
 import { FileDrop } from "@/components/file-drop";
 import { AccessibleBionic } from "@/components/accessible-bionic";
+import { bucketCount, bucketSize, formatOf, track } from "@/lib/analytics";
 import { PatternExplorer } from "@/components/pattern-panel";
 import { GsapCount, Magnetic, ScrollScene, StaggerBlock } from "@/components/gsap-motion";
 import { scrollToId } from "@/lib/gsap";
@@ -185,6 +186,12 @@ export function Landing() {
         readTime: doc.metadata.estimatedReadTime,
       });
       const skipped = doc.metadata.unreadablePages ?? 0;
+      track("file_opened", {
+        format: formatOf(file.name),
+        size: bucketSize(file.size),
+        pages: bucketCount(doc.metadata.pageCount ?? 0),
+        skipped_pages: skipped > 0,
+      });
       if (skipped > 0) {
         // Said plainly rather than hidden: the reader will meet the gaps, and
         // meeting them unannounced reads as the app having lost something.
@@ -195,6 +202,19 @@ export function Landing() {
         toast.success("Document ready");
       }
     } catch (err) {
+      // The stage is inferred from which of the app's own messages came back;
+      // the message itself is never recorded.
+      const message = err instanceof Error ? err.message : "";
+      track("file_failed", {
+        format: formatOf(file.name),
+        stage: /pages of that/i.test(message)
+          ? "pages"
+          : /open that/i.test(message)
+            ? "open"
+            : /cannot read a|unsupported/i.test(message)
+              ? "unsupported"
+              : "read",
+      });
       setError(err instanceof Error ? err.message : "Could not read that file.");
       toast.error(err instanceof Error ? err.message : "Could not read that file");
     } finally {

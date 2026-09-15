@@ -52,12 +52,32 @@ export function nearestFixationPreset(value: number): (typeof FIXATION_PRESETS)[
   );
 }
 
+/**
+ * Make text safe to place inside HTML.
+ *
+ * Everything this module returns is inserted with `dangerouslySetInnerHTML`,
+ * and the text it is given comes from files people upload — so a book
+ * containing `<img/src=x/onerror=…>` used to reach the page as a live element
+ * and run with full access to everything stored in the browser. Only the
+ * fixation spans this module writes itself are markup; every character of the
+ * reader's text is escaped first.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function processBionicText(
   text: string,
   strength = 0.5,
   rhythmOverride = false,
 ): string {
-  if (!text || strength <= 0) return text;
+  if (!text) return "";
+  if (strength <= 0) return escapeHtml(text);
 
   const sentences = splitSentenceSpans(text);
 
@@ -71,7 +91,7 @@ export function processBionicText(
           if (/^\s+$/.test(part)) return part;
 
           const match = part.match(/^([^a-zA-Z0-9]*)([a-zA-Z0-9']+)([^a-zA-Z0-9]*)$/);
-          if (!match) return part;
+          if (!match) return escapeHtml(part);
 
           const [, prefix, word, suffix] = match;
           const lowerWord = word.toLowerCase();
@@ -86,9 +106,11 @@ export function processBionicText(
 
           const positionBoost = rhythmOverride && wordInSentence <= 2 ? 1.12 : 1;
           const boldLength = fixationLength(word, strength * positionBoost, importance);
-          if (boldLength <= 0) return part;
+          if (boldLength <= 0) return escapeHtml(part);
 
-          return `${prefix}<span class="fixation">${word.slice(0, boldLength)}</span>${word.slice(boldLength)}${suffix}`;
+          // `word` is letters, digits and apostrophes only; the apostrophe is
+          // the one character in it that still needs escaping.
+          return `${escapeHtml(prefix)}<span class="fixation">${escapeHtml(word.slice(0, boldLength))}</span>${escapeHtml(word.slice(boldLength))}${escapeHtml(suffix)}`;
         })
         .join("");
     })
@@ -97,5 +119,11 @@ export function processBionicText(
 
 /** Strip fixation markup so assistive tech hears the original word, not “T he”. */
 export function plainTextFromBionic(html: string): string {
-  return html.replace(/<[^>]*>/g, "");
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
 }

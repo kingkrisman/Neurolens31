@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { CircleHelp, LogOut, UserRound } from "lucide-react";
+import { CircleHelp, LogOut, Palette, UserRound } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,6 +61,10 @@ export function HeaderAccount() {
             <UserRound size={14} aria-hidden />
             Account
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void navigate({ to: "/account", hash: "avatar" })}>
+            <Palette size={14} aria-hidden />
+            Customise avatar
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void navigate({ to: "/help" })}>
             <CircleHelp size={14} aria-hidden />
             Help
@@ -68,6 +73,7 @@ export function HeaderAccount() {
             disabled={leaving}
             onSelect={async () => {
               setLeaving(true);
+              track("auth", { action: "sign_out", provider: user.provider });
               await signOut();
               setLeaving(false);
             }}

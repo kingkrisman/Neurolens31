@@ -18,6 +18,36 @@ import { PREFERENCE_WEIGHT, readPreference } from "./adaptive/preference.ts";
 import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { fitSessions } from "./session-storage.ts";
+import { track } from "./analytics.ts";
+
+/** Settings whose changes are counted — by name only, never by value. */
+const TRACKED_SETTINGS = [
+  "fontFamily",
+  "fontSize",
+  "lineHeight",
+  "letterSpacing",
+  "wordSpacing",
+  "theme",
+  "tint",
+  "align",
+  "bionicStrength",
+  "readingMask",
+  "wordGuide",
+  "syllables",
+  "letterGuide",
+  "plainLanguage",
+  "focusHighlight",
+  "rhythmOptimization",
+] as const;
+
+/**
+ * When each setting was last counted.
+ *
+ * A slider fires setProfile on every step of a drag, and one adjustment is one
+ * decision — without this a single drag of the size slider would be recorded
+ * forty times and drown out every other signal.
+ */
+const lastSettingEvent = new Map<string, number>();
 import { DEFAULT_HIGHLIGHT_COLOR, colorById, type HighlightColorId } from "./highlight-colors.ts";
 import { inkColorById, strokeId, toolById, trimStrokes, type InkStroke, type InkToolId } from "./ink.ts";
 import type { NeuralEvent } from "./neural.ts";
@@ -519,6 +549,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (tab === "read" && !get().text) return;
     const direction = TAB_ORDER.indexOf(tab) >= TAB_ORDER.indexOf(current) ? 1 : -1;
     set({ tab, direction, autoScrolling: false, controlsOpen: tab === "read" ? get().controlsOpen : false });
+    if (tab !== current) track("tab_view", { tab });
   },
 
   startReading: (raw, meta) => {
@@ -676,6 +707,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const before = get().profile;
       const next = persistAndApply(profile, get().mode);
+
+      const now = Date.now();
+      const was = before as unknown as Record<string, unknown>;
+      const is = profile as unknown as Record<string, unknown>;
+      for (const key of TRACKED_SETTINGS) {
+        if (was[key] === is[key]) continue;
+        if (now - (lastSettingEvent.get(key) ?? 0) < 10_000) continue;
+        lastSettingEvent.set(key, now);
+        track("setting_changed", { setting: key });
+      }
 
       /**
        * A hand-made change is evidence, so the engine hears about it.

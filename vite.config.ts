@@ -12,6 +12,28 @@ import { grokPwaPlugin } from "./scripts/grok-pwa-plugin.mjs";
 // @ts-expect-error JS plugin alongside the TS vite config
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
+import { securityHeaders } from "./scripts/security-headers.mjs";
+
+/** Services configured later (Supabase, analytics) that the browser must be allowed to reach. */
+const EXTRA_CONNECT = [process.env.VITE_SUPABASE_URL, process.env.VITE_ANALYTICS_ENDPOINT];
+
+/**
+ * The same security headers on the dev server as in production, so a policy
+ * that blocks something the app needs fails here, in front of a developer,
+ * instead of silently on a reader's phone.
+ */
+function securityHeadersPlugin(): Plugin {
+  return {
+    name: "neurolens-security-headers",
+    configureServer(server) {
+      const headers = securityHeaders({ dev: true, extraConnect: EXTRA_CONNECT });
+      server.middlewares.use((_req, res, next) => {
+        for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+        next();
+      });
+    },
+  };
+}
 
 /** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
 function hasGlobbedMigrations(root: string): boolean {
@@ -180,6 +202,10 @@ export default defineConfig(({ command, isPreview }) => ({
       ? [
           nitro({
             preset: "vercel",
+            // Every response, including the PDF worker and static files.
+            routeRules: {
+              "/**": { headers: securityHeaders({ extraConnect: EXTRA_CONNECT }) },
+            },
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
@@ -188,5 +214,6 @@ export default defineConfig(({ command, isPreview }) => ({
         ]
       : []),
     viteReact(),
+    securityHeadersPlugin(),
   ],
 }));

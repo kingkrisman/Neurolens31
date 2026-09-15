@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/surfaces";
 import { ProviderMark } from "@/components/auth/provider-mark";
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { PROVIDER_LABEL, signInWith, useAuthUser, type AuthProvider } from "@/lib/auth-ui/session";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const PROVIDERS: AuthProvider[] = ["google", "apple"];
@@ -52,6 +53,7 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
     setBusy(provider);
     try {
       await signInWith(provider);
+      track("auth", { action: mode === "signin" ? "sign_in" : "sign_up", provider });
       await navigate({ to: "/" });
     } catch {
       setError(`Could not continue with ${PROVIDER_LABEL[provider]}. Try again.`);

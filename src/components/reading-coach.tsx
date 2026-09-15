@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { doneMarker, resumeStep } from "@/lib/coach-progress";
+import { track } from "@/lib/analytics";
 
 export const COACH_KEY = "neurolens-coach";
 export const STARTED_KEY = "neurolens-started";
@@ -63,9 +64,11 @@ export function ReadingCoach() {
   function next() {
     if (step == null) return;
     if (step >= STEPS.length - 1) {
+      track("tour", { step: String(step + 1), action: "done" });
       finish();
       return;
     }
+    track("tour", { step: String(step + 1), action: "next" });
     const index = step + 1;
     mark(COACH_KEY, String(index));
     setStep(index);
@@ -78,7 +81,14 @@ export function ReadingCoach() {
     >
       <p className="min-w-0 text-xs leading-relaxed text-pretty">{STEPS[step]}</p>
       <div className="flex shrink-0 gap-1.5">
-        <Button size="sm" variant="ghost" onClick={finish}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            track("tour", { step: String(step + 1), action: "skip" });
+            finish();
+          }}
+        >
           Skip
         </Button>
         <Button size="sm" onClick={next}>
