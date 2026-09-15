@@ -956,6 +956,16 @@
     scroll-snap-type: y proximity;
   }
 
+  /* Snap points and a lerp cannot share a scroller: each frame Lenis writes a
+     position and the browser drags it onto the nearest snap point, so the page
+     lurches, then freezes while the glide runs on underneath. Wherever Lenis
+     drives the scroll, it owns settling. Touch devices skip Lenis and keep
+     snapping. */
+  html.lenis,
+  .pane-scroll.lenis {
+    scroll-snap-type: none;
+  }
+
   .reader-scroll {
     position: relative;
     scroll-snap-type: none;
