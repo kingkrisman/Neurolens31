@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SmoothScroll } from "@/components/smooth-scroll";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "NeuroLens";
@@ -39,6 +40,7 @@ export const Route = createRootRoute({
           }}
         />
         <PreviewHostBridge />
+        <SmoothScroll />
         <AuthProvider>
           <Outlet />
         </AuthProvider>

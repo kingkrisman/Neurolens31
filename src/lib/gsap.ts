@@ -1,6 +1,7 @@
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { lenisFor } from "@/lib/smooth-scroll";
 
 let registered = false;
 
@@ -36,7 +37,15 @@ export function scrollToId(id: string, offsetY = 88) {
   registerGsap();
   const target = document.getElementById(id);
   if (!target) return;
-  gsap.to(scrollerOf(target), {
+  const scroller = scrollerOf(target);
+  // When smooth scrolling drives this scroller, ask it to move; tweening
+  // scrollTop underneath it would have the two fighting over every frame.
+  const lenis = lenisFor(scroller);
+  if (lenis) {
+    lenis.scrollTo(target, { offset: -offsetY, duration: 1.1, easing: (t) => 1 - Math.pow(1 - t, 4) });
+    return;
+  }
+  gsap.to(scroller, {
     duration: 0.7,
     ease: "power3.inOut",
     overwrite: "auto",

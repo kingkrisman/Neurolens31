@@ -102,14 +102,14 @@ function WhatsNew() {
       </p>
 
       {RELEASES.map((release) => (
-        <section key={release.date} className="border-t border-fg/10 pt-6">
-          <p className="font-mono text-[11px] tracking-wide text-subtle uppercase">{release.date}</p>
-          <h2 className="mt-1.5 font-serif text-lg text-fg italic">{release.title}</h2>
-          <ul className="mt-3 space-y-3">
+        <section key={release.date} className="doc-section">
+          <p className="doc-eyebrow">{release.date}</p>
+          <h2 className="doc-h2 mt-2">{release.title}</h2>
+          <ul className="mt-6 space-y-3">
             {release.items.map((item) => (
-              <li key={item.what}>
-                <p className="text-sm leading-relaxed text-fg">{item.what}</p>
-                {item.why ? <p className="mt-1 text-sm leading-relaxed text-muted">{item.why}</p> : null}
+              <li key={item.what} className="rounded-2xl bg-surface p-5 shadow-border">
+                <p className="text-[15px] leading-relaxed font-medium text-fg">{item.what}</p>
+                {item.why ? <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.why}</p> : null}
               </li>
             ))}
           </ul>

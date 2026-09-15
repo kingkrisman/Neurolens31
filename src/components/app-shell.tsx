@@ -15,6 +15,8 @@ import { Mark } from "@/components/mark";
 import { Segmented } from "@/components/segmented";
 import { NavMenu } from "@/components/nav-menu";
 import { HeaderAccount } from "@/components/auth/header-account";
+import { AnalyticsConsent } from "@/components/analytics-consent";
+import { useSmoothScroller } from "@/lib/smooth-scroll";
 import { GlassHeader } from "@/components/glass-header";
 import { Neuro } from "@/components/neuro";
 import { MotionCues } from "@/components/motion-cues";
@@ -105,6 +107,9 @@ function Pane({
   onProgress?: (value: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // The app scrolls inside panes rather than the window, so each pane carries
+  // its own weighted scrolling.
+  useSmoothScroller(ref);
 
   return (
     <div
@@ -445,6 +450,8 @@ export function AppShell() {
           </footer>
         )}
         <MotionCues />
+        {/* Never while reading: that is the one moment an interruption costs most. */}
+        <AnalyticsConsent hidden={reading} />
         <Neuro />
         <LiveAnnouncer />
         <FontLoader />

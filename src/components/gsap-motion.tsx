@@ -34,14 +34,18 @@ export function PageEnter({
       if (!targets.length) return;
       gsap.fromTo(
         targets,
-        { y: 22, autoAlpha: 0 },
+        // A light blur bridges the two states, so each block reads as one
+        // object arriving rather than two frames swapping. expo.out is GSAP's
+        // closest match to the app's --ease-out: fast start, long gentle settle.
+        { y: 20, autoAlpha: 0, filter: "blur(6px)" },
         {
           y: 0,
           autoAlpha: 1,
-          duration: 0.48,
-          stagger: 0.06,
-          ease: easeOut,
-          clearProps: "transform,visibility,opacity",
+          filter: "blur(0px)",
+          duration: 0.75,
+          stagger: 0.07,
+          ease: "expo.out",
+          clearProps: "transform,visibility,opacity,filter",
         },
       );
     },

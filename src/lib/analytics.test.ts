@@ -34,6 +34,8 @@ const {
 beforeEach(() => {
   g.localStorage = memoryStorage();
   g.sessionStorage = memoryStorage();
+  // Most tests describe behaviour after someone has said yes.
+  (g.localStorage as Storage).setItem("neurolens-analytics", "on");
 });
 
 describe("sanitize", () => {
@@ -62,6 +64,22 @@ describe("sanitize", () => {
         assert.ok(rule === "bool" || Array.isArray(rule), `${event}.${field} must be a closed list`);
       }
     }
+  });
+});
+
+describe("consent", () => {
+  it("records nothing until the person opts in", () => {
+    (g.localStorage as Storage).removeItem("neurolens-analytics");
+    track("tab_view", { tab: "library" });
+    assert.equal(queuedEvents().length, 0);
+    assert.equal(analyticsEnabled(), false);
+  });
+
+  it("records once they say yes", () => {
+    (g.localStorage as Storage).removeItem("neurolens-analytics");
+    setAnalyticsEnabled(true);
+    track("tab_view", { tab: "library" });
+    assert.ok(queuedEvents().some((event) => event.e === "tab_view"));
   });
 });
 

@@ -150,9 +150,9 @@ function Accessibility() {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-fg/10 pt-6">
-      <h2 className="font-serif text-lg text-fg italic">{title}</h2>
-      <div className="mt-3 space-y-3">{children}</div>
+    <section className="doc-section">
+      <h2 className="doc-h2">{title}</h2>
+      <div className="doc-prose mt-5">{children}</div>
     </section>
   );
 }

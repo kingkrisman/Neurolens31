@@ -37,8 +37,9 @@ export function AnalyticsSettings() {
             Share how you use the app
           </p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted">
-            Which tools and file types get used — never your name, your email, or anything you read.
-            {signal && !enabled ? " Your browser asks not to be tracked, so this starts off." : ""}
+            Which tools and file types get used — never your name, your email, or anything you read. Off
+            until you switch it on.
+            {signal && !enabled ? " Your browser asks sites not to track you, so you will not be asked." : ""}
           </p>
         </div>
         <button

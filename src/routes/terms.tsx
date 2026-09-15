@@ -1,158 +1,146 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { PublicLayout } from "@/components/public-layout";
+import { FileCheck2, HeartPulse, LogOut, ShieldCheck } from "lucide-react";
+import { DocSection, Glance, PublicLayout } from "@/components/public-layout";
 
 export const Route = createFileRoute("/terms")({ component: Terms });
 
-/** Kept in one place so the page and its summary cannot drift apart. */
-const UPDATED = "14 September 2026";
+const UPDATED = "15 September 2026";
+
+const TOC = [
+  { id: "summary", label: "In short" },
+  { id: "using", label: "Using NeuroLens" },
+  { id: "documents", label: "Your documents" },
+  { id: "uploads", label: "What you upload" },
+  { id: "accounts", label: "Accounts" },
+  { id: "services", label: "Outside services" },
+  { id: "not-medical", label: "Not a treatment" },
+  { id: "as-is", label: "Offered as it is" },
+  { id: "changes", label: "Changes" },
+  { id: "ending", label: "Ending it" },
+  { id: "contact", label: "Contact" },
+];
 
 /**
- * Terms of use.
+ * Terms of use, written to be read.
  *
- * Written to be read. Terms that nobody finishes are terms nobody agreed to in
- * any meaningful sense, and this app's readers are the least likely of anyone
- * to push through a wall of defined terms in capital letters. So: short
- * sections, plain sentences, and a summary at the top that says the same thing
- * as the document rather than a friendlier version of it.
+ * Terms nobody finishes are terms nobody meaningfully agreed to, and this app's
+ * readers are the least likely of anyone to push through capitals and defined
+ * terms. So: a summary that says the same thing as the document rather than a
+ * friendlier version of it, then short numbered sections — numbered because
+ * terms are cited by clause.
  *
- * This is not legal advice and has not been reviewed by a lawyer. It states
- * honestly how the app actually behaves, which is the part only this codebase
- * knows.
+ * Not legal advice; not reviewed by a lawyer.
  */
 function Terms() {
   return (
-    <PublicLayout eyebrow="Terms" title="The short version, and the long one.">
-      <p className="text-subtle">Last updated {UPDATED}.</p>
+    <PublicLayout
+      eyebrow="Terms"
+      title="The short version, and the long one."
+      lead="Plain terms for a reading app. The summary below says the same thing as the document — not a friendlier version of it."
+      meta={
+        <>
+          <span>Updated {UPDATED}</span>
+          <span aria-hidden className="size-1 rounded-full bg-fg/20" />
+          <span>5 minute read</span>
+        </>
+      }
+      toc={TOC}
+    >
+      <section id="summary" className="scroll-mt-28">
+        <Glance
+          items={[
+            { icon: FileCheck2, title: "Free, and yours", body: "What you upload stays on your device and remains entirely yours." },
+            { icon: ShieldCheck, title: "Upload fairly", body: "Only upload things you are allowed to read and copy." },
+            { icon: HeartPulse, title: "A reading aid", body: "Designed to help — but not a medical device, and it diagnoses nothing." },
+            { icon: LogOut, title: "Leave any time", body: "Export or erase your data yourself, whenever you like." },
+          ]}
+        />
+      </section>
 
-      <div className="not-prose rounded-md bg-fg/4 p-4">
-        <p className="text-sm font-medium text-fg">In short</p>
-        <ul className="mt-2 ml-4 list-disc space-y-1.5 text-sm leading-relaxed text-muted">
-          <li>NeuroLens is free to use, and your documents stay on your device.</li>
-          <li>What you upload remains yours. We claim nothing in it and do not train on it.</li>
-          <li>Only upload things you are allowed to read.</li>
-          <li>The app is offered as it is. It is a reading aid, not a medical device.</li>
-          <li>You can take your data out, or delete it, at any time, without asking.</li>
-        </ul>
-      </div>
+      <DocSection id="using" kicker="1" title="Using NeuroLens">
+        <p>
+          NeuroLens is a reading application, free for personal or professional reading. You need to be
+          old enough to agree to terms where you live; if you are not, an adult should agree for you.
+        </p>
+      </DocSection>
 
-      <Section title="1. Using NeuroLens">
+      <DocSection id="documents" kicker="2" title="Your documents stay yours">
         <p>
-          NeuroLens is a reading application. It is free to use, and you may use it for personal or
-          professional reading. You need to be old enough to agree to terms where you live; if you
-          are not, an adult should agree on your behalf.
+          Files you upload are read inside your browser and stored on your device. They are not sent to
+          us, we cannot see them, and we do not use them to train anything.
         </p>
-      </Section>
+        <p>
+          Because they live on your device, browser storage limits apply, and clearing browser data
+          removes them. Keeping a copy of anything important is your responsibility —{" "}
+          <Link to="/account">your account</Link> exports everything as one file.
+        </p>
+      </DocSection>
 
-      <Section title="2. Your documents stay yours">
+      <DocSection id="uploads" kicker="3" title="What you upload">
         <p>
-          Files you upload are read inside your browser and stored on your device. They are not sent
-          to us, we cannot see them, and we do not use them to train anything.
+          Only upload documents you own or are otherwise permitted to read and copy, and do not use
+          NeuroLens to store or share anything unlawful. You keep every right you already had in your
+          files; we acquire none.
         </p>
-        <p>
-          Because they live on your device, they are subject to your browser's storage limits.
-          Clearing your browser data removes them. Keeping a copy of anything important is your
-          responsibility — the{" "}
-          <Link to="/account" className="text-fg underline underline-offset-2">
-            account page
-          </Link>{" "}
-          will export everything as a single file.
-        </p>
-      </Section>
+      </DocSection>
 
-      <Section title="3. What you upload">
+      <DocSection id="accounts" kicker="4" title="Accounts">
         <p>
-          Only upload documents you own or are otherwise permitted to read and copy. Do not use
-          NeuroLens to store or distribute anything unlawful. You keep every right you already had in
-          your own files; we acquire none.
+          An account is optional — the app works fully without one. Signing in uses Google or Apple, so
+          there is no password for us to hold. You are responsible for the security of the account you
+          sign in with, and can stop using it at any time.
         </p>
-      </Section>
+      </DocSection>
 
-      <Section title="4. Accounts">
+      <DocSection id="services" kicker="5" title="Features that reach the internet">
         <p>
-          An account is optional — the app works fully without one. Signing in uses Google or Apple,
-          so there is no password for us to hold or lose. We receive your name, email address and
-          profile picture from them, and nothing else.
+          A few features fetch from third parties when you ask: Bible passages, library records, poems
+          and definitions. Those requests are governed by each service's own terms; the{" "}
+          <Link to="/privacy">privacy page</Link> names them.
         </p>
-        <p>
-          You are responsible for the security of the account you sign in with. You can sign out or
-          stop using the account at any time.
-        </p>
-      </Section>
+      </DocSection>
 
-      <Section title="5. Features that reach the internet">
+      <DocSection id="not-medical" kicker="6" title="A reading aid, not a treatment">
         <p>
-          Most of NeuroLens is offline. A few features fetch from third parties when you ask for
-          them: Bible passages, library catalogue records, poems, and dictionary lookups. Those
-          requests go to the service concerned and are governed by its terms. The{" "}
-          <Link to="/privacy" className="text-fg underline underline-offset-2">
-            Privacy Policy
-          </Link>{" "}
-          names each one.
+          NeuroLens is designed with dyslexia, ADHD and cognitive fatigue in mind, and may make reading
+          easier. It is not a medical device, does not diagnose anything, and is no substitute for a
+          professional. Nothing it shows you — including what adaptive mode notices — is a clinical
+          finding.
         </p>
-      </Section>
+      </DocSection>
 
-      <Section title="6. This is a reading aid, not a treatment">
+      <DocSection id="as-is" kicker="7" title="Offered as it is">
         <p>
-          NeuroLens is designed with dyslexia, ADHD and cognitive fatigue in mind, and it may make
-          reading easier. It is not a medical device, it does not diagnose anything, and it is not a
-          substitute for advice from a professional. Nothing it shows you — including anything the
-          adaptive mode notices about your reading — is a clinical finding.
+          The app comes without warranties of any kind. We do not promise it will always be available,
+          free of faults, or read every file correctly. As far as the law allows, we are not liable for
+          loss from using it — including documents or notes stored in your browser.
         </p>
-      </Section>
+        <p>Nothing here limits liability the law does not allow to be limited, and consumer rights are unaffected.</p>
+      </DocSection>
 
-      <Section title="7. Offered as it is">
+      <DocSection id="changes" kicker="8" title="Changes">
         <p>
-          The app is provided without warranties of any kind. We do not promise it will be available
-          without interruption, free of faults, or that it will read every file correctly. To the
-          fullest extent the law allows, we are not liable for loss arising from using it — including
-          loss of documents or notes stored in your browser.
-        </p>
-        <p>
-          Nothing here limits liability that cannot be limited by law, and if you are a consumer, your
-          statutory rights are unaffected.
-        </p>
-      </Section>
-
-      <Section title="8. Changes">
-        <p>
-          These terms may change as the app does. The date at the top says when they last did.
-          Continuing to use NeuroLens after a change means the new terms apply. A change that
+          These terms may change as the app does; the date at the top says when. A change that
           materially reduces your rights will be announced in the app, not slipped in quietly.
         </p>
-      </Section>
+      </DocSection>
 
-      <Section title="9. Ending it">
+      <DocSection id="ending" kicker="9" title="Ending it">
         <p>
-          You can stop using NeuroLens whenever you like; deleting your data from the account page is
-          immediate and complete on that device. We may suspend access where it is being used
-          unlawfully.
+          Stop using NeuroLens whenever you like — erasing your data from the account page is immediate
+          and complete on that device. Access may be suspended where the app is used unlawfully.
         </p>
-      </Section>
+      </DocSection>
 
-      <Section title="10. Getting in touch">
+      <DocSection id="contact" kicker="10" title="Getting in touch">
         <p>
-          Questions about these terms, or anything else, go through{" "}
-          <Link to="/support" className="text-fg underline underline-offset-2">
-            support
-          </Link>
-          .
+          Questions about these terms go through <Link to="/support">support</Link>.
         </p>
-      </Section>
-
-      <p className="border-t border-fg/10 pt-6 text-subtle">
-        This document describes how the app behaves and is written in plain language rather than
-        legal drafting. It has not been reviewed by a lawyer, and it is not legal advice.
-      </p>
+        <p className="text-sm text-subtle">
+          Written in plain language to describe how the app behaves. Not reviewed by a lawyer, and not
+          legal advice.
+        </p>
+      </DocSection>
     </PublicLayout>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="border-t border-fg/10 pt-6">
-      <h2 className="font-serif text-lg text-fg italic">{title}</h2>
-      <div className="mt-3 space-y-3">{children}</div>
-    </section>
   );
 }

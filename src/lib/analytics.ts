@@ -14,8 +14,8 @@
  *   never joined to one, and is thrown away when analytics is switched off.
  * - Timestamps are rounded to the hour, so events cannot be lined up against
  *   anything else a person did.
- * - A browser sending Global Privacy Control or Do Not Track is treated as a
- *   "no" until the person explicitly says otherwise.
+ * - Opt-in. Nothing is recorded until the person says yes, and a browser
+ *   sending Global Privacy Control or Do Not Track is never even asked.
  * - Nothing leaves the device until `VITE_ANALYTICS_ENDPOINT` is set. Until
  *   then events queue locally, where the account page shows them word for word.
  */
@@ -133,12 +133,32 @@ export function privacySignal(): boolean {
   return nav.globalPrivacyControl === true || nav.doNotTrack === "1";
 }
 
-/** Whether events are recorded on this device right now. */
+/**
+ * Whether events are recorded on this device right now.
+ *
+ * Opt-in: nothing is recorded until the person says yes. Where the law asks for
+ * consent before measuring use (the EU and UK among them), silence is not
+ * consent, and an app about respecting its readers should not be the one that
+ * treats it as such.
+ */
 export function analyticsEnabled(): boolean {
+  return storage()?.getItem(PREF_KEY) === "on";
+}
+
+/** The person's answer, or null if they have not been asked yet. */
+export function analyticsChoice(): "on" | "off" | null {
   const saved = storage()?.getItem(PREF_KEY);
-  if (saved === "off") return false;
-  if (saved === "on") return true;
-  return !privacySignal();
+  return saved === "on" || saved === "off" ? saved : null;
+}
+
+/**
+ * Whether it is worth asking at all.
+ *
+ * A browser sending Global Privacy Control or Do Not Track has already
+ * answered, so the question is not put to that person.
+ */
+export function shouldAskForAnalytics(): boolean {
+  return analyticsChoice() === null && !privacySignal();
 }
 
 /** Turning it off also discards everything queued and the device id. */
