@@ -124,50 +124,6 @@ export function Landing() {
     return { session: latest, detail, target };
   }, [sessions, targetWpm]);
 
-  const [demoBionic, setDemoBionic] = useState(true);
-  // Once the visitor works the toggle themselves, the demo stops driving it.
-  // Something that keeps moving after you have taken hold of it is a fight,
-  // not a demonstration.
-  const [demoTaken, setDemoTaken] = useState(false);
-  const demoRef = useRef<HTMLDivElement>(null);
-  const demoInView = useInView(demoRef, { once: false, rootMargin: "0px" });
-  const reduceMotion = useReducedMotion();
-
-  /**
-   * Let the fixation preview demonstrate itself.
-   *
-   * This card carries the whole idea of the product and it sat still until
-   * somebody clicked it, which meant the one thing worth watching on the page
-   * never moved. Cycling it turns the hero from a description of adaptive
-   * formatting into a showing of it.
-   *
-   * Deliberately slow. At four seconds a pass the change registers as the text
-   * re-setting itself rather than as a flicker demanding attention — which
-   * matters more than usual for the readers this is built for. It runs only
-   * while the card is actually on screen, stops for good once the visitor takes
-   * the control, and never starts under reduced motion.
-   */
-  useEffect(() => {
-    if (demoTaken || reduceMotion || !demoInView) return;
-    const timer = window.setInterval(() => setDemoBionic((on) => !on), 4000);
-    return () => window.clearInterval(timer);
-  }, [demoTaken, reduceMotion, demoInView]);
-  // The floating mobile CTA is a stand-in for the hero button. While the real
-  // one is on screen it is pure duplication — and it sat on top of the preview
-  // card — so it only rides in once the hero button has scrolled away.
-  const [heroCtaGone, setHeroCtaGone] = useState(false);
-
-  useEffect(() => {
-    const cta = document.getElementById("hero-cta");
-    if (!cta || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroCtaGone(!entry?.isIntersecting),
-      { rootMargin: "-8px 0px 0px 0px" },
-    );
-    observer.observe(cta);
-    return () => observer.disconnect();
-  }, []);
-
   async function onUpload(file: File | undefined) {
     if (!file) return;
     setError(null);
@@ -317,38 +273,7 @@ export function Landing() {
             </StaggerBlock>
           </div>
 
-          <div ref={demoRef} className="relative w-full min-w-0 pb-4 lg:w-[38%] lg:max-w-xl lg:shrink-0 lg:pb-0">
-            <Card className="material-surface overflow-hidden p-4 sm:p-5">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="font-serif text-sm text-accent italic">Fixation</span>
-                <Segmented
-                  value={demoBionic ? "bionic" : "standard"}
-                  onChange={(id) => {
-                    setDemoTaken(true);
-                    setDemoBionic(id === "bionic");
-                  }}
-                  label="Fixation preview"
-                  options={[
-                    { id: "bionic", label: "Bionic" },
-                    { id: "standard", label: "Standard" },
-                  ]}
-                  className="w-max shrink-0"
-                />
-              </div>
-              <StaggerBlock delay={80}>
-              <p
-                key={demoBionic ? "bionic" : "standard"}
-                className="nl-demo-swap text-left text-sm leading-relaxed sm:text-base"
-              >
-                {demoBionic ? (
-                  <AccessibleBionic text={DEMO_SENTENCE} html={processBionicText(DEMO_SENTENCE, 0.55, true)} />
-                ) : (
-                  DEMO_SENTENCE
-                )}
-              </p>
-              </StaggerBlock>
-            </Card>
-          </div>
+          <FixationDemo />
         </div>
       </ParallaxHero>
 
@@ -664,21 +589,119 @@ export function Landing() {
       </ScrollScene>
       </div>
 
-      <a
-        href="#reader-start"
-        aria-hidden={!heroCtaGone}
-        tabIndex={heroCtaGone ? undefined : -1}
-        className={cn(
-          // Clears the footer row below it.
-          "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 inline-flex h-12 items-center gap-1 rounded-lg bg-primary px-4 pr-3.5 text-sm font-medium text-primary-fg shadow-float sm:hidden",
-          "transition-[opacity,transform] duration-[250ms] ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none",
-          heroCtaGone
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-3 opacity-0",
-        )}
-      >
-        Start reading <ChevronRight size={16} className="icon-motion icon-shift" />
-      </a>
+      <FloatingStartCta />
     </div>
+  );
+}
+
+/*
+ * The two pieces of the landing page that change state while it is scrolled
+ * each hold that state themselves. Kept in Landing, every flip — the demo
+ * cycling, the demo entering or leaving view, the hero button scrolling away —
+ * re-rendered the entire home page, and it did so mid-scroll, which is exactly
+ * when a long frame shows up as the glide stuttering.
+ */
+
+function FixationDemo() {
+  const [demoBionic, setDemoBionic] = useState(true);
+  // Once the visitor works the toggle themselves, the demo stops driving it.
+  // Something that keeps moving after you have taken hold of it is a fight,
+  // not a demonstration.
+  const [demoTaken, setDemoTaken] = useState(false);
+  const demoRef = useRef<HTMLDivElement>(null);
+  const demoInView = useInView(demoRef, { once: false, rootMargin: "0px" });
+  const reduceMotion = useReducedMotion();
+
+  /**
+   * Let the fixation preview demonstrate itself.
+   *
+   * This card carries the whole idea of the product and it sat still until
+   * somebody clicked it, which meant the one thing worth watching on the page
+   * never moved. Cycling it turns the hero from a description of adaptive
+   * formatting into a showing of it.
+   *
+   * Deliberately slow. At four seconds a pass the change registers as the text
+   * re-setting itself rather than as a flicker demanding attention — which
+   * matters more than usual for the readers this is built for. It runs only
+   * while the card is actually on screen, stops for good once the visitor takes
+   * the control, and never starts under reduced motion.
+   */
+  useEffect(() => {
+    if (demoTaken || reduceMotion || !demoInView) return;
+    const timer = window.setInterval(() => setDemoBionic((on) => !on), 4000);
+    return () => window.clearInterval(timer);
+  }, [demoTaken, reduceMotion, demoInView]);
+
+  return (
+    <div ref={demoRef} className="relative w-full min-w-0 pb-4 lg:w-[38%] lg:max-w-xl lg:shrink-0 lg:pb-0">
+      <Card className="material-surface overflow-hidden p-4 sm:p-5">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="font-serif text-sm text-accent italic">Fixation</span>
+          <Segmented
+            value={demoBionic ? "bionic" : "standard"}
+            onChange={(id) => {
+              setDemoTaken(true);
+              setDemoBionic(id === "bionic");
+            }}
+            label="Fixation preview"
+            options={[
+              { id: "bionic", label: "Bionic" },
+              { id: "standard", label: "Standard" },
+            ]}
+            className="w-max shrink-0"
+          />
+        </div>
+        <StaggerBlock delay={80}>
+          <p
+            key={demoBionic ? "bionic" : "standard"}
+            className="nl-demo-swap text-left text-sm leading-relaxed sm:text-base"
+          >
+            {demoBionic ? (
+              <AccessibleBionic text={DEMO_SENTENCE} html={processBionicText(DEMO_SENTENCE, 0.55, true)} />
+            ) : (
+              DEMO_SENTENCE
+            )}
+          </p>
+        </StaggerBlock>
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * The floating mobile CTA, a stand-in for the hero button. While the real one
+ * is on screen it is pure duplication — and it sat on top of the preview card —
+ * so it only rides in once the hero button has scrolled away.
+ */
+function FloatingStartCta() {
+  const [heroCtaGone, setHeroCtaGone] = useState(false);
+
+  useEffect(() => {
+    const cta = document.getElementById("hero-cta");
+    if (!cta || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroCtaGone(!entry?.isIntersecting),
+      { rootMargin: "-8px 0px 0px 0px" },
+    );
+    observer.observe(cta);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <a
+      href="#reader-start"
+      aria-hidden={!heroCtaGone}
+      tabIndex={heroCtaGone ? undefined : -1}
+      className={cn(
+        // Clears the footer row below it.
+        "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 inline-flex h-12 items-center gap-1 rounded-lg bg-primary px-4 pr-3.5 text-sm font-medium text-primary-fg shadow-float sm:hidden",
+        "transition-[opacity,transform] duration-[250ms] ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none",
+        heroCtaGone
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-3 opacity-0",
+      )}
+    >
+      Start reading <ChevronRight size={16} className="icon-motion icon-shift" />
+    </a>
   );
 }

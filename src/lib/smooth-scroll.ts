@@ -35,13 +35,51 @@ const OPTIONS = {
   wheelMultiplier: 0.9,
   smoothWheel: true,
   syncTouch: false,
-  autoRaf: true,
+  // Driven by the shared clock below instead.
+  autoRaf: false,
   autoResize: true,
   // A nested list takes the wheel only while it can still move that way, then
   // hands off to the page — as native scrolling does. Direction-aware, and its
   // style reads are cached, unlike a walk up the tree on every wheel event.
   allowNestedScroll: true,
 } as const;
+
+/**
+ * One clock for every instance, with its step capped.
+ *
+ * Native scrolling runs off the main thread, so a busy frame never touches it.
+ * A glide cannot: Lenis moves the page from JavaScript, and it eases by elapsed
+ * time — so after a frame the main thread spent elsewhere (a render, an image
+ * decoding) it would cover the whole missed stretch at once, and the page would
+ * freeze and then lurch to catch up. Capping the step turns that into a brief
+ * hold, and the glide carries on from exactly where it was.
+ */
+const MAX_STEP_MS = 1000 / 30;
+let frame = 0;
+let clock = 0;
+let lastNow = 0;
+
+function tick(now: number) {
+  clock += lastNow ? Math.min(now - lastNow, MAX_STEP_MS) : 0;
+  lastNow = now;
+  for (const lenis of INSTANCES.values()) lenis.raf(clock);
+  frame = requestAnimationFrame(tick);
+}
+
+function register(scroller: Window | HTMLElement, lenis: Lenis) {
+  INSTANCES.set(scroller, lenis);
+  if (frame) return;
+  lastNow = 0;
+  frame = requestAnimationFrame(tick);
+}
+
+function unregister(scroller: Window | HTMLElement, lenis: Lenis) {
+  if (INSTANCES.get(scroller) === lenis) INSTANCES.delete(scroller);
+  lenis.destroy();
+  if (INSTANCES.size || !frame) return;
+  cancelAnimationFrame(frame);
+  frame = 0;
+}
 
 /** Things that own their scrolling and must never be driven by a parent. */
 const OWN_SCROLL =
@@ -74,11 +112,8 @@ export function startWindowSmoothScroll(): () => void {
     // App panes scroll themselves, with their own instance.
     prevent: (node) => ownsScroll(node) || node.classList.contains("pane-scroll"),
   });
-  INSTANCES.set(window, lenis);
-  return () => {
-    INSTANCES.delete(window);
-    lenis.destroy();
-  };
+  register(window, lenis);
+  return () => unregister(window, lenis);
 }
 
 /** Smooth scrolling for an inner scroll container, such as an app pane. */
@@ -94,10 +129,7 @@ export function useSmoothScroller(ref: RefObject<HTMLElement | null>, enabled = 
       eventsTarget: wrapper,
       prevent: ownsScroll,
     });
-    INSTANCES.set(wrapper, lenis);
-    return () => {
-      INSTANCES.delete(wrapper);
-      lenis.destroy();
-    };
+    register(wrapper, lenis);
+    return () => unregister(wrapper, lenis);
   }, [ref, enabled]);
 }
