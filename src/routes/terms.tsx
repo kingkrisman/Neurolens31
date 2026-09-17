@@ -1,20 +1,34 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { FileCheck2, HeartPulse, LogOut, ShieldCheck } from "lucide-react";
-import { DocSection, Glance, PublicLayout } from "@/components/public-layout";
+import { Copyright, FileCheck2, HeartPulse, LogOut, Scale, ShieldCheck } from "lucide-react";
+import { DocSection, Glance, PublicLayout, Term } from "@/components/public-layout";
 
 export const Route = createFileRoute("/terms")({ component: Terms });
 
-const UPDATED = "15 September 2026";
+const UPDATED = "17 September 2026";
+
+/**
+ * Blanks, deliberately visible.
+ *
+ * An arbitration clause does nothing until it names where a dispute is heard
+ * and under whose rules, and those follow from where NeuroLens is established —
+ * which is not something this file can invent. Left as bracketed text so they
+ * read as unfinished on the page as well as in the source, rather than shipping
+ * as a plausible-looking answer nobody checked.
+ */
+const GOVERNING_LAW = "[country or state, and its courts]";
+const ARBITRATION_BODY = "[arbitration body, and the rules it publishes]";
 
 const TOC = [
   { id: "summary", label: "In short" },
   { id: "using", label: "Using NeuroLens" },
   { id: "documents", label: "Your documents" },
   { id: "uploads", label: "What you upload" },
+  { id: "responsibility", label: "Answering for it" },
   { id: "accounts", label: "Accounts" },
   { id: "services", label: "Outside services" },
   { id: "not-medical", label: "Not a treatment" },
   { id: "as-is", label: "Offered as it is" },
+  { id: "disputes", label: "Disputes" },
   { id: "changes", label: "Changes" },
   { id: "ending", label: "Ending it" },
   { id: "contact", label: "Contact" },
@@ -29,6 +43,13 @@ const TOC = [
  * friendlier version of it, then short numbered sections — numbered because
  * terms are cited by clause.
  *
+ * Two clauses carry more weight than the rest and are written accordingly. The
+ * one about content says plainly that nothing here is moderated, because the
+ * files never arrive. The one about disputes gives up a right people usually
+ * are not told they are giving up, so it says so in the summary, keeps its
+ * opt-out in the open rather than in a footnote, and does not pretend to
+ * override consumer law that says arbitration cannot be forced.
+ *
  * Not legal advice; not reviewed by a lawyer.
  */
 function Terms() {
@@ -41,7 +62,7 @@ function Terms() {
         <>
           <span>Updated {UPDATED}</span>
           <span aria-hidden className="size-1 rounded-full bg-fg/20" />
-          <span>5 minute read</span>
+          <span>7 minute read</span>
         </>
       }
       toc={TOC}
@@ -51,6 +72,8 @@ function Terms() {
           items={[
             { icon: FileCheck2, title: "Free, and yours", body: "What you upload stays on your device and remains entirely yours." },
             { icon: ShieldCheck, title: "Upload fairly", body: "Only upload things you are allowed to read and copy." },
+            { icon: Copyright, title: "Yours to answer for", body: "We never receive your files, so nothing you open is checked or approved by us." },
+            { icon: Scale, title: "Disputes, and an opt-out", body: "Serious disputes go to individual arbitration — and you have 30 days to opt out of that." },
             { icon: HeartPulse, title: "A reading aid", body: "Designed to help — but not a medical device, and it diagnoses nothing." },
             { icon: LogOut, title: "Leave any time", body: "Export or erase your data yourself, whenever you like." },
           ]}
@@ -84,7 +107,32 @@ function Terms() {
         </p>
       </DocSection>
 
-      <DocSection id="accounts" kicker="4" title="Accounts">
+      <DocSection id="responsibility" kicker="4" title="Answering for what you bring in">
+        <p>
+          Everything you bring into NeuroLens — a document, a note, a highlight, a bookmark — is yours.
+          It is also yours to answer for.
+        </p>
+        <p>
+          Nothing you open here is reviewed, moderated or approved by us, because none of it reaches
+          us: it is read and kept on your device. <Term>Nothing being blocked is not the same as
+          something being checked.</Term> We have no way to know what you have opened, and no way to
+          vet it.
+        </p>
+        <p>
+          So having the right to read, copy and adapt what you bring in is on you, as is what you do
+          with it afterwards — including anything you export and pass on to somebody else. If a third
+          party brings a claim against us because of material you brought in or shared, you cover what
+          it reasonably costs us to deal with. That does not apply where the claim is our fault rather
+          than yours, and it takes away none of the rights the law gives you as a consumer.
+        </p>
+        <p>
+          We also cannot take a file off your device — only you can do that. Where something is being
+          used unlawfully, that sits between you and whoever holds the rights. If we ever host material
+          ourselves, tell <Link to="/support">support</Link> and we will act on it.
+        </p>
+      </DocSection>
+
+      <DocSection id="accounts" kicker="5" title="Accounts">
         <p>
           An account is optional — the app works fully without one. Signing in uses Google or Apple, so
           there is no password for us to hold. You are responsible for the security of the account you
@@ -92,7 +140,7 @@ function Terms() {
         </p>
       </DocSection>
 
-      <DocSection id="services" kicker="5" title="Features that reach the internet">
+      <DocSection id="services" kicker="6" title="Features that reach the internet">
         <p>
           A few features fetch from third parties when you ask: Bible passages, library records, poems
           and definitions. Those requests are governed by each service's own terms; the{" "}
@@ -100,7 +148,7 @@ function Terms() {
         </p>
       </DocSection>
 
-      <DocSection id="not-medical" kicker="6" title="A reading aid, not a treatment">
+      <DocSection id="not-medical" kicker="7" title="A reading aid, not a treatment">
         <p>
           NeuroLens is designed with dyslexia, ADHD and cognitive fatigue in mind, and may make reading
           easier. It is not a medical device, does not diagnose anything, and is no substitute for a
@@ -109,7 +157,7 @@ function Terms() {
         </p>
       </DocSection>
 
-      <DocSection id="as-is" kicker="7" title="Offered as it is">
+      <DocSection id="as-is" kicker="8" title="Offered as it is">
         <p>
           The app comes without warranties of any kind. We do not promise it will always be available,
           free of faults, or read every file correctly. As far as the law allows, we are not liable for
@@ -118,27 +166,69 @@ function Terms() {
         <p>Nothing here limits liability the law does not allow to be limited, and consumer rights are unaffected.</p>
       </DocSection>
 
-      <DocSection id="changes" kicker="8" title="Changes">
+      <DocSection id="disputes" kicker="9" title="If we end up in a dispute">
+        <p>
+          <Term>Talk to us first.</Term> Nearly everything is a misunderstanding or a bug. Send{" "}
+          <Link to="/support">support</Link> a description of the problem and what you would like done
+          about it, and give us 60 days to put it right. Most of this section never comes up.
+        </p>
+        <p>
+          <Term>Then arbitration, not a courtroom.</Term> If 60 days pass without resolution, a dispute
+          between us is settled by binding arbitration before {ARBITRATION_BODY}, rather than by a
+          judge or a jury. Arbitration is usually faster and cheaper than a court case, and the
+          arbitrator can award the same remedies a court could — but it is more private, the grounds
+          for appeal are far narrower, and you are giving up a day in court. That is why it is named in
+          the summary at the top of this page rather than left down here to be discovered.
+        </p>
+        <p>
+          <Term>You can opt out, and it costs you nothing.</Term> Within 30 days of first accepting
+          these terms, email <Link to="/support">support</Link> with the words{" "}
+          <Term>arbitration opt-out</Term> and the address you use here. That is the whole process.
+          Nothing else in these terms changes, and we will not treat you differently for it — you
+          simply keep the courts in {GOVERNING_LAW} instead.
+        </p>
+        <p>
+          <Term>One person at a time.</Term> Claims are brought individually: not as a class action, not
+          combined with anybody else's claim, and not by a representative acting for a group. If that
+          restriction turns out to be unenforceable for a particular claim, then that claim belongs in
+          court rather than in arbitration, and the rest of this section still stands.
+        </p>
+        <p>
+          <Term>Two things either of us can still take to court.</Term> A claim small enough for a small
+          claims court can go there instead, and either side can ask a court to stop misuse of
+          intellectual property without waiting on arbitration.
+        </p>
+        <p>
+          <Term>Where local law says otherwise, local law wins.</Term> Plenty of places — the EU and the
+          UK among them — do not let a consumer be required to arbitrate in advance. If you live
+          somewhere like that, this section takes nothing away from you: you keep your local courts,
+          and your mandatory consumer protections apply in full. These terms are otherwise governed by
+          the law of {GOVERNING_LAW}.
+        </p>
+      </DocSection>
+
+      <DocSection id="changes" kicker="10" title="Changes">
         <p>
           These terms may change as the app does; the date at the top says when. A change that
           materially reduces your rights will be announced in the app, not slipped in quietly.
         </p>
       </DocSection>
 
-      <DocSection id="ending" kicker="9" title="Ending it">
+      <DocSection id="ending" kicker="11" title="Ending it">
         <p>
           Stop using NeuroLens whenever you like — erasing your data from the account page is immediate
           and complete on that device. Access may be suspended where the app is used unlawfully.
         </p>
       </DocSection>
 
-      <DocSection id="contact" kicker="10" title="Getting in touch">
+      <DocSection id="contact" kicker="12" title="Getting in touch">
         <p>
           Questions about these terms go through <Link to="/support">support</Link>.
         </p>
         <p className="text-sm text-subtle">
           Written in plain language to describe how the app behaves. Not reviewed by a lawyer, and not
-          legal advice.
+          legal advice. The arbitration section in particular decides where and how a dispute is heard,
+          and it is unfinished until the bracketed blanks above are filled in and a lawyer has read it.
         </p>
       </DocSection>
     </PublicLayout>
