@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -14,19 +14,35 @@ import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
 import { securityHeaders } from "./scripts/security-headers.mjs";
 
-/** Services configured later (Supabase, analytics) that the browser must be allowed to reach. */
-const EXTRA_CONNECT = [process.env.VITE_SUPABASE_URL, process.env.VITE_ANALYTICS_ENDPOINT];
+/**
+ * Services the browser must be allowed to reach, for `connect-src`.
+ *
+ * Read through Vite's own `loadEnv` rather than `process.env`, because that is
+ * the difference between a working app and a silently broken one: `.env.local`
+ * reaches the client as `import.meta.env`, but never lands in `process.env`. So
+ * the app knew its Supabase URL while the policy did not, every request to it
+ * was blocked before it left the browser, and the only symptom was a failed
+ * fetch — which reads to a user as "check your connection".
+ *
+ * `process.env` still wins where it is set, which is how the deployed build
+ * picks these up from the hosting provider.
+ */
+function extraConnect(mode: string): Array<string | undefined> {
+  const fromFiles = loadEnv(mode, process.cwd(), "");
+  const pick = (name: string) => process.env[name] ?? fromFiles[name];
+  return [pick("VITE_SUPABASE_URL"), pick("VITE_ANALYTICS_ENDPOINT")];
+}
 
 /**
  * The same security headers on the dev server as in production, so a policy
  * that blocks something the app needs fails here, in front of a developer,
  * instead of silently on a reader's phone.
  */
-function securityHeadersPlugin(): Plugin {
+function securityHeadersPlugin(extra: Array<string | undefined>): Plugin {
   return {
     name: "neurolens-security-headers",
     configureServer(server) {
-      const headers = securityHeaders({ dev: true, extraConnect: EXTRA_CONNECT });
+      const headers = securityHeaders({ dev: true, extraConnect: extra });
       server.middlewares.use((_req, res, next) => {
         for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
         next();
@@ -168,7 +184,7 @@ function authPopupPlugin(): Plugin {
 // `0.0.0.0:8080` is the live-preview contract — don't change host/port.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
-export default defineConfig(({ command, isPreview }) => ({
+export default defineConfig(({ command, isPreview, mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -204,7 +220,7 @@ export default defineConfig(({ command, isPreview }) => ({
             preset: "vercel",
             // Every response, including the PDF worker and static files.
             routeRules: {
-              "/**": { headers: securityHeaders({ extraConnect: EXTRA_CONNECT }) },
+              "/**": { headers: securityHeaders({ extraConnect: extraConnect(mode) }) },
             },
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
@@ -214,6 +230,6 @@ export default defineConfig(({ command, isPreview }) => ({
         ]
       : []),
     viteReact(),
-    securityHeadersPlugin(),
+    securityHeadersPlugin(extraConnect(mode)),
   ],
 }));
