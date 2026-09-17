@@ -206,9 +206,13 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
               </Link>
               .
             </p>
+            {/* Was "Keep reading without an account", which is no longer an
+                option — reading needs one. It goes back to the page that
+                explains the app, which is what somebody not ready to sign up
+                actually wants. */}
             <p className="mt-3 text-center text-sm">
               <Link to="/" className="font-medium text-muted hover:text-fg">
-                Keep reading without an account
+                Back to what NeuroLens does
               </Link>
             </p>
           </div>
