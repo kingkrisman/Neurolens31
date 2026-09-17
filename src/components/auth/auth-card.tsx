@@ -51,12 +51,21 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
   async function start(provider: AuthProvider) {
     setError(null);
     setBusy(provider);
+    // Recorded before the redirect, not after: the browser is about to leave
+    // for the provider and this page will not run again. The queue is on the
+    // device, so the event survives the trip.
+    track("auth", { action: mode === "signin" ? "sign_in" : "sign_up", provider });
     try {
       await signInWith(provider);
-      track("auth", { action: mode === "signin" ? "sign_in" : "sign_up", provider });
-      await navigate({ to: "/" });
-    } catch {
-      setError(`Could not continue with ${PROVIDER_LABEL[provider]}. Try again.`);
+      // No navigation here. `signInWith` hands the browser to Google or Apple;
+      // the session arrives when they send it back, and the effect below is
+      // what moves the reader on. Navigating now would race the redirect.
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : `Could not continue with ${PROVIDER_LABEL[provider]}. Try again.`,
+      );
       setBusy(null);
     }
   }

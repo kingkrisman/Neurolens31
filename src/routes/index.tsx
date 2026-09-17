@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
+import { AuthGate } from "@/components/auth/auth-gate";
 import { FAQ } from "@/lib/faq";
 import { appJsonLd, faqJsonLd, jsonLd, seo } from "@/lib/seo";
 import { TABS, type TabId } from "@/lib/types";
@@ -42,5 +43,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  return <AppShell />;
+  return (
+    <AuthGate>
+      <AppShell />
+    </AuthGate>
+  );
 }

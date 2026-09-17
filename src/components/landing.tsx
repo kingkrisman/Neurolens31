@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, type MouseEvent } from "react";
+import { Link } from "@tanstack/react-router";
 import { useInView } from "@/lib/use-in-view";
 import { describePart, describeTimeLeft, positionOf, resumeTarget } from "@/lib/reading-position";
 import { useReducedMotion } from "@/lib/prefers-reduced-motion";
@@ -85,7 +86,57 @@ function FirstStart() {
   );
 }
 
-export function Landing() {
+/**
+ * What stands where the reader does, before somebody has an account.
+ *
+ * It keeps `id="reader-start"`, because the hero's "Start reading" button and
+ * the closing call to action both point at that anchor — locked, they should
+ * land on the thing that explains why they cannot start yet, not scroll past
+ * it into the features.
+ *
+ * Everything above and below this on the page is unchanged, which is the point:
+ * the landing page a search engine sees, and the one somebody reads while
+ * deciding whether to sign up, is the whole page rather than a wall.
+ */
+function LockedStart() {
+  return (
+    <Reveal>
+      <div id="reader-start" className="snap-block mt-16">
+        <Card className="flex flex-col items-center p-8 text-center sm:p-12">
+          <h2 className="max-w-lg font-serif text-3xl tracking-[-0.02em] text-balance italic sm:text-4xl">
+            Your library, on every device.
+          </h2>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-pretty text-muted">
+            Books, highlights and the reading settings you have tuned are kept in your account, so
+            the page you left off on is waiting wherever you next open NeuroLens.
+          </p>
+          <div className="mt-8 flex w-full max-w-xs flex-col gap-2.5">
+            <Link
+              to="/signup"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+            >
+              Create a free account
+            </Link>
+            <Link
+              to="/login"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-bg px-5 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 active:scale-[0.97]"
+            >
+              I already have one
+            </Link>
+          </div>
+          <p className="mt-6 text-xs leading-relaxed text-subtle">
+            Free, with Google or Apple.{" "}
+            <Link to="/privacy" className="underline underline-offset-2 hover:text-fg">
+              What is stored
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </Reveal>
+  );
+}
+
+export function Landing({ locked = false }: { locked?: boolean } = {}) {
   const startReading = useAppStore((s) => s.startReading);
   const sessions = useAppStore((s) => s.sessions);
   const [input, setInput] = useState("");
@@ -313,6 +364,10 @@ export function Landing() {
       </Card>
       </Reveal>
 
+      {locked ? (
+        <LockedStart />
+      ) : (
+        <>
       <Reveal>
       <FirstStart />
       <div id="reader-start" className="snap-block mt-16 grid gap-6 md:grid-cols-2">
@@ -402,6 +457,8 @@ export function Landing() {
         </Card>
       </div>
       </Reveal>
+        </>
+      )}
 
       <section id="how-it-works" className="snap-block mt-24">
         <Reveal>
