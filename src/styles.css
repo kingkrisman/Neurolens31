@@ -1397,9 +1397,12 @@
     border-color: color-mix(in oklab, white 13%, transparent);
   }
 
-  /* Without backdrop-filter the blur silently does nothing, so the capsule has
-     to carry enough opacity by itself to keep the header legible. */
-  @supports not (backdrop-filter: blur(1px)) {
+  /* Without backdrop-filter the blur silently does nothing — so the capsule has
+     to carry the legibility by itself, at the top of the page as well. An
+     unfrosted, unfilled bar leaves the navigation sitting directly on the hero
+     photograph. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    html .nl-glass-tint,
     html[data-scrolled="true"] .nl-glass-tint {
       background: color-mix(in oklab, var(--color-bg) 94%, transparent);
     }
@@ -2046,12 +2049,18 @@
   }
 
   /* Asked for less transparency: the capsule stops being glass and becomes a
-     solid surface once there is anything behind it. */
+     solid surface — at rest as much as scrolled. Taking the blur away while
+     leaving the fill transparent, which is what this did at first, is the worst
+     of both: nothing frosted, and nothing behind the type either, so the header
+     simply vanished into the hero on any machine with transparency effects
+     switched off. Specific enough to beat the scrolled rule, which would
+     otherwise win on the way down. */
   .nl-glass-pane {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
+  html .nl-glass-tint,
   html[data-scrolled="true"] .nl-glass-tint {
     background: var(--color-bg);
   }
