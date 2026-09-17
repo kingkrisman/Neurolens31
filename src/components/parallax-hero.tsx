@@ -105,7 +105,7 @@ export function ParallaxHero({ children, className }: { children: ReactNode; cla
   return (
     <section
       ref={sectionRef}
-      className={cn("parallax-hero relative -mt-14 overflow-clip sm:-mt-16", className)}
+      className={cn("parallax-hero relative -mt-16 overflow-clip sm:-mt-[4.5rem]", className)}
     >
       <div className="parallax-mouse-far pointer-events-none absolute inset-x-0 -top-[22%] h-[144%]" aria-hidden>
         <div className="parallax-far h-full w-full">
