@@ -26,3 +26,6 @@ dev-server.log
 # Generated on every build by scripts/build-seo-files.mjs
 public/robots.txt
 public/sitemap.xml
+
+# Supabase personal access token, used by scripts/supabase-apply.mjs
+.supabase-token
