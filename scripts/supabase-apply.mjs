@@ -130,32 +130,46 @@ async function applySchema(ref, key) {
  * to say why.
  */
 async function applyAuth(ref, key, creds) {
-  if (!creds.GOOGLE_CLIENT_ID || !creds.GOOGLE_CLIENT_SECRET) {
-    fail(
-      "Google sign-in needs a client ID and secret, and they are not in the credentials file.",
-      "Those two come from Google Cloud Console — see the steps this script printed.\n" +
-        "  Nothing else can create them; they are tied to your Google account.",
-    );
-  }
-
-  const site = creds.SITE_URL || DEV_ORIGIN;
+  const site = (creds.SITE_URL || DEV_ORIGIN).replace(/\/+$/, "");
   // Both, always: a project configured only for production cannot be developed
   // against, and one configured only for localhost breaks the moment it ships.
-  const allow = [...new Set([`${DEV_ORIGIN}/**`, `${site.replace(/\/+$/, "")}/**`])].join(",");
+  const allow = [...new Set([`${DEV_ORIGIN}/**`, `${site}/**`])].join(",");
 
   console.log(`\n  site URL        ${site}`);
   console.log(`  redirect allow  ${allow}`);
+
+  /**
+   * The settings email sign-in actually needs.
+   *
+   * `site_url` is what every confirmation and reset link is built from, and a
+   * project left on the default points them at a port this app does not run on.
+   * `uri_allow_list` is what lets the app be returned to afterwards — miss it
+   * and the round trip completes and then the session is refused, with nothing
+   * in any log to say why.
+   */
+  const settings = {
+    site_url: site,
+    uri_allow_list: allow,
+    external_email_enabled: true,
+  };
+
+  // Google is optional now that sign-in is email and password. Configured only
+  // if somebody has put the credentials in the file, never demanded.
+  if (creds.GOOGLE_CLIENT_ID && creds.GOOGLE_CLIENT_SECRET) {
+    settings.external_google_enabled = true;
+    settings.external_google_client_id = creds.GOOGLE_CLIENT_ID;
+    settings.external_google_secret = creds.GOOGLE_CLIENT_SECRET;
+  }
+
   await api(`/v1/projects/${ref}/config/auth`, key, {
     method: "PATCH",
-    body: JSON.stringify({
-      site_url: site,
-      uri_allow_list: allow,
-      external_google_enabled: true,
-      external_google_client_id: creds.GOOGLE_CLIENT_ID,
-      external_google_secret: creds.GOOGLE_CLIENT_SECRET,
-    }),
+    body: JSON.stringify(settings),
   });
-  console.log("  google sign-in enabled.");
+  console.log(
+    settings.external_google_enabled
+      ? "  email and google sign-in enabled."
+      : "  email sign-in enabled.",
+  );
 }
 
 async function verify(ref, key) {
@@ -192,14 +206,18 @@ async function verify(ref, key) {
 
   /* ── sign-in ── */
   const auth = await api(`/v1/projects/${ref}/config/auth`, key);
-  console.log("\n  google sign-in  " + (auth.external_google_enabled ? "enabled" : "DISABLED"));
-  console.log("  client id       " + (auth.external_google_client_id || "(not set)"));
+  console.log("\n  email sign-in   " + (auth.external_email_enabled ? "enabled" : "DISABLED"));
+  console.log("  confirm email   " + (auth.mailer_autoconfirm ? "not required" : "required"));
   console.log("  site url        " + (auth.site_url || "(not set)"));
   console.log("  redirect allow  " + (auth.uri_allow_list || "(not set)"));
+  if (auth.external_google_enabled) {
+    console.log("  google sign-in  enabled (" + (auth.external_google_client_id || "no client id") + ")");
+  }
 
+  // Email on, and the app's own address reachable. Those two are what a reader
+  // needs; anything else here is optional.
   const authOk =
-    Boolean(auth.external_google_enabled) &&
-    Boolean(auth.external_google_client_id) &&
+    Boolean(auth.external_email_enabled) &&
     String(auth.uri_allow_list || "").includes(DEV_ORIGIN);
 
   console.log("");
@@ -212,10 +230,10 @@ async function verify(ref, key) {
   if (!authOk) {
     fail(
       "Sign-in is not ready.",
-      "Google must be enabled, carry a client ID, and the redirect allow list must\n  include the address the app actually runs on.",
+      "Email sign-in must be enabled, and the redirect allow list must include the\n  address the app actually runs on.",
     );
   }
-  console.log("  Ready: five tables, RLS on, four policies each, Google sign-in live.\n");
+  console.log("  Ready: five tables, RLS on, four policies each, email sign-in live.\n");
 }
 
 async function main() {
