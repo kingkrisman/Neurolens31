@@ -179,9 +179,10 @@ function Terms() {
 
       <DocSection id="accounts" kicker="5" title="Accounts">
         <p>
-          An account is optional — the app works fully without one. Signing in uses Google or Apple,
-          so there is no password for us to hold. You are responsible for the security of the
-          account you sign in with, and can stop using it at any time.
+          Reading requires an account, so that your books and highlights can follow you between
+          devices. Signing in uses Google, so there is no password for us to hold. You are
+          responsible for the security of the account you sign in with, and can stop using it at any
+          time — the account page erases everything we hold.
         </p>
       </DocSection>
 

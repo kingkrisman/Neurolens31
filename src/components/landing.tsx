@@ -12,7 +12,12 @@ import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { Badge, Card, Media } from "@/components/ui/surfaces";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Segmented } from "@/components/segmented";
 import { Reveal } from "@/components/reveal";
 import { HeroTitle } from "@/components/hero-title";
@@ -54,7 +59,11 @@ const FEATURES = [
 const START_MODES = [
   { id: "default" as const, label: "Standard", hint: "A calm page, nothing extra." },
   { id: "adhd" as const, label: "ADHD", hint: "Stronger fixation, quieter chrome." },
-  { id: "dyslexia" as const, label: "Dyslexia", hint: "Plain words, more space, distinct letters." },
+  {
+    id: "dyslexia" as const,
+    label: "Dyslexia",
+    hint: "Plain words, more space, distinct letters.",
+  },
 ];
 
 function FirstStart() {
@@ -125,7 +134,7 @@ function LockedStart() {
             </Link>
           </div>
           <p className="mt-6 text-xs leading-relaxed text-subtle">
-            Free, with Google or Apple.{" "}
+            Free, with Google.{" "}
             <Link to="/privacy" className="underline underline-offset-2 hover:text-fg">
               What is stored
             </Link>
@@ -142,7 +151,12 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
   const [input, setInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [meta, setMeta] = useState<{ title: string; format: string; wordCount: number; readTime: number } | null>(null);
+  const [meta, setMeta] = useState<{
+    title: string;
+    format: string;
+    wordCount: number;
+    readTime: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const targetWpm = useAppStore((s) => s.targetWpm);
 
@@ -169,7 +183,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
     // for a part the reader finished without turning the page, and a button
     // that names one place and opens another is worse than no button.
     const target = resumeTarget(position);
-    const position2 = positionOf({ ...latest, section: target.part, progress: target.within }, targetWpm);
+    const position2 = positionOf(
+      { ...latest, section: target.part, progress: target.within },
+      targetWpm,
+    );
     const detail = [describePart(position2), describeTimeLeft(position2)]
       .filter(Boolean)
       .join(" · ");
@@ -256,8 +273,12 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
               <p className="mb-4 font-serif text-base text-accent italic">Adaptive reading</p>
             </StaggerBlock>
             <HeroTitle />
-            <StaggerBlock delay={160} className="mt-5 max-w-prose text-base leading-relaxed text-pretty text-muted sm:text-lg">
-              Formatting that follows your attention. Less visual friction, stronger fixation, a calmer page.
+            <StaggerBlock
+              delay={160}
+              className="mt-5 max-w-prose text-base leading-relaxed text-pretty text-muted sm:text-lg"
+            >
+              Formatting that follows your attention. Less visual friction, stronger fixation, a
+              calmer page.
             </StaggerBlock>
             <StaggerBlock delay={220} className="mt-8 flex flex-col gap-3 sm:flex-row">
               {resumable ? (
@@ -330,315 +351,336 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
       </ParallaxHero>
 
       <div className="mx-auto flex w-full max-w-6xl flex-col px-4 sm:px-6">
-      <ScrollScene>
-      <Reveal>
-      <Card className="relative mt-10 overflow-hidden p-0 sm:mt-16">
-        <Media
-          src="/images/reading-room.jpg"
-          alt="A sunlit university reading room with walnut shelves"
-          width={1600}
-          height={900}
-          data-scrub
-          className="aspect-[16/9] w-full object-cover parallax-entry sm:aspect-[21/9]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/15" />
-        <div className="absolute inset-0 flex flex-col justify-end gap-6 p-5 text-primary-fg sm:flex-row sm:items-end sm:justify-between sm:p-8">
-          <p className="max-w-sm font-serif text-2xl leading-snug italic sm:text-3xl">
-            Built for the way attention actually works.
-          </p>
-          <div className="flex gap-8">
-            <div>
-              <p className="font-serif text-4xl tracking-tight">
-                <GsapCount value={92} suffix="%" />
-              </p>
-              <p className="mt-1 text-xs text-primary-fg/70">Focus gain</p>
-            </div>
-            <div>
-              <p className="font-serif text-4xl tracking-tight">
-                <GsapCount value={40} suffix="%" />
-              </p>
-              <p className="mt-1 text-xs text-primary-fg/70">Less fatigue</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-      </Reveal>
-
-      {locked ? (
-        <LockedStart />
-      ) : (
-        <>
-      <Reveal>
-      <FirstStart />
-      <div id="reader-start" className="snap-block mt-16 grid gap-6 md:grid-cols-2">
-        <Card
-          className="flex min-h-[26rem] flex-col p-5 sm:p-6"
-          onDragOver={(event) => {
-            if (event.dataTransfer && [...event.dataTransfer.types].includes("Files")) event.preventDefault();
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-            void onUpload(event.dataTransfer?.files?.[0]);
-          }}
-        >
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <span className="font-serif text-sm text-accent italic">Source</span>
-            <FileDrop
-              compact
-              busy={uploading}
-              busyLabel={progress ? `Page ${progress.done} of ${progress.total}` : undefined}
-              onFile={(file) => void onUpload(file)}
-            />
-          </div>
-          <Textarea
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Paste an article, essay, or chapter…"
-            className="flex-1"
-            aria-label="Text to read"
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? "upload-error" : undefined}
-          />
-          {meta && (
-            <div className="mt-4 rounded-md bg-fg/4 px-3 py-2 text-xs text-muted">
-              <span className="font-medium text-fg">{meta.title}</span>
-              <span className="mx-2 text-subtle">·</span>
-              {meta.format} · {meta.wordCount.toLocaleString()} words · ~{meta.readTime} min
-            </div>
-          )}
-          <Button
-            className="mt-5 w-full pl-4 pr-3.5"
-            disabled={!(input.trim() || meta?.format === "PDF")}
-            onClick={() =>
-              startReading(input, meta ? { title: meta.title, kind: meta.format === "PDF" ? "pdf" : "text" } : undefined)
-            }
-          >
-            Open in reader
-            <ChevronRight size={16} className="icon-motion icon-shift" />
-          </Button>
-          {error && (
-            <p id="upload-error" role="alert" className="mt-3 text-xs text-danger">
-              {error}
-            </p>
-          )}
-        </Card>
-
-        <Card className="p-5 sm:p-6">
-          <h2 className="mb-4 font-serif text-xl italic">Try a passage</h2>
-          <div className="space-y-2">
-            {SAMPLE_TEXTS.map((sample) => (
-              <button
-                key={sample.title}
-                type="button"
-                data-batch
-                onClick={() => setInput(sample.text)}
-                className="group flex w-full items-start gap-3 rounded-md p-2 text-left transition-[background-color] duration-[150ms] ease-[var(--ease-standard)] hover:bg-fg/4 active:scale-[0.97]"
-              >
-                <Media
-                  src={sample.image}
-                  alt=""
-                  width={120}
-                  height={160}
-                  className="h-16 w-12 shrink-0 rounded-sm object-cover"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{sample.title}</span>
-                  <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
-                    {sample.text}
-                  </span>
-                </span>
-                <ChevronRight
-                  size={14}
-                  className="mt-1 shrink-0 text-subtle icon-motion icon-shift"
-                />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
-      </Reveal>
-        </>
-      )}
-
-      <section id="how-it-works" className="snap-block mt-24">
-        <Reveal>
-          <p className="mb-3 font-serif text-base text-accent italic">Designed for attention</p>
-          <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
-            Clarity without changing who you are.
-          </h2>
-        </Reveal>
-        <div className="mt-12 space-y-10">
-          {FEATURES.map((feature, index) => (
-            <Reveal key={feature.title} delay={index * 60}>
-              <div
-                className={cn(
-                  "grid items-center gap-6 md:grid-cols-2 md:gap-10",
-                  index % 2 === 1 && "md:[&>div:first-child]:order-2",
-                )}
-              >
-                <Card className="group overflow-hidden p-2">
-                  <Magnetic strength={6}>
-                  <div className="overflow-hidden rounded-sm">
-                    <Media
-                      src={feature.image}
-                      alt={feature.alt}
-                      width={1200}
-                      height={1600}
-                      zoom
-                      data-scrub
-                      className="aspect-[4/5] w-full object-cover sm:aspect-[5/4]"
-                    />
-                  </div>
-                  </Magnetic>
-                </Card>
-                <div className="px-1">
-                  <p className="font-serif text-sm text-accent italic">{feature.index}</p>
-                  <h3 className="mt-3 font-serif text-3xl">{feature.title}</h3>
-                  <p className="mt-3 max-w-md text-base leading-relaxed text-muted">{feature.text}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      <section id="patterns" className="snap-block mt-24">
-        <Reveal>
-          <p className="mb-3 font-serif text-base text-accent italic">Neural reading patterns</p>
-          <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
-            The page can tell when you are actually reading.
-          </h2>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
-            A line held in the reading band is a fixation. The next line is a saccade. A jump, a return, or
-            a long pause names the sitting — without a camera, and without asking you to click.
-          </p>
-        </Reveal>
-        <div className="mt-10">
+        <ScrollScene>
           <Reveal>
-            <PatternExplorer />
-          </Reveal>
-        </div>
-      </section>
-
-      <section id="case-studies" className="snap-block mt-24">
-        <Reveal>
-          <p className="mb-3 font-serif text-base text-accent italic">How it lands</p>
-          <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
-            Built for the way reading actually happens.
-          </h2>
-        </Reveal>
-        <div className="mt-10 grid gap-4 lg:grid-cols-5">
-          <Reveal className="lg:col-span-3">
-            <Card className="group overflow-hidden p-2">
-            <div className="overflow-hidden rounded-sm">
+            <Card className="relative mt-10 overflow-hidden p-0 sm:mt-16">
               <Media
                 src="/images/reading-room.jpg"
-                alt="A graduate student working in a sunlit reading room"
+                alt="A sunlit university reading room with walnut shelves"
                 width={1600}
                 height={900}
-                zoom
                 data-scrub
-                className="aspect-[16/10] w-full object-cover"
+                className="aspect-[16/9] w-full object-cover parallax-entry sm:aspect-[21/9]"
               />
-            </div>
-            <div className="px-4 pt-5 pb-4 sm:px-5">
-              <p className="font-serif text-sm text-accent italic">Graduate student</p>
-              <h3 className="mt-2 font-serif text-2xl">A clearer first pass</h3>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                A calmer layout made intimidating research blocks approachable in shorter sessions.
-              </p>
-              <a href="#reader-start" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent">
-                Try it <ChevronRight size={14} className="icon-motion icon-shift" />
-              </a>
-            </div>
-          </Card>
-          </Reveal>
-          <div className="grid gap-4 lg:col-span-2">
-            {[
-              {
-                image: "/images/case-team.jpg",
-                alt: "Product documentation spread across a sunlit desk",
-                label: "Product team",
-                title: "Docs with less friction",
-                text: "Shared documents became easier to scan when decisions had to move.",
-              },
-              {
-                image: "/images/nook.jpg",
-                alt: "A reader in an armchair by a window",
-                label: "Daily reader",
-                title: "Energy for the last page",
-                text: "A personalized rhythm made it easier to continue when attention was thin.",
-              },
-            ].map((study, index) => (
-              <Reveal key={study.title} delay={index * 80}>
-              <Card className="group overflow-hidden p-2">
-                <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[8.5rem_minmax(0,1fr)]">
-                  <div className="overflow-hidden rounded-sm">
-                    <Media
-                      src={study.image}
-                      alt={study.alt}
-                      width={1200}
-                      height={1600}
-                      zoom
-                      data-scrub
-                      className="h-full min-h-28 w-full object-cover"
-                    />
+              <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/15" />
+              <div className="absolute inset-0 flex flex-col justify-end gap-6 p-5 text-primary-fg sm:flex-row sm:items-end sm:justify-between sm:p-8">
+                <p className="max-w-sm font-serif text-2xl leading-snug italic sm:text-3xl">
+                  Built for the way attention actually works.
+                </p>
+                <div className="flex gap-8">
+                  <div>
+                    <p className="font-serif text-4xl tracking-tight">
+                      <GsapCount value={92} suffix="%" />
+                    </p>
+                    <p className="mt-1 text-xs text-primary-fg/70">Focus gain</p>
                   </div>
-                  <div className="py-2 pr-2">
-                    <p className="font-serif text-sm text-accent italic">{study.label}</p>
-                    <h3 className="mt-1 font-serif text-lg">{study.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-muted">{study.text}</p>
+                  <div>
+                    <p className="font-serif text-4xl tracking-tight">
+                      <GsapCount value={40} suffix="%" />
+                    </p>
+                    <p className="mt-1 text-xs text-primary-fg/70">Less fatigue</p>
                   </div>
                 </div>
-              </Card>
+              </div>
+            </Card>
+          </Reveal>
+
+          {locked ? (
+            <LockedStart />
+          ) : (
+            <>
+              <Reveal>
+                <FirstStart />
+                <div id="reader-start" className="snap-block mt-16 grid gap-6 md:grid-cols-2">
+                  <Card
+                    className="flex min-h-[26rem] flex-col p-5 sm:p-6"
+                    onDragOver={(event) => {
+                      if (event.dataTransfer && [...event.dataTransfer.types].includes("Files"))
+                        event.preventDefault();
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      void onUpload(event.dataTransfer?.files?.[0]);
+                    }}
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <span className="font-serif text-sm text-accent italic">Source</span>
+                      <FileDrop
+                        compact
+                        busy={uploading}
+                        busyLabel={
+                          progress ? `Page ${progress.done} of ${progress.total}` : undefined
+                        }
+                        onFile={(file) => void onUpload(file)}
+                      />
+                    </div>
+                    <Textarea
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                      placeholder="Paste an article, essay, or chapter…"
+                      className="flex-1"
+                      aria-label="Text to read"
+                      aria-invalid={Boolean(error)}
+                      aria-describedby={error ? "upload-error" : undefined}
+                    />
+                    {meta && (
+                      <div className="mt-4 rounded-md bg-fg/4 px-3 py-2 text-xs text-muted">
+                        <span className="font-medium text-fg">{meta.title}</span>
+                        <span className="mx-2 text-subtle">·</span>
+                        {meta.format} · {meta.wordCount.toLocaleString()} words · ~{meta.readTime}{" "}
+                        min
+                      </div>
+                    )}
+                    <Button
+                      className="mt-5 w-full pl-4 pr-3.5"
+                      disabled={!(input.trim() || meta?.format === "PDF")}
+                      onClick={() =>
+                        startReading(
+                          input,
+                          meta
+                            ? { title: meta.title, kind: meta.format === "PDF" ? "pdf" : "text" }
+                            : undefined,
+                        )
+                      }
+                    >
+                      Open in reader
+                      <ChevronRight size={16} className="icon-motion icon-shift" />
+                    </Button>
+                    {error && (
+                      <p id="upload-error" role="alert" className="mt-3 text-xs text-danger">
+                        {error}
+                      </p>
+                    )}
+                  </Card>
+
+                  <Card className="p-5 sm:p-6">
+                    <h2 className="mb-4 font-serif text-xl italic">Try a passage</h2>
+                    <div className="space-y-2">
+                      {SAMPLE_TEXTS.map((sample) => (
+                        <button
+                          key={sample.title}
+                          type="button"
+                          data-batch
+                          onClick={() => setInput(sample.text)}
+                          className="group flex w-full items-start gap-3 rounded-md p-2 text-left transition-[background-color] duration-[150ms] ease-[var(--ease-standard)] hover:bg-fg/4 active:scale-[0.97]"
+                        >
+                          <Media
+                            src={sample.image}
+                            alt=""
+                            width={120}
+                            height={160}
+                            className="h-16 w-12 shrink-0 rounded-sm object-cover"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium">{sample.title}</span>
+                            <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
+                              {sample.text}
+                            </span>
+                          </span>
+                          <ChevronRight
+                            size={14}
+                            className="mt-1 shrink-0 text-subtle icon-motion icon-shift"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
               </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+            </>
+          )}
 
-      <section id="faq" className="snap-block mt-24 pb-8">
-        <Reveal>
-          <h2 data-scrub-fade className="mb-6 max-w-xl text-4xl sm:text-5xl">
-            A little more clarity before you start.
-          </h2>
-        </Reveal>
-        <Reveal>
-        <Accordion type="single" collapsible className="max-w-3xl border-t border-border">
-          {FAQ.map(({ question, answer }) => (
-            <AccordionItem key={question} value={question}>
-              <AccordionTrigger>{question}</AccordionTrigger>
-              <AccordionContent>{answer}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-        </Reveal>
-      </section>
+          <section id="how-it-works" className="snap-block mt-24">
+            <Reveal>
+              <p className="mb-3 font-serif text-base text-accent italic">Designed for attention</p>
+              <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
+                Clarity without changing who you are.
+              </h2>
+            </Reveal>
+            <div className="mt-12 space-y-10">
+              {FEATURES.map((feature, index) => (
+                <Reveal key={feature.title} delay={index * 60}>
+                  <div
+                    className={cn(
+                      "grid items-center gap-6 md:grid-cols-2 md:gap-10",
+                      index % 2 === 1 && "md:[&>div:first-child]:order-2",
+                    )}
+                  >
+                    <Card className="group overflow-hidden p-2">
+                      <Magnetic strength={6}>
+                        <div className="overflow-hidden rounded-sm">
+                          <Media
+                            src={feature.image}
+                            alt={feature.alt}
+                            width={1200}
+                            height={1600}
+                            zoom
+                            data-scrub
+                            className="aspect-[4/5] w-full object-cover sm:aspect-[5/4]"
+                          />
+                        </div>
+                      </Magnetic>
+                    </Card>
+                    <div className="px-1">
+                      <p className="font-serif text-sm text-accent italic">{feature.index}</p>
+                      <h3 className="mt-3 font-serif text-3xl">{feature.title}</h3>
+                      <p className="mt-3 max-w-md text-base leading-relaxed text-muted">
+                        {feature.text}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </section>
 
-      <Reveal>
-      <Card className="relative mt-16 mb-8 overflow-hidden p-0">
-        <Media
-          src="/images/nook.jpg"
-          alt=""
-          width={1200}
-          height={1600}
-          data-scrub
-          className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/25" />
-        <div className="relative px-8 py-12 text-center text-primary-fg sm:px-12 sm:py-16">
-          <Badge className="mb-4 bg-primary-fg/10 text-primary-fg">Private by default</Badge>
-          <h2 className="font-serif text-4xl italic sm:text-5xl">Your next page can start here.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-primary-fg/75">
-            Bring a passage, choose a profile, and see what changes when reading is shaped around your attention.
-          </p>
-          <Button asChild variant="outline" className="mt-7 bg-surface text-fg">
-            <a href="#reader-start">Open the reader</a>
-          </Button>
-        </div>
-      </Card>
-      </Reveal>
-      </ScrollScene>
+          <section id="patterns" className="snap-block mt-24">
+            <Reveal>
+              <p className="mb-3 font-serif text-base text-accent italic">
+                Neural reading patterns
+              </p>
+              <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
+                The page can tell when you are actually reading.
+              </h2>
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
+                A line held in the reading band is a fixation. The next line is a saccade. A jump, a
+                return, or a long pause names the sitting — without a camera, and without asking you
+                to click.
+              </p>
+            </Reveal>
+            <div className="mt-10">
+              <Reveal>
+                <PatternExplorer />
+              </Reveal>
+            </div>
+          </section>
+
+          <section id="case-studies" className="snap-block mt-24">
+            <Reveal>
+              <p className="mb-3 font-serif text-base text-accent italic">How it lands</p>
+              <h2 data-scrub-fade className="max-w-xl text-4xl sm:text-5xl">
+                Built for the way reading actually happens.
+              </h2>
+            </Reveal>
+            <div className="mt-10 grid gap-4 lg:grid-cols-5">
+              <Reveal className="lg:col-span-3">
+                <Card className="group overflow-hidden p-2">
+                  <div className="overflow-hidden rounded-sm">
+                    <Media
+                      src="/images/reading-room.jpg"
+                      alt="A graduate student working in a sunlit reading room"
+                      width={1600}
+                      height={900}
+                      zoom
+                      data-scrub
+                      className="aspect-[16/10] w-full object-cover"
+                    />
+                  </div>
+                  <div className="px-4 pt-5 pb-4 sm:px-5">
+                    <p className="font-serif text-sm text-accent italic">Graduate student</p>
+                    <h3 className="mt-2 font-serif text-2xl">A clearer first pass</h3>
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                      A calmer layout made intimidating research blocks approachable in shorter
+                      sessions.
+                    </p>
+                    <a
+                      href="#reader-start"
+                      className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent"
+                    >
+                      Try it <ChevronRight size={14} className="icon-motion icon-shift" />
+                    </a>
+                  </div>
+                </Card>
+              </Reveal>
+              <div className="grid gap-4 lg:col-span-2">
+                {[
+                  {
+                    image: "/images/case-team.jpg",
+                    alt: "Product documentation spread across a sunlit desk",
+                    label: "Product team",
+                    title: "Docs with less friction",
+                    text: "Shared documents became easier to scan when decisions had to move.",
+                  },
+                  {
+                    image: "/images/nook.jpg",
+                    alt: "A reader in an armchair by a window",
+                    label: "Daily reader",
+                    title: "Energy for the last page",
+                    text: "A personalized rhythm made it easier to continue when attention was thin.",
+                  },
+                ].map((study, index) => (
+                  <Reveal key={study.title} delay={index * 80}>
+                    <Card className="group overflow-hidden p-2">
+                      <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[8.5rem_minmax(0,1fr)]">
+                        <div className="overflow-hidden rounded-sm">
+                          <Media
+                            src={study.image}
+                            alt={study.alt}
+                            width={1200}
+                            height={1600}
+                            zoom
+                            data-scrub
+                            className="h-full min-h-28 w-full object-cover"
+                          />
+                        </div>
+                        <div className="py-2 pr-2">
+                          <p className="font-serif text-sm text-accent italic">{study.label}</p>
+                          <h3 className="mt-1 font-serif text-lg">{study.title}</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-muted">{study.text}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section id="faq" className="snap-block mt-24 pb-8">
+            <Reveal>
+              <h2 data-scrub-fade className="mb-6 max-w-xl text-4xl sm:text-5xl">
+                A little more clarity before you start.
+              </h2>
+            </Reveal>
+            <Reveal>
+              <Accordion type="single" collapsible className="max-w-3xl border-t border-border">
+                {FAQ.map(({ question, answer }) => (
+                  <AccordionItem key={question} value={question}>
+                    <AccordionTrigger>{question}</AccordionTrigger>
+                    <AccordionContent>{answer}</AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </Reveal>
+          </section>
+
+          <Reveal>
+            <Card className="relative mt-16 mb-8 overflow-hidden p-0">
+              <Media
+                src="/images/nook.jpg"
+                alt=""
+                width={1200}
+                height={1600}
+                data-scrub
+                className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/25" />
+              <div className="relative px-8 py-12 text-center text-primary-fg sm:px-12 sm:py-16">
+                <Badge className="mb-4 bg-primary-fg/10 text-primary-fg">Private by default</Badge>
+                <h2 className="font-serif text-4xl italic sm:text-5xl">
+                  Your next page can start here.
+                </h2>
+                <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-primary-fg/75">
+                  Bring a passage, choose a profile, and see what changes when reading is shaped
+                  around your attention.
+                </p>
+                <Button asChild variant="outline" className="mt-7 bg-surface text-fg">
+                  <a href="#reader-start">Open the reader</a>
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
+        </ScrollScene>
       </div>
 
       <FloatingStartCta />
@@ -685,7 +727,10 @@ function FixationDemo() {
   }, [demoTaken, reduceMotion, demoInView]);
 
   return (
-    <div ref={demoRef} className="relative w-full min-w-0 pb-4 lg:w-[38%] lg:max-w-xl lg:shrink-0 lg:pb-0">
+    <div
+      ref={demoRef}
+      className="relative w-full min-w-0 pb-4 lg:w-[38%] lg:max-w-xl lg:shrink-0 lg:pb-0"
+    >
       <Card className="material-surface overflow-hidden p-4 sm:p-5">
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="font-serif text-sm text-accent italic">Fixation</span>
@@ -709,7 +754,10 @@ function FixationDemo() {
             className="nl-demo-swap text-left text-sm leading-relaxed sm:text-base"
           >
             {demoBionic ? (
-              <AccessibleBionic text={DEMO_SENTENCE} html={processBionicText(DEMO_SENTENCE, 0.55, true)} />
+              <AccessibleBionic
+                text={DEMO_SENTENCE}
+                html={processBionicText(DEMO_SENTENCE, 0.55, true)}
+              />
             ) : (
               DEMO_SENTENCE
             )}
@@ -731,10 +779,9 @@ function FloatingStartCta() {
   useEffect(() => {
     const cta = document.getElementById("hero-cta");
     if (!cta || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroCtaGone(!entry?.isIntersecting),
-      { rootMargin: "-8px 0px 0px 0px" },
-    );
+    const observer = new IntersectionObserver(([entry]) => setHeroCtaGone(!entry?.isIntersecting), {
+      rootMargin: "-8px 0px 0px 0px",
+    });
     observer.observe(cta);
     return () => observer.disconnect();
   }, []);
@@ -748,9 +795,7 @@ function FloatingStartCta() {
         // Clears the footer row below it.
         "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 inline-flex h-12 items-center gap-1 rounded-lg bg-primary px-4 pr-3.5 text-sm font-medium text-primary-fg shadow-float sm:hidden",
         "transition-[opacity,transform] duration-[250ms] ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none",
-        heroCtaGone
-          ? "translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-3 opacity-0",
+        heroCtaGone ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
       )}
     >
       Start reading <ChevronRight size={16} className="icon-motion icon-shift" />

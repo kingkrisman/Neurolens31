@@ -41,7 +41,7 @@ export const Route = createRootRoute({
       links: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "stylesheet", href: appCss },
-        { rel: "preload", as: "image", href: "/images/hero-lens.jpg", fetchpriority: "high" },
+        { rel: "preload", as: "image", href: "/images/hero-lens.jpg", fetchPriority: "high" },
         // Was pointing at a file that does not exist, so every install prompt
         // and every crawler asking for the manifest got a 404.
         { rel: "manifest", href: "/manifest.webmanifest" },

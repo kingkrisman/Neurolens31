@@ -43,7 +43,7 @@ const RELEASES: Release[] = [
     title: "Accounts, help, and a place to tell us things",
     items: [
       {
-        what: "Sign in with Google or Apple — no password.",
+        what: "Sign in with Google — no password.",
         why: "A password is one more thing to remember and one more thing to lose. Your books, marks and reading profile follow you between devices.",
       },
       { what: "An account page that downloads everything you have, or erases it." },

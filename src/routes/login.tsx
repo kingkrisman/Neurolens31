@@ -7,7 +7,7 @@ export const Route = createFileRoute("/login")({
     ...seo({
       title: "Sign in",
       description:
-        "Sign in to NeuroLens with Google or Apple. Optional — the app works fully without an account.",
+        "Sign in to NeuroLens with Google to reach your books, highlights and reading settings on any device.",
       path: "/login",
       noindex: true,
     }),

@@ -27,7 +27,11 @@ export function PublicHome() {
           <div className="nl-glass-pane pointer-events-none absolute inset-0" aria-hidden />
           <div className="nl-glass-tint pointer-events-none absolute inset-0" aria-hidden />
           <div className="nl-glass-content pointer-events-auto relative flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:px-6">
-            <Link to="/" aria-label="NeuroLens home" className="icon-group flex items-center gap-2.5">
+            <Link
+              to="/"
+              aria-label="NeuroLens home"
+              className="icon-group flex items-center gap-2.5"
+            >
               <Mark detail className="size-9 text-fg sm:size-10" />
               <span className="text-sm font-medium tracking-tight">NeuroLens</span>
             </Link>

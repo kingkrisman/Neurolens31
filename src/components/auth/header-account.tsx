@@ -15,8 +15,8 @@ import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 /**
  * The header's account control: a sign-in button, or the person's badge.
  *
- * Signed out it is a quiet outline button — the app works fully without an
- * account, so asking for one should not be the loudest thing on screen. Signed
+ * Signed out it is a quiet outline button — the way in to an account, so
+ * asking for one should not be the loudest thing on screen. Signed
  * in it becomes a face, because a face is recognised faster than a name, and the
  * menu behind it holds the few things a person looks for under their own
  * picture.
@@ -44,7 +44,9 @@ export function HeaderAccount() {
           aria-label={`Account menu for ${user.name}`}
           className="group flex h-9 shrink-0 items-center gap-2 rounded-full py-0.5 pr-0.5 pl-0.5 transition-[background-color] duration-150 hover:bg-fg/6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg sm:pl-3"
         >
-          <span className="hidden max-w-28 truncate text-sm font-medium sm:inline">{firstName}</span>
+          <span className="hidden max-w-28 truncate text-sm font-medium sm:inline">
+            {firstName}
+          </span>
           <UserAvatar seed={user.avatarSeed} size={32} />
         </button>
       </DropdownMenuTrigger>

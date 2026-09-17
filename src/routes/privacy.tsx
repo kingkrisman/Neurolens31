@@ -133,9 +133,9 @@ function Privacy() {
 
       <DocSection id="accounts" title="Accounts">
         <p>
-          An account is optional. Sign in with Google or Apple and they confirm who you are;
-          NeuroLens never sees your password. Your avatar is drawn on your device from a random seed
-          — no photo is stored.
+          Reading needs an account. Sign in with Google and they confirm who you are; NeuroLens
+          never sees your password, and stores nothing from them but your name and email address.
+          Your avatar is drawn on your device from a random seed — no photo is fetched or stored.
         </p>
       </DocSection>
 

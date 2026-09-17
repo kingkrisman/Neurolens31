@@ -33,7 +33,13 @@ export function ProviderMark({ idp, className = "size-5" }: { idp: string; class
 
   if (idp === "apple") {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden className={className} focusable="false" fill="currentColor">
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden
+        className={className}
+        focusable="false"
+        fill="currentColor"
+      >
         <path d="M17.05 12.53c-.02-2.2 1.8-3.26 1.88-3.31-1.02-1.5-2.61-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.75-.78-2.87-.76-1.48.02-2.84.86-3.6 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.25 2.75 2.2 1.1-.04 1.52-.71 2.85-.71 1.33 0 1.71.71 2.87.69 1.19-.02 1.94-1.08 2.66-2.14.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.32-.89-2.34-3.5ZM14.9 5.1c.61-.74 1.02-1.77.91-2.8-.88.04-1.94.59-2.57 1.32-.56.65-1.05 1.7-.92 2.7.98.08 1.98-.5 2.58-1.22Z" />
       </svg>
     );
@@ -41,7 +47,13 @@ export function ProviderMark({ idp, className = "size-5" }: { idp: string; class
 
   if (idp === "twitter") {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden className={className} focusable="false" fill="currentColor">
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden
+        className={className}
+        focusable="false"
+        fill="currentColor"
+      >
         <path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25h6.82l4.71 6.23 5.46-6.23Zm-1.16 17.52h1.83L7.01 4.13H5.04l12.04 15.64Z" />
       </svg>
     );
@@ -50,7 +62,10 @@ export function ProviderMark({ idp, className = "size-5" }: { idp: string; class
   // An upstream added to the broker before it was given a mark here: the button
   // still works, it just leads with its initial.
   return (
-    <span aria-hidden className={`grid place-items-center rounded-full bg-fg/10 text-[11px] font-semibold ${className}`}>
+    <span
+      aria-hidden
+      className={`grid place-items-center rounded-full bg-fg/10 text-[11px] font-semibold ${className}`}
+    >
       {idp.charAt(0).toUpperCase()}
     </span>
   );

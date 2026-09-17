@@ -58,7 +58,11 @@ export function AvatarPicker({ seed }: { seed: string }) {
       </div>
 
       <p className="mt-6 text-sm font-medium">Style</p>
-      <div role="radiogroup" aria-label="Avatar style" className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6">
+      <div
+        role="radiogroup"
+        aria-label="Avatar style"
+        className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-6"
+      >
         {AVATAR_STYLES.map((style) => {
           const active = prefs.style === style.id;
           return (
@@ -75,7 +79,13 @@ export function AvatarPicker({ seed }: { seed: string }) {
               )}
             >
               <span className="relative">
-                <UserAvatar seed={seed} size={44} styleId={style.id} shuffle={0} background={prefs.background} />
+                <UserAvatar
+                  seed={seed}
+                  size={44}
+                  styleId={style.id}
+                  shuffle={0}
+                  background={prefs.background}
+                />
                 {active ? (
                   <span className="absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full bg-fg text-bg">
                     <Check size={10} strokeWidth={3} aria-hidden />
@@ -101,7 +111,9 @@ export function AvatarPicker({ seed }: { seed: string }) {
               aria-checked={active}
               aria-label={color ? `Background ${name}` : "No background"}
               title={name}
-              onClick={() => choose({ background: color }, color ? "Background changed" : "Background removed")}
+              onClick={() =>
+                choose({ background: color }, color ? "Background changed" : "Background removed")
+              }
               className={cn(
                 "grid size-8 place-items-center rounded-full shadow-border transition-transform duration-150 hover:scale-110",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
@@ -110,10 +122,15 @@ export function AvatarPicker({ seed }: { seed: string }) {
               style={
                 color
                   ? { backgroundColor: `#${color}` }
-                  : { backgroundImage: "linear-gradient(135deg, transparent 45%, currentColor 45%, currentColor 55%, transparent 55%)" }
+                  : {
+                      backgroundImage:
+                        "linear-gradient(135deg, transparent 45%, currentColor 45%, currentColor 55%, transparent 55%)",
+                    }
               }
             >
-              {active ? <Check size={12} strokeWidth={3} className="text-[#1A1208]" aria-hidden /> : null}
+              {active ? (
+                <Check size={12} strokeWidth={3} className="text-[#1A1208]" aria-hidden />
+              ) : null}
             </button>
           );
         })}

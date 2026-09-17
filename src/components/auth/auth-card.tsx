@@ -10,12 +10,21 @@ import { PROVIDER_LABEL, signInWith, useAuthUser, type AuthProvider } from "@/li
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-const PROVIDERS: AuthProvider[] = ["google", "apple"];
+/**
+ * Google only, for now.
+ *
+ * Apple sign-in needs a paid Apple Developer account, an App ID, a Service ID
+ * and a signing key, none of which exist yet — and a provider button that opens
+ * a provider error is worse than one that is absent, particularly as the first
+ * thing a new reader touches. `AuthProvider` still carries "apple", and the
+ * styling for it is still below, so restoring it is this line.
+ */
+const PROVIDERS: AuthProvider[] = ["google"];
 
 /**
  * Sign in and sign up, as one screen with two voices.
  *
- * With only Google and Apple there is no mechanical difference between the two:
+ * With only provider sign-in there is no mechanical difference between the two:
  * the first time someone continues with a provider, an account is created. So
  * this is one component, and `mode` changes only the words — which still
  * matters, because someone who has never used the app goes looking for "create
@@ -57,7 +66,7 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
     track("auth", { action: mode === "signin" ? "sign_in" : "sign_up", provider });
     try {
       await signInWith(provider);
-      // No navigation here. `signInWith` hands the browser to Google or Apple;
+      // No navigation here. `signInWith` hands the browser to the provider;
       // the session arrives when they send it back, and the effect below is
       // what moves the reader on. Navigating now would race the redirect.
     } catch (err) {
@@ -151,7 +160,10 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
 
               <p className="mt-1 text-center text-sm text-muted">
                 {copy.switchPrompt}{" "}
-                <Link to={copy.switchTo} className="font-medium text-fg underline underline-offset-4">
+                <Link
+                  to={copy.switchTo}
+                  className="font-medium text-fg underline underline-offset-4"
+                >
                   {copy.switchLink}
                 </Link>
               </p>
@@ -177,8 +189,8 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
               <li className="flex gap-2.5">
                 <ShieldCheck size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
                 <span>
-                  <span className="font-medium text-fg">Only your name and email.</span> Google or
-                  Apple confirms it is you; NeuroLens never sees your password.
+                  <span className="font-medium text-fg">Only your name and email.</span> Google
+                  confirms it is you; NeuroLens never sees your password.
                 </span>
               </li>
             </ul>
