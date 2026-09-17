@@ -29,3 +29,6 @@ public/sitemap.xml
 
 # Supabase personal access token, used by scripts/supabase-apply.mjs
 .supabase-token
+
+# Supabase + Google credentials for scripts/supabase-apply.mjs
+.supabase-credentials
