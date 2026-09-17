@@ -24,6 +24,7 @@ import { GsapCount, Magnetic, ScrollScene, StaggerBlock } from "@/components/gsa
 import { scrollToId } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
 import { markStarted } from "@/components/reading-coach";
+import { FAQ } from "@/lib/faq";
 
 const FEATURES = [
   {
@@ -547,16 +548,10 @@ export function Landing() {
         </Reveal>
         <Reveal>
         <Accordion type="single" collapsible className="max-w-3xl border-t border-border">
-          {[
-            { q: "Does it watch my eyes?", a: "No camera. NeuroLens infers fixations and saccades from which line sits in the reading band, how long it is held, and how the page moves. That log stays in this browser." },
-            { q: "Who is NeuroLens for?", a: "Anyone who finds dense pages tiring — ADHD, dyslexia, cognitive fatigue, or a preference for calmer text." },
-            { q: "Can I use my own documents?", a: "Paste text, or upload a PDF or text file. PDFs open one page at a time, including figures, then you can format the words on that page." },
-            { q: "How quickly will I see a result?", a: "Typical passages open in an adapted view in under 30 seconds. Short text is ready immediately." },
-            { q: "Is my text used to train a model?", a: "Reading preferences and recent sessions stay in your browser. You can clear them from Settings at any time." },
-          ].map(({ q, a }) => (
-            <AccordionItem key={q} value={q}>
-              <AccordionTrigger>{q}</AccordionTrigger>
-              <AccordionContent>{a}</AccordionContent>
+          {FAQ.map(({ question, answer }) => (
+            <AccordionItem key={question} value={question}>
+              <AccordionTrigger>{question}</AccordionTrigger>
+              <AccordionContent>{answer}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>

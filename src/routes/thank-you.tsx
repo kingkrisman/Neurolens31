@@ -1,7 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
 import { PublicLayout } from "@/components/public-layout";
 
-export const Route = createFileRoute("/thank-you")({ component: ThankYou });
+export const Route = createFileRoute("/thank-you")({
+  head: () => ({
+    ...seo({
+      title: "Thank you",
+      description: "The people, projects and open-source work NeuroLens is built on.",
+      path: "/thank-you",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "Thank you", path: "/thank-you" },
+        ]),
+      ),
+    ],
+  }),
+  component: ThankYou,
+});
 
 function ThankYou() {
   return (

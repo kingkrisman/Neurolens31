@@ -1,8 +1,27 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
 import { Copyright, FileCheck2, HeartPulse, LogOut, Scale, ShieldCheck } from "lucide-react";
 import { DocSection, Glance, PublicLayout, Term } from "@/components/public-layout";
 
-export const Route = createFileRoute("/terms")({ component: Terms });
+export const Route = createFileRoute("/terms")({
+  head: () => ({
+    ...seo({
+      title: "Terms",
+      description:
+        "Plain terms for a reading app — what you may upload, what we promise, what we do not, and how a dispute is settled.",
+      path: "/terms",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "Terms", path: "/terms" },
+        ]),
+      ),
+    ],
+  }),
+  component: Terms,
+});
 
 const UPDATED = "17 September 2026";
 
@@ -70,27 +89,52 @@ function Terms() {
       <section id="summary" className="scroll-mt-28">
         <Glance
           items={[
-            { icon: FileCheck2, title: "Free, and yours", body: "What you upload stays on your device and remains entirely yours." },
-            { icon: ShieldCheck, title: "Upload fairly", body: "Only upload things you are allowed to read and copy." },
-            { icon: Copyright, title: "Yours to answer for", body: "We never receive your files, so nothing you open is checked or approved by us." },
-            { icon: Scale, title: "Disputes, and an opt-out", body: "Serious disputes go to individual arbitration — and you have 30 days to opt out of that." },
-            { icon: HeartPulse, title: "A reading aid", body: "Designed to help — but not a medical device, and it diagnoses nothing." },
-            { icon: LogOut, title: "Leave any time", body: "Export or erase your data yourself, whenever you like." },
+            {
+              icon: FileCheck2,
+              title: "Free, and yours",
+              body: "What you upload stays on your device and remains entirely yours.",
+            },
+            {
+              icon: ShieldCheck,
+              title: "Upload fairly",
+              body: "Only upload things you are allowed to read and copy.",
+            },
+            {
+              icon: Copyright,
+              title: "Yours to answer for",
+              body: "We never receive your files, so nothing you open is checked or approved by us.",
+            },
+            {
+              icon: Scale,
+              title: "Disputes, and an opt-out",
+              body: "Serious disputes go to individual arbitration — and you have 30 days to opt out of that.",
+            },
+            {
+              icon: HeartPulse,
+              title: "A reading aid",
+              body: "Designed to help — but not a medical device, and it diagnoses nothing.",
+            },
+            {
+              icon: LogOut,
+              title: "Leave any time",
+              body: "Export or erase your data yourself, whenever you like.",
+            },
           ]}
         />
       </section>
 
       <DocSection id="using" kicker="1" title="Using NeuroLens">
         <p>
-          NeuroLens is a reading application, free for personal or professional reading. You need to be
-          old enough to agree to terms where you live; if you are not, an adult should agree for you.
+          NeuroLens is a reading application, free for personal or professional reading. You need to
+          be old enough to agree to terms where you live; if you are not, an adult should agree for
+          you.
         </p>
       </DocSection>
 
       <DocSection id="documents" kicker="2" title="Your documents stay yours">
         <p>
-          Files you upload are read inside your browser and stored on your device. They are not sent to
-          us, we cannot see them, and we do not use them to train anything.
+          Files you upload are read inside your browser and stored on your device. They are not sent
+          to us, we cannot see them, and we do not use them to train anything.
         </p>
         <p>
           Because they live on your device, browser storage limits apply, and clearing browser data
@@ -102,83 +146,88 @@ function Terms() {
       <DocSection id="uploads" kicker="3" title="What you upload">
         <p>
           Only upload documents you own or are otherwise permitted to read and copy, and do not use
-          NeuroLens to store or share anything unlawful. You keep every right you already had in your
-          files; we acquire none.
+          NeuroLens to store or share anything unlawful. You keep every right you already had in
+          your files; we acquire none.
         </p>
       </DocSection>
 
       <DocSection id="responsibility" kicker="4" title="Answering for what you bring in">
         <p>
-          Everything you bring into NeuroLens — a document, a note, a highlight, a bookmark — is yours.
-          It is also yours to answer for.
+          Everything you bring into NeuroLens — a document, a note, a highlight, a bookmark — is
+          yours. It is also yours to answer for.
         </p>
         <p>
           Nothing you open here is reviewed, moderated or approved by us, because none of it reaches
-          us: it is read and kept on your device. <Term>Nothing being blocked is not the same as
-          something being checked.</Term> We have no way to know what you have opened, and no way to
-          vet it.
+          us: it is read and kept on your device.{" "}
+          <Term>Nothing being blocked is not the same as something being checked.</Term> We have no
+          way to know what you have opened, and no way to vet it.
         </p>
         <p>
           So having the right to read, copy and adapt what you bring in is on you, as is what you do
-          with it afterwards — including anything you export and pass on to somebody else. If a third
-          party brings a claim against us because of material you brought in or shared, you cover what
-          it reasonably costs us to deal with. That does not apply where the claim is our fault rather
-          than yours, and it takes away none of the rights the law gives you as a consumer.
+          with it afterwards — including anything you export and pass on to somebody else. If a
+          third party brings a claim against us because of material you brought in or shared, you
+          cover what it reasonably costs us to deal with. That does not apply where the claim is our
+          fault rather than yours, and it takes away none of the rights the law gives you as a
+          consumer.
         </p>
         <p>
-          We also cannot take a file off your device — only you can do that. Where something is being
-          used unlawfully, that sits between you and whoever holds the rights. If we ever host material
-          ourselves, tell <Link to="/support">support</Link> and we will act on it.
+          We also cannot take a file off your device — only you can do that. Where something is
+          being used unlawfully, that sits between you and whoever holds the rights. If we ever host
+          material ourselves, tell <Link to="/support">support</Link> and we will act on it.
         </p>
       </DocSection>
 
       <DocSection id="accounts" kicker="5" title="Accounts">
         <p>
-          An account is optional — the app works fully without one. Signing in uses Google or Apple, so
-          there is no password for us to hold. You are responsible for the security of the account you
-          sign in with, and can stop using it at any time.
+          An account is optional — the app works fully without one. Signing in uses Google or Apple,
+          so there is no password for us to hold. You are responsible for the security of the
+          account you sign in with, and can stop using it at any time.
         </p>
       </DocSection>
 
       <DocSection id="services" kicker="6" title="Features that reach the internet">
         <p>
-          A few features fetch from third parties when you ask: Bible passages, library records, poems
-          and definitions. Those requests are governed by each service's own terms; the{" "}
+          A few features fetch from third parties when you ask: Bible passages, library records,
+          poems and definitions. Those requests are governed by each service's own terms; the{" "}
           <Link to="/privacy">privacy page</Link> names them.
         </p>
       </DocSection>
 
       <DocSection id="not-medical" kicker="7" title="A reading aid, not a treatment">
         <p>
-          NeuroLens is designed with dyslexia, ADHD and cognitive fatigue in mind, and may make reading
-          easier. It is not a medical device, does not diagnose anything, and is no substitute for a
-          professional. Nothing it shows you — including what adaptive mode notices — is a clinical
-          finding.
+          NeuroLens is designed with dyslexia, ADHD and cognitive fatigue in mind, and may make
+          reading easier. It is not a medical device, does not diagnose anything, and is no
+          substitute for a professional. Nothing it shows you — including what adaptive mode notices
+          — is a clinical finding.
         </p>
       </DocSection>
 
       <DocSection id="as-is" kicker="8" title="Offered as it is">
         <p>
-          The app comes without warranties of any kind. We do not promise it will always be available,
-          free of faults, or read every file correctly. As far as the law allows, we are not liable for
-          loss from using it — including documents or notes stored in your browser.
+          The app comes without warranties of any kind. We do not promise it will always be
+          available, free of faults, or read every file correctly. As far as the law allows, we are
+          not liable for loss from using it — including documents or notes stored in your browser.
         </p>
-        <p>Nothing here limits liability the law does not allow to be limited, and consumer rights are unaffected.</p>
+        <p>
+          Nothing here limits liability the law does not allow to be limited, and consumer rights
+          are unaffected.
+        </p>
       </DocSection>
 
       <DocSection id="disputes" kicker="9" title="If we end up in a dispute">
         <p>
           <Term>Talk to us first.</Term> Nearly everything is a misunderstanding or a bug. Send{" "}
-          <Link to="/support">support</Link> a description of the problem and what you would like done
-          about it, and give us 60 days to put it right. Most of this section never comes up.
+          <Link to="/support">support</Link> a description of the problem and what you would like
+          done about it, and give us 60 days to put it right. Most of this section never comes up.
         </p>
         <p>
-          <Term>Then arbitration, not a courtroom.</Term> If 60 days pass without resolution, a dispute
-          between us is settled by binding arbitration before {ARBITRATION_BODY}, rather than by a
-          judge or a jury. Arbitration is usually faster and cheaper than a court case, and the
-          arbitrator can award the same remedies a court could — but it is more private, the grounds
-          for appeal are far narrower, and you are giving up a day in court. That is why it is named in
-          the summary at the top of this page rather than left down here to be discovered.
+          <Term>Then arbitration, not a courtroom.</Term> If 60 days pass without resolution, a
+          dispute between us is settled by binding arbitration before {ARBITRATION_BODY}, rather
+          than by a judge or a jury. Arbitration is usually faster and cheaper than a court case,
+          and the arbitrator can award the same remedies a court could — but it is more private, the
+          grounds for appeal are far narrower, and you are giving up a day in court. That is why it
+          is named in the summary at the top of this page rather than left down here to be
+          discovered.
         </p>
         <p>
           <Term>You can opt out, and it costs you nothing.</Term> Within 30 days of first accepting
@@ -188,22 +237,22 @@ function Terms() {
           simply keep the courts in {GOVERNING_LAW} instead.
         </p>
         <p>
-          <Term>One person at a time.</Term> Claims are brought individually: not as a class action, not
-          combined with anybody else's claim, and not by a representative acting for a group. If that
-          restriction turns out to be unenforceable for a particular claim, then that claim belongs in
-          court rather than in arbitration, and the rest of this section still stands.
+          <Term>One person at a time.</Term> Claims are brought individually: not as a class action,
+          not combined with anybody else's claim, and not by a representative acting for a group. If
+          that restriction turns out to be unenforceable for a particular claim, then that claim
+          belongs in court rather than in arbitration, and the rest of this section still stands.
         </p>
         <p>
-          <Term>Two things either of us can still take to court.</Term> A claim small enough for a small
-          claims court can go there instead, and either side can ask a court to stop misuse of
+          <Term>Two things either of us can still take to court.</Term> A claim small enough for a
+          small claims court can go there instead, and either side can ask a court to stop misuse of
           intellectual property without waiting on arbitration.
         </p>
         <p>
-          <Term>Where local law says otherwise, local law wins.</Term> Plenty of places — the EU and the
-          UK among them — do not let a consumer be required to arbitrate in advance. If you live
+          <Term>Where local law says otherwise, local law wins.</Term> Plenty of places — the EU and
+          the UK among them — do not let a consumer be required to arbitrate in advance. If you live
           somewhere like that, this section takes nothing away from you: you keep your local courts,
-          and your mandatory consumer protections apply in full. These terms are otherwise governed by
-          the law of {GOVERNING_LAW}.
+          and your mandatory consumer protections apply in full. These terms are otherwise governed
+          by the law of {GOVERNING_LAW}.
         </p>
       </DocSection>
 
@@ -216,8 +265,9 @@ function Terms() {
 
       <DocSection id="ending" kicker="11" title="Ending it">
         <p>
-          Stop using NeuroLens whenever you like — erasing your data from the account page is immediate
-          and complete on that device. Access may be suspended where the app is used unlawfully.
+          Stop using NeuroLens whenever you like — erasing your data from the account page is
+          immediate and complete on that device. Access may be suspended where the app is used
+          unlawfully.
         </p>
       </DocSection>
 
@@ -226,9 +276,10 @@ function Terms() {
           Questions about these terms go through <Link to="/support">support</Link>.
         </p>
         <p className="text-sm text-subtle">
-          Written in plain language to describe how the app behaves. Not reviewed by a lawyer, and not
-          legal advice. The arbitration section in particular decides where and how a dispute is heard,
-          and it is unfinished until the bracketed blanks above are filled in and a lawyer has read it.
+          Written in plain language to describe how the app behaves. Not reviewed by a lawyer, and
+          not legal advice. The arbitration section in particular decides where and how a dispute is
+          heard, and it is unfinished until the bracketed blanks above are filled in and a lawyer
+          has read it.
         </p>
       </DocSection>
     </PublicLayout>

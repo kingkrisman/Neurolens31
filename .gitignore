@@ -22,3 +22,7 @@ attachments/
 
 # Local dev server log (started detached on Windows)
 dev-server.log
+
+# Generated on every build by scripts/build-seo-files.mjs
+public/robots.txt
+public/sitemap.xml

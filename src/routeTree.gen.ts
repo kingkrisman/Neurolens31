@@ -20,6 +20,7 @@ import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as WhatsNewRouteImport } from './routes/whats-new'
+import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiDictionaryRouteImport } from './routes/api/dictionary'
 import { Route as ApiGutenbergRouteImport } from './routes/api/gutenberg'
 import { Route as ApiGutendexSplatRouteImport } from './routes/api/gutendex.$'
@@ -80,6 +81,11 @@ const WhatsNewRoute = WhatsNewRouteImport.update({
   path: '/whats-new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
+  id: '/api/analytics',
+  path: '/api/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDictionaryRoute = ApiDictionaryRouteImport.update({
   id: '/api/dictionary',
   path: '/api/dictionary',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/whats-new': typeof WhatsNewRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/whats-new': typeof WhatsNewRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/thank-you': typeof ThankYouRoute
   '/whats-new': typeof WhatsNewRoute
+  '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/thank-you'
     | '/whats-new'
+    | '/api/analytics'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/thank-you'
     | '/whats-new'
+    | '/api/analytics'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/thank-you'
     | '/whats-new'
+    | '/api/analytics'
     | '/api/dictionary'
     | '/api/gutenberg'
     | '/api/gutendex/$'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ThankYouRoute: typeof ThankYouRoute
   WhatsNewRoute: typeof WhatsNewRoute
+  ApiAnalyticsRoute: typeof ApiAnalyticsRoute
   ApiDictionaryRoute: typeof ApiDictionaryRoute
   ApiGutenbergRoute: typeof ApiGutenbergRoute
   ApiGutendexSplatRoute: typeof ApiGutendexSplatRoute
@@ -304,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WhatsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/analytics': {
+      id: '/api/analytics'
+      path: '/api/analytics'
+      fullPath: '/api/analytics'
+      preLoaderRoute: typeof ApiAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/dictionary': {
       id: '/api/dictionary'
       path: '/api/dictionary'
@@ -347,6 +367,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ThankYouRoute: ThankYouRoute,
   WhatsNewRoute: WhatsNewRoute,
+  ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiDictionaryRoute: ApiDictionaryRoute,
   ApiGutenbergRoute: ApiGutenbergRoute,
   ApiGutendexSplatRoute: ApiGutendexSplatRoute,

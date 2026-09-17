@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
+import { FAQ } from "@/lib/faq";
+import { appJsonLd, faqJsonLd, jsonLd, seo } from "@/lib/seo";
 import { TABS, type TabId } from "@/lib/types";
 
 const TAB_IDS = new Set<string>(TABS.map((tab) => tab.id));
@@ -7,6 +9,21 @@ const TAB_IDS = new Set<string>(TABS.map((tab) => tab.id));
 export type HomeSearch = { view?: TabId };
 
 export const Route = createFileRoute("/")({
+  /**
+   * The home page is the app, so this is where it describes itself — the
+   * WebApplication block, and the questions the page visibly answers. The FAQ
+   * text comes from the same constant the accordion renders, because structured
+   * data that does not match what is on the page is a penalty rather than a
+   * feature.
+   *
+   * Every view lives at this one URL behind `?view=`, and the canonical points
+   * at the bare path: five tabs indexed as five near-identical pages would
+   * compete with each other for the same query.
+   */
+  head: () => ({
+    ...seo({ path: "/" }),
+    scripts: [jsonLd(appJsonLd()), jsonLd(faqJsonLd([...FAQ]))],
+  }),
   /**
    * The active view lives in the URL so a tab can be linked, bookmarked, and
    * reached with the back button. `explore` is the default and stays absent

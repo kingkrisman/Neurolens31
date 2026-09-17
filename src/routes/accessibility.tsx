@@ -1,8 +1,27 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
 import type { ReactNode } from "react";
 import { PublicLayout } from "@/components/public-layout";
 
-export const Route = createFileRoute("/accessibility")({ component: Accessibility });
+export const Route = createFileRoute("/accessibility")({
+  head: () => ({
+    ...seo({
+      title: "Accessibility",
+      description:
+        "How NeuroLens is built for screen readers, keyboard use, reduced motion and low vision — and where it still falls short.",
+      path: "/accessibility",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "Accessibility", path: "/accessibility" },
+        ]),
+      ),
+    ],
+  }),
+  component: Accessibility,
+});
 
 const UPDATED = "14 September 2026";
 
@@ -46,8 +65,8 @@ function Accessibility() {
             ratio shown so you can see whether a choice is still readable.
           </li>
           <li>
-            <Strong>Colour-vision preview</Strong> — check any theme as it appears with
-            protanopia, deuteranopia or tritanopia.
+            <Strong>Colour-vision preview</Strong> — check any theme as it appears with protanopia,
+            deuteranopia or tritanopia.
           </li>
           <li>
             <Strong>Reading mask, word guide and syllable splitting</Strong>, for holding a line or
@@ -74,8 +93,8 @@ function Accessibility() {
             keyboard, with a visible focus ring, and a skip link on each page.
           </li>
           <li>
-            <Strong>Colour is never the only signal.</Strong> Highlight colours are named as well
-            as shown, and the marker in use is stated in text.
+            <Strong>Colour is never the only signal.</Strong> Highlight colours are named as well as
+            shown, and the marker in use is stated in text.
           </li>
           <li>
             <Strong>Touch targets are at least 44&nbsp;px</Strong> on phones.
@@ -92,9 +111,7 @@ function Accessibility() {
       </Section>
 
       <Section title="Where it falls short">
-        <p>
-          Said plainly, because you will find these anyway and it is better to know first.
-        </p>
+        <p>Said plainly, because you will find these anyway and it is better to know first.</p>
         <ul className="ml-4 list-disc space-y-1.5">
           <li>
             <Strong>Drawings are not described to a screen reader.</Strong> Ink you draw on a page

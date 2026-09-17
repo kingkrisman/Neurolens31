@@ -1,3 +1,4 @@
+import { PreferredSourceBadge } from "@/components/preferred-source";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
@@ -131,6 +132,10 @@ export function PublicLayout({
                   <RelatedLink key={item.to} to={item.to} label={item.label} />
                 ))}
               </nav>
+              {/* Where Google suggests this sits: the end of the page, beside
+                  the other things a reader might do once they have finished. */}
+              <PreferredSourceBadge className="mt-8" tone="card" />
+
               <Link
                 to="/"
                 className="group mt-8 inline-flex items-center gap-2 text-sm font-medium text-fg"

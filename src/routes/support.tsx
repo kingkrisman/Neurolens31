@@ -1,10 +1,40 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, BookOpen, Check, Copy, Database, FileWarning, Lightbulb, Mail, UserRound, Wrench } from "lucide-react";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
+import {
+  AlertCircle,
+  BookOpen,
+  Check,
+  Copy,
+  Database,
+  FileWarning,
+  Lightbulb,
+  Mail,
+  UserRound,
+  Wrench,
+} from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { PublicLayout } from "@/components/public-layout";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/support")({ component: Support });
+export const Route = createFileRoute("/support")({
+  head: () => ({
+    ...seo({
+      title: "Support",
+      description:
+        "Something broken, or a question the help page does not answer? Tell us what happened and we will look into it.",
+      path: "/support",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "Support", path: "/support" },
+        ]),
+      ),
+    ],
+  }),
+  component: Support,
+});
 
 /**
  * Where support mail goes. A placeholder until there is an address meant to be
@@ -12,7 +42,11 @@ export const Route = createFileRoute("/support")({ component: Support });
  */
 const SUPPORT_EMAIL = "support@neurolens.app";
 
-const TOPICS: Array<{ id: string; label: string; icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }> }> = [
+const TOPICS: Array<{
+  id: string;
+  label: string;
+  icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+}> = [
   { id: "broken", label: "Something is broken", icon: Wrench },
   { id: "file", label: "A file will not open", icon: FileWarning },
   { id: "reading", label: "Reading is still hard", icon: BookOpen },
@@ -82,7 +116,10 @@ function Support() {
       lead={
         <>
           Write it the way you would say it. Most questions are answered faster in{" "}
-          <Link to="/help" className="text-fg underline decoration-fg/30 underline-offset-4 hover:decoration-fg">
+          <Link
+            to="/help"
+            className="text-fg underline decoration-fg/30 underline-offset-4 hover:decoration-fg"
+          >
             Help
           </Link>
           , but if it is not there, this reaches a person.
@@ -99,7 +136,11 @@ function Support() {
               <StepNumber n={1} />
               <span className="doc-h3">What is this about?</span>
             </legend>
-            <div role="radiogroup" aria-label="Topic" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div
+              role="radiogroup"
+              aria-label="Topic"
+              className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3"
+            >
               {TOPICS.map(({ id, label, icon: Icon }) => {
                 const active = topic === id;
                 return (
@@ -156,23 +197,41 @@ function Support() {
               <p className="font-mono text-[11px] text-bg/50">to {SUPPORT_EMAIL}</p>
             </div>
             <div className="max-h-[22rem] overflow-auto px-6 py-5">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">Subject</p>
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+                Subject
+              </p>
               <p className="mt-1 text-sm">NeuroLens — {topicLabel}</p>
-              <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">What happened</p>
-              <p className={cn("mt-1 text-sm leading-relaxed whitespace-pre-wrap", !what.trim() && "text-bg/40")}>
+              <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+                What happened
+              </p>
+              <p
+                className={cn(
+                  "mt-1 text-sm leading-relaxed whitespace-pre-wrap",
+                  !what.trim() && "text-bg/40",
+                )}
+              >
                 {what.trim() || "Start typing on the left…"}
               </p>
               {expected.trim() ? (
                 <>
-                  <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">Expected</p>
-                  <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">{expected.trim()}</p>
+                  <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+                    Expected
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">
+                    {expected.trim()}
+                  </p>
                 </>
               ) : null}
               <details className="mt-5 group">
                 <summary className="cursor-pointer text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase marker:content-none">
-                  Technical details <span className="normal-case tracking-normal text-bg/40">· attached automatically</span>
+                  Technical details{" "}
+                  <span className="normal-case tracking-normal text-bg/40">
+                    · attached automatically
+                  </span>
                 </summary>
-                <pre className="mt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-bg/60">{details}</pre>
+                <pre className="mt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-bg/60">
+                  {details}
+                </pre>
               </details>
             </div>
             <div className="flex flex-wrap gap-2 border-t border-bg/10 p-4">
@@ -228,8 +287,9 @@ function Support() {
           </div>
 
           <p className="px-2 text-xs leading-relaxed text-subtle">
-            Nothing is sent from this page. <span className="text-muted">Open in mail</span> starts a draft in
-            your own mail app; <span className="text-muted">Copy</span> lets you paste it anywhere.
+            Nothing is sent from this page. <span className="text-muted">Open in mail</span> starts
+            a draft in your own mail app; <span className="text-muted">Copy</span> lets you paste it
+            anywhere.
           </p>
 
           <Link

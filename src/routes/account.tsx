@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { seo } from "@/lib/seo";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Download, LogOut, Trash2, BookOpen, Clock, Highlighter } from "lucide-react";
 import { Mark } from "@/components/mark";
@@ -11,7 +12,17 @@ import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/account")({ component: Account });
+export const Route = createFileRoute("/account")({
+  head: () => ({
+    ...seo({
+      title: "Your account",
+      description: "Export or erase everything NeuroLens has stored on this device.",
+      path: "/account",
+      noindex: true,
+    }),
+  }),
+  component: Account,
+});
 
 function Account() {
   // The same session the header badge reads, so the two can never disagree.
@@ -30,7 +41,7 @@ function Account() {
     const marks = Object.values(highlights).reduce((total, list) => total + list.length, 0);
     const minutes = sessions.reduce((total, session) => {
       const words = session.content?.trim() ? session.content.trim().split(/\s+/).length : 0;
-      return total + Math.round(((words * (session.progress ?? 0)) / 220) || 0);
+      return total + Math.round((words * (session.progress ?? 0)) / 220 || 0);
     }, 0);
     return { books, marks, minutes };
   }, [sessions, highlights]);
@@ -98,13 +109,23 @@ function Account() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-2xl px-5 py-14 outline-none sm:px-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto max-w-2xl px-5 py-14 outline-none sm:px-8"
+      >
         <PageEnter>
-          <p data-enter className="font-serif text-base text-accent italic">Your account</p>
-          <h1 data-enter className="mt-2 text-4xl leading-tight">{name}</h1>
+          <p data-enter className="font-serif text-base text-accent italic">
+            Your account
+          </p>
+          <h1 data-enter className="mt-2 text-4xl leading-tight">
+            {name}
+          </h1>
 
           {isPending ? (
-            <p data-enter className="mt-8 text-sm text-muted">Loading your account…</p>
+            <p data-enter className="mt-8 text-sm text-muted">
+              Loading your account…
+            </p>
           ) : !user ? (
             <div data-enter>
               <Card className="mt-8 p-6">
@@ -140,7 +161,8 @@ function Account() {
                 <section id="avatar" className="scroll-mt-24">
                   <h2 className="mt-10 font-serif text-xl italic">Your avatar</h2>
                   <p className="mt-2 text-sm leading-relaxed text-muted">
-                    Pick a style and shuffle until it feels like you. It is drawn on your device — no photo.
+                    Pick a style and shuffle until it feels like you. It is drawn on your device —
+                    no photo.
                   </p>
                   <Card className="mt-4 p-5">
                     <AvatarPicker seed={user.avatarSeed} />
@@ -151,8 +173,16 @@ function Account() {
               <div data-enter>
                 <h2 className="mt-10 font-serif text-xl italic">Your reading</h2>
                 <div className="mt-4 grid grid-cols-3 gap-3">
-                  <Stat icon={BookOpen} value={stats.books} label={stats.books === 1 ? "book" : "books"} />
-                  <Stat icon={Highlighter} value={stats.marks} label={stats.marks === 1 ? "mark" : "marks"} />
+                  <Stat
+                    icon={BookOpen}
+                    value={stats.books}
+                    label={stats.books === 1 ? "book" : "books"}
+                  />
+                  <Stat
+                    icon={Highlighter}
+                    value={stats.marks}
+                    label={stats.marks === 1 ? "mark" : "marks"}
+                  />
                   <Stat icon={Clock} value={stats.minutes} label="min read" />
                 </div>
               </div>
@@ -197,7 +227,11 @@ function Account() {
                   clearData();
                   setConfirmingClear(false);
                 }}
-                secondary={confirmingClear ? { label: "Cancel", onAction: () => setConfirmingClear(false) } : undefined}
+                secondary={
+                  confirmingClear
+                    ? { label: "Cancel", onAction: () => setConfirmingClear(false) }
+                    : undefined
+                }
               />
 
               {user ? (
@@ -221,10 +255,18 @@ function Account() {
 
           <div data-enter>
             <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2 border-t border-fg/10 pt-6 text-sm text-muted">
-              <Link to="/help" className="hover:text-fg">How to use NeuroLens</Link>
-              <Link to="/support" className="hover:text-fg">Get help</Link>
-              <Link to="/privacy" className="hover:text-fg">Privacy</Link>
-              <Link to="/terms" className="hover:text-fg">Terms</Link>
+              <Link to="/help" className="hover:text-fg">
+                How to use NeuroLens
+              </Link>
+              <Link to="/support" className="hover:text-fg">
+                Get help
+              </Link>
+              <Link to="/privacy" className="hover:text-fg">
+                Privacy
+              </Link>
+              <Link to="/terms" className="hover:text-fg">
+                Terms
+              </Link>
             </div>
           </div>
         </PageEnter>
@@ -272,7 +314,11 @@ function Row({
 }) {
   return (
     <Card className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
-      <Icon size={16} className={cn("shrink-0", danger ? "text-danger" : "text-accent")} aria-hidden />
+      <Icon
+        size={16}
+        className={cn("shrink-0", danger ? "text-danger" : "text-accent")}
+        aria-hidden
+      />
       <div className="min-w-0 flex-1 basis-56">
         <p className="text-sm font-medium">{title}</p>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">{detail}</p>

@@ -1,7 +1,26 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
 import { PublicLayout } from "@/components/public-layout";
 
-export const Route = createFileRoute("/whats-new")({ component: WhatsNew });
+export const Route = createFileRoute("/whats-new")({
+  head: () => ({
+    ...seo({
+      title: "What's new",
+      description:
+        "Recent changes to NeuroLens: new reading tools, accessibility fixes, and what is being worked on next.",
+      path: "/whats-new",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "What's new", path: "/whats-new" },
+        ]),
+      ),
+    ],
+  }),
+  component: WhatsNew,
+});
 
 type Release = {
   date: string;
@@ -28,7 +47,9 @@ const RELEASES: Release[] = [
         why: "A password is one more thing to remember and one more thing to lose. Your books, marks and reading profile follow you between devices.",
       },
       { what: "An account page that downloads everything you have, or erases it." },
-      { what: "A help page covering every tool, and a support page that gathers the technical details for you." },
+      {
+        what: "A help page covering every tool, and a support page that gathers the technical details for you.",
+      },
       { what: "Terms and an accessibility statement, both written to actually be read." },
     ],
   },
@@ -48,7 +69,9 @@ const RELEASES: Release[] = [
         what: "One unreadable page no longer loses the whole book.",
         why: "A page that will not parse is left blank and counted, and you are told how many.",
       },
-      { what: "Long PDFs count their pages while they load, so a slow file no longer looks like a broken one." },
+      {
+        what: "Long PDFs count their pages while they load, so a slow file no longer looks like a broken one.",
+      },
       { what: "PDFs now open on older phones, which previously failed on every page." },
     ],
   },
@@ -80,7 +103,9 @@ const RELEASES: Release[] = [
         why: "The original page was being drawn on top of the very text extracted from it — which is the layout this reader exists to replace.",
       },
       { what: "Any length of PDF opens; the old two-hundred-page limit is gone." },
-      { what: "Words no longer break apart mid-word, and headings no longer run into the paragraph beneath them." },
+      {
+        what: "Words no longer break apart mid-word, and headings no longer run into the paragraph beneath them.",
+      },
     ],
   },
 ];
@@ -109,7 +134,9 @@ function WhatsNew() {
             {release.items.map((item) => (
               <li key={item.what} className="rounded-2xl bg-surface p-5 shadow-border">
                 <p className="text-[15px] leading-relaxed font-medium text-fg">{item.what}</p>
-                {item.why ? <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.why}</p> : null}
+                {item.why ? (
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.why}</p>
+                ) : null}
               </li>
             ))}
           </ul>

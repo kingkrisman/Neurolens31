@@ -1,0 +1,42 @@
+{
+  "name": "NeuroLens — adaptive reading",
+  "short_name": "NeuroLens",
+  "description": "Turn dense text into a calmer, more accessible read. Adaptive formatting for ADHD, dyslexia and cognitive fatigue.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F0E8DC",
+  "theme_color": "#F0E8DC",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "productivity", "books", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/__grok/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open the reader",
+      "short_name": "Read",
+      "url": "/?view=read",
+      "description": "Go straight to what you were reading"
+    },
+    {
+      "name": "Your library",
+      "short_name": "Library",
+      "url": "/?view=library",
+      "description": "Books, highlights and bookmarks"
+    }
+  ]
+}

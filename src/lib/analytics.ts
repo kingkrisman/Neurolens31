@@ -16,8 +16,9 @@
  *   anything else a person did.
  * - Opt-in. Nothing is recorded until the person says yes, and a browser
  *   sending Global Privacy Control or Do Not Track is never even asked.
- * - Nothing leaves the device until `VITE_ANALYTICS_ENDPOINT` is set. Until
- *   then events queue locally, where the account page shows them word for word.
+ * - Events go to this app's own endpoint, not a third party's, and only once
+ *   someone has said yes. Until they are accepted they stay queued on the
+ *   device, where the account page shows them word for word.
  */
 
 const BUCKETS = ["0", "1-9", "10-49", "50-199", "200-999", "1000+"] as const;
@@ -78,6 +79,20 @@ export const SCHEMA = {
       "glass",
     ],
   },
+  /** Someone chose to mark the site as a preferred source in Google. */
+  preferred_source_click: {},
+  /**
+   * Core Web Vitals, bucketed to Google's own good/needs-work/poor thresholds.
+   *
+   * The raw millisecond figure is deliberately not kept. A precise LCP is a
+   * fingerprint — it varies by device, connection and moment — and the only
+   * question worth answering here is which of three bands a page fell into.
+   */
+  web_vital: {
+    metric: ["LCP", "INP", "CLS", "TTFB", "FCP"],
+    rating: ["good", "needs-improvement", "poor"],
+    view: ["home", "reader", "document"],
+  },
 } as const satisfies Record<string, Record<string, Field>>;
 
 export type EventName = keyof typeof SCHEMA;
@@ -111,7 +126,10 @@ function storage(): Storage | null {
  * a real boolean for "bool" fields); unknown fields and anything free-form are
  * silently removed.
  */
-export function sanitize(name: string, props: Record<string, unknown> = {}): Record<string, string | boolean> | null {
+export function sanitize(
+  name: string,
+  props: Record<string, unknown> = {},
+): Record<string, string | boolean> | null {
   if (!Object.prototype.hasOwnProperty.call(SCHEMA, name)) return null;
   const fields = SCHEMA[name as EventName] as Record<string, Field>;
   const clean: Record<string, string | boolean> = {};
@@ -205,7 +223,11 @@ function append(event: StoredEvent) {
 }
 
 /** Record one event. Does nothing when switched off or when the event is unknown. */
-export function track(name: EventName, props: Record<string, unknown> = {}, now = Date.now()): void {
+export function track(
+  name: EventName,
+  props: Record<string, unknown> = {},
+  now = Date.now(),
+): void {
   if (!analyticsEnabled()) return;
   const clean = sanitize(name, props);
   if (!clean) return;
@@ -226,38 +248,57 @@ export function track(name: EventName, props: Record<string, unknown> = {}, now 
   void flush();
 }
 
-/** A random device id, made on first use. Never derived from the account. */
-function deviceId(): string {
-  const store = storage();
-  let id = store?.getItem(ID_KEY) ?? null;
-  if (!id) {
-    id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-    store?.setItem(ID_KEY, id);
-  }
-  return id;
-}
+/**
+ * Where the queue is sent.
+ *
+ * The app's own endpoint by default, which is same-origin: no third party is
+ * involved, nothing crosses to another domain, and there is no vendor to trust.
+ * `VITE_ANALYTICS_ENDPOINT` overrides it for anyone pointing this at their own
+ * collector, and is required to be https so events cannot be sent in the clear.
+ */
+const FIRST_PARTY_ENDPOINT = "/api/analytics";
 
-function endpoint(): string | null {
+function endpoint(): string {
   const env = (import.meta as { env?: Record<string, string | undefined> }).env;
   const url = env?.VITE_ANALYTICS_ENDPOINT;
-  return url && /^https:\/\//.test(url) ? url : null;
+  return url && /^https:\/\//.test(url) ? url : FIRST_PARTY_ENDPOINT;
 }
 
-/** Send the queue if an endpoint is configured; otherwise leave it on the device. */
+/**
+ * Send the queue, and only clear it once that has actually worked.
+ *
+ * The device id is deliberately not sent. It exists to keep one browser's queue
+ * coherent, the server has no column for it, and a value that identifies a
+ * device is not made harmless by being discarded on arrival — it is safer never
+ * to put it on the wire.
+ */
 export async function flush(): Promise<boolean> {
-  const url = endpoint();
   const events = queuedEvents();
-  if (!url || !events.length || !analyticsEnabled()) return false;
-  const body = JSON.stringify({ device: deviceId(), events });
-  const sent =
-    typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function"
-      ? navigator.sendBeacon(url, new Blob([body], { type: "application/json" }))
-      : false;
-  if (sent) storage()?.removeItem(QUEUE_KEY);
-  return sent;
+  if (!events.length || !analyticsEnabled()) return false;
+  const url = endpoint();
+  const body = JSON.stringify({ events });
+
+  // `keepalive` so a flush started as the tab closes still completes, which is
+  // exactly when most of them start. sendBeacon would do the same, but it
+  // reports only that the request was queued, never that it was accepted — and
+  // clearing the queue on that would lose events whenever the server was down.
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+      keepalive: body.length < 60_000,
+      credentials: "omit",
+    });
+    if (!response.ok) return false;
+  } catch {
+    // Offline, blocked, or the endpoint is not there. The queue survives on the
+    // device and the next flush tries again.
+    return false;
+  }
+
+  storage()?.removeItem(QUEUE_KEY);
+  return true;
 }
 
 export function bucketCount(n: number): (typeof BUCKETS)[number] {

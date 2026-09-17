@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { breadcrumbJsonLd, jsonLd, seo } from "@/lib/seo";
 import {
   Bookmark,
   FileUp,
@@ -17,7 +18,25 @@ import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNod
 import { DocSection, PublicLayout, Term } from "@/components/public-layout";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/help")({ component: Help });
+export const Route = createFileRoute("/help")({
+  head: () => ({
+    ...seo({
+      title: "Help",
+      description:
+        "How to open a book, make the page easier to read, mark what matters, and fix the things that most often go wrong in NeuroLens.",
+      path: "/help",
+    }),
+    scripts: [
+      jsonLd(
+        breadcrumbJsonLd([
+          { name: "NeuroLens", path: "/" },
+          { name: "Help", path: "/help" },
+        ]),
+      ),
+    ],
+  }),
+  component: Help,
+});
 
 type Topic = {
   id: string;
@@ -44,12 +63,13 @@ const TOPICS: Topic[] = [
     title: "Getting a book in",
     summary: "Upload, drag in, or paste.",
     icon: FileUp,
-    keywords: "upload file pdf epub word docx html rtf markdown text paste import open drag cloud icloud drive fails",
+    keywords:
+      "upload file pdf epub word docx html rtf markdown text paste import open drag cloud icloud drive fails",
     body: (
       <>
         <p>
-          On the home page, use <Term>Upload</Term> in the Source card, drag a file onto it, or paste
-          text straight into the box.
+          On the home page, use <Term>Upload</Term> in the Source card, drag a file onto it, or
+          paste text straight into the box.
         </p>
         <p>
           NeuroLens reads <Term>PDF</Term>, <Term>EPUB</Term>, <Term>Word</Term>, <Term>HTML</Term>,{" "}
@@ -72,7 +92,8 @@ const TOPICS: Topic[] = [
     title: "Making the page easier",
     summary: "Type, spacing, colour and focus.",
     icon: Type,
-    keywords: "font typeface size spacing line height theme tint colour color contrast dyslexia opendyslexic mask bionic fixation dark",
+    keywords:
+      "font typeface size spacing line height theme tint colour color contrast dyslexia opendyslexic mask bionic fixation dark",
     body: (
       <>
         <p>
@@ -81,8 +102,8 @@ const TOPICS: Topic[] = [
         </p>
         <ul>
           <li>
-            <Term>Fixation</Term> bolds the start of each word to give the eye a landing point. Turn it
-            down if it feels busy.
+            <Term>Fixation</Term> bolds the start of each word to give the eye a landing point. Turn
+            it down if it feels busy.
           </li>
           <li>
             <Term>Typeface</Term> includes OpenDyslexic, Atkinson Hyperlegible and Lexend.
@@ -91,7 +112,8 @@ const TOPICS: Topic[] = [
             <Term>Spacing and line height</Term> often help more than a bigger size.
           </li>
           <li>
-            <Term>Theme and tint</Term> reduce glare, with the contrast ratio shown so it stays readable.
+            <Term>Theme and tint</Term> reduce glare, with the contrast ratio shown so it stays
+            readable.
           </li>
           <li>
             <Term>Reading mask</Term> dims everything except the line you are on.
@@ -109,8 +131,8 @@ const TOPICS: Topic[] = [
     body: (
       <>
         <p>
-          <Term>Drag across any phrase</Term> to highlight it. The mark snaps to whole words, so there
-          is no need to be precise.
+          <Term>Drag across any phrase</Term> to highlight it. The mark snaps to whole words, so
+          there is no need to be precise.
         </p>
         <p>
           The highlighter button in the bottom bar holds six colours — one for the point, one for a
@@ -132,16 +154,16 @@ const TOPICS: Topic[] = [
     body: (
       <>
         <p>
-          Choose <Term>Draw on the page</Term> from the highlighter menu for a pen, marker, pencil and
-          eraser, with undo and clear.
+          Choose <Term>Draw on the page</Term> from the highlighter menu for a pen, marker, pencil
+          and eraser, with undo and clear.
         </p>
         <p>
-          <Term>A stylus just draws</Term> — an Apple Pencil draws the moment it touches the page, and
-          your finger still scrolls. With a mouse or finger, turn drawing on first.
+          <Term>A stylus just draws</Term> — an Apple Pencil draws the moment it touches the page,
+          and your finger still scrolls. With a mouse or finger, turn drawing on first.
         </p>
         <p>
-          Drawings are pinned to the line they were drawn on, so they move with the text when the type
-          size changes.
+          Drawings are pinned to the line they were drawn on, so they move with the text when the
+          type size changes.
         </p>
       </>
     ),
@@ -156,8 +178,8 @@ const TOPICS: Topic[] = [
       <>
         <p>
           In <Term>Adaptive</Term> mode NeuroLens notices pace, pauses and re-reads, and suggests a
-          change when the page seems to be working against you. Suggestions are offered, never applied
-          behind your back.
+          change when the page seems to be working against you. Suggestions are offered, never
+          applied behind your back.
         </p>
         <p>
           Lock any setting you do not want touched. <Term>Insights</Term> shows what it has noticed.
@@ -174,12 +196,12 @@ const TOPICS: Topic[] = [
     body: (
       <>
         <p>
-          The home page offers <Term>Continue</Term> with the part you were in and roughly how long is
-          left, and returns you to the exact spot.
+          The home page offers <Term>Continue</Term> with the part you were in and roughly how long
+          is left, and returns you to the exact spot.
         </p>
         <p>
-          <Term>Bookmarks</Term> save a place on purpose. Long books are split into parts, so a chapter
-          is never an endless scroll.
+          <Term>Bookmarks</Term> save a place on purpose. Long books are split into parts, so a
+          chapter is never an endless scroll.
         </p>
       </>
     ),
@@ -193,12 +215,12 @@ const TOPICS: Topic[] = [
     body: (
       <>
         <p>
-          An open book stays on your device, so you can read it with no connection. Uploaded documents
-          never leave your browser.
+          An open book stays on your device, so you can read it with no connection. Uploaded
+          documents never leave your browser.
         </p>
         <p>
-          Browsers limit storage, so a very large library may drop the oldest books. Download anything
-          you want to keep from <Link to="/account">your account</Link>.
+          Browsers limit storage, so a very large library may drop the oldest books. Download
+          anything you want to keep from <Link to="/account">your account</Link>.
         </p>
       </>
     ),
@@ -208,21 +230,22 @@ const TOPICS: Topic[] = [
     title: "Your account and privacy",
     summary: "Avatar, analytics, your data.",
     icon: UserRound,
-    keywords: "account sign in google apple avatar customise analytics privacy download erase delete data",
+    keywords:
+      "account sign in google apple avatar customise analytics privacy download erase delete data",
     body: (
       <>
         <p>
           Sign in with <Term>Google</Term> or <Term>Apple</Term> — there is no password. In{" "}
-          <Link to="/account">your account</Link> you can pick an avatar style, shuffle it, and choose a
-          background.
+          <Link to="/account">your account</Link> you can pick an avatar style, shuffle it, and
+          choose a background.
         </p>
         <p>
           Usage analytics is <Term>off until you switch it on</Term>, and never includes your name,
           email, or anything you read. The account page shows every event it has recorded.
         </p>
         <p>
-          <Term>Download everything</Term> or <Term>Erase everything</Term> at any time, with no request
-          needed.
+          <Term>Download everything</Term> or <Term>Erase everything</Term> at any time, with no
+          request needed.
         </p>
       </>
     ),
@@ -236,7 +259,10 @@ const TOPICS: Topic[] = [
     body: (
       <dl className="grid overflow-hidden rounded-2xl bg-surface shadow-border sm:grid-cols-2">
         {SHORTCUTS.map(([keys, what]) => (
-          <div key={keys} className="flex items-center justify-between gap-4 border-b border-fg/6 px-5 py-3.5 last:border-b-0">
+          <div
+            key={keys}
+            className="flex items-center justify-between gap-4 border-b border-fg/6 px-5 py-3.5 last:border-b-0"
+          >
             <dd className="text-sm text-muted">{what}</dd>
             <dt>
               <kbd className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-bg px-2 font-mono text-xs text-fg shadow-border">
@@ -280,7 +306,9 @@ function Help() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const typing = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      const typing =
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (event.key === "/" && !typing) {
         event.preventDefault();
         input.current?.focus();
@@ -372,7 +400,9 @@ function Help() {
                     <Icon size={18} aria-hidden />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold tracking-[-0.01em] text-fg">{title}</span>
+                    <span className="block text-[15px] font-semibold tracking-[-0.01em] text-fg">
+                      {title}
+                    </span>
                     <span className="mt-1 block text-sm leading-snug text-muted">{summary}</span>
                   </span>
                 </a>
