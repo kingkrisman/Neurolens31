@@ -853,16 +853,21 @@
   }
 
   /* Glass that only shows its edge once there is something under it. */
+  /* The same light blur as the app header's capsule, so the two read as one
+     product. These pages keep the full-width bar — they are documents, and a
+     floating capsule over a column of prose would be chrome asking to be
+     looked at — but the glass behaves identically: barely frosted, and what
+     passes underneath stays legible. */
   .doc-header {
-    background: color-mix(in oklab, var(--color-bg) 72%, transparent);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: transparent;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 1px 0 transparent;
     transition: box-shadow 250ms ease, background-color 250ms ease;
   }
 
   .doc-header[data-scrolled] {
-    background: color-mix(in oklab, var(--color-bg) 80%, transparent);
+    background: color-mix(in oklab, var(--color-bg) 62%, transparent);
     box-shadow: 0 1px 0 color-mix(in oklab, var(--color-fg) 8%, transparent);
   }
 
@@ -1335,52 +1340,67 @@
     }
   }
 
-  /* Liquid glass.
+  /* Header glass, after kiro.dev.
 
-     The blur lives on `.nl-glass-pane`, not on the header, because the pane is
-     also what carries `filter: url(#…)` — and a filter on the header itself
-     would refract its own text along with the page behind it. Separating them
-     is what lets the backdrop be distorted while the type stays sharp. */
+     A floating capsule, not a bar: inset from every edge, an 18px radius, and a
+     4px blur. The blur is the substance of it. At 20px with a saturation boost
+     — and a displacement refraction over the top — whatever passed underneath
+     became fog, and the header read as a lid laid over the page. At 4px the
+     content stays recognisable as it travels under, which is what makes the
+     capsule read as a pane of glass resting on the page. */
   .nl-glass {
+    margin: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 18px;
     background: transparent;
+    transition:
+      background-color 200ms ease-in,
+      border-color 200ms ease-in;
   }
 
-  /* The refracting layer. Paints nothing of its own on purpose — `filter`
-     applies to an element's own content, so any background here would be run
-     through the displacement chain and screen-blended toward grey. Blur and
-     saturation only; the colour arrives on the tint layer above.
-     Saturation above 100% is what separates glass from a grey scrim: real glass
-     concentrates the colour behind it rather than washing it out. */
+  /* Inherited, so the blur and the fill are clipped to the capsule rather than
+     squaring off its corners. Deliberately not `overflow: hidden` on the
+     parent: that would also clip the menus that open out of the header. */
+  .nl-glass-pane,
+  .nl-glass-tint {
+    border-radius: inherit;
+  }
+
+  /* Paints nothing of its own — the colour arrives on the tint layer above, so
+     that reading mode can dim the colour while the blur stays at full
+     strength. */
   .nl-glass-pane {
     background: transparent;
-    backdrop-filter: blur(20px) saturate(185%);
-    -webkit-backdrop-filter: blur(20px) saturate(185%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
-  /* Body and thickness: a lit top edge, a shaded bottom one. Unfiltered, so it
-     stays the colour it was written as. */
   .nl-glass-tint {
-    background: color-mix(in oklab, var(--color-bg) 52%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 55%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, var(--color-fg) 8%, transparent),
-      0 1px 24px -8px color-mix(in oklab, var(--color-fg) 22%, transparent);
+    background: transparent;
+    transition: background-color 200ms ease-in;
   }
 
-  /* Dark schemes take less white: a bright sheen over dark ink reads as fog. */
-  :root[data-scheme="night"] .nl-glass-tint,
-  :root[data-scheme="ink"] .nl-glass-tint {
-    background: color-mix(in oklab, var(--color-bg) 58%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 16%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, black 22%, transparent),
-      0 1px 24px -8px rgba(0, 0, 0, 0.5);
+  /* Invisible at the top of the page. The fill and the border arrive on first
+     scroll, once there is something underneath worth separating from. */
+  html[data-scrolled="true"] .nl-glass {
+    border-color: color-mix(in oklab, var(--color-fg) 11%, transparent);
   }
 
-  /* Without backdrop-filter the blur silently does nothing, so the pane has to
-     carry enough opacity by itself to keep the header legible. */
+  html[data-scrolled="true"] .nl-glass-tint {
+    background: color-mix(in oklab, var(--color-bg) 62%, transparent);
+  }
+
+  /* Dark schemes: the edge is caught light rather than shadow, so it is drawn
+     from white — a dark border on dark ink is invisible. */
+  html[data-scrolled="true"][data-scheme="night"] .nl-glass,
+  html[data-scrolled="true"][data-scheme="ink"] .nl-glass {
+    border-color: color-mix(in oklab, white 13%, transparent);
+  }
+
+  /* Without backdrop-filter the blur silently does nothing, so the capsule has
+     to carry enough opacity by itself to keep the header legible. */
   @supports not (backdrop-filter: blur(1px)) {
-    .nl-glass-tint {
+    html[data-scrolled="true"] .nl-glass-tint {
       background: color-mix(in oklab, var(--color-bg) 94%, transparent);
     }
   }
@@ -1606,27 +1626,6 @@
   @media (prefers-reduced-motion: reduce) {
     .nl-part-done {
       animation: none;
-    }
-  }
-
-  /* Scroll edge effect, not a divider.
-     A 1px rule under floating chrome announces the chrome. The material
-     guidance is to fade content out where it passes beneath instead, and only
-     while something is actually under there — so the header draws no line at
-     all, and this gradient is absent at rest and materialises on first
-     scroll. */
-  .nl-scroll-edge {
-    opacity: 0;
-    transition: opacity var(--motion-fast) var(--ease-out);
-  }
-
-  html[data-scrolled="true"] .nl-scroll-edge {
-    opacity: 1;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .nl-scroll-edge {
-      transition: none;
     }
   }
 
@@ -2044,6 +2043,17 @@
   .material-surface {
     background: var(--color-surface);
     backdrop-filter: none;
+  }
+
+  /* Asked for less transparency: the capsule stops being glass and becomes a
+     solid surface once there is anything behind it. */
+  .nl-glass-pane {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  html[data-scrolled="true"] .nl-glass-tint {
+    background: var(--color-bg);
   }
 
   .grain {

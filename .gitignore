@@ -19,3 +19,6 @@ dist/
 # 23 MB of it made pushes time out over a slow link.
 screenshots/
 attachments/
+
+# Local dev server log (started detached on Windows)
+dev-server.log

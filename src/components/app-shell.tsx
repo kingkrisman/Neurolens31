@@ -127,7 +127,7 @@ function Pane({
         onProgress(remaining > 1 ? Math.min(1, node.scrollTop / remaining) : 1);
       }}
     >
-      <div className="min-h-full pt-14 sm:pt-16">{children}</div>
+      <div className="min-h-full pt-16 sm:pt-[4.5rem]">{children}</div>
     </div>
   );
 }
@@ -356,11 +356,7 @@ export function AppShell() {
             <NavMenu />
           </div>
           </GlassHeader>
-          <div aria-hidden className="scroll-progress pointer-events-none h-0.5 bg-fg/35" />
-          <div
-            aria-hidden
-            className="nl-scroll-edge pointer-events-none h-6 bg-gradient-to-b from-bg/80 to-transparent"
-          />
+          <div aria-hidden className="scroll-progress pointer-events-none mx-2 h-0.5 rounded-full bg-fg/35" />
         </header>
 
         <main
