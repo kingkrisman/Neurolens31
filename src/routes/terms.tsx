@@ -23,40 +23,48 @@ export const Route = createFileRoute("/terms")({
   component: Terms,
 });
 
-const UPDATED = "17 September 2026";
+const UPDATED = "18 September 2026";
 
 /**
- * Blanks, deliberately visible — but not as source placeholders.
+ * Where a dispute is heard, and under whose law.
  *
- * An arbitration clause does nothing until it names where a dispute is heard
- * and under whose rules, and those follow from where NeuroLens is established,
- * which is not something this file can invent. So they stay empty until
- * somebody who knows fills them in.
+ * NeuroLens is established in Lagos, Nigeria, so Nigerian law governs and the
+ * Lagos courts are the fallback when arbitration does not apply. Arbitration
+ * agreements are enforceable here under the Arbitration and Mediation Act 2023,
+ * which replaced the 1988 Act and is what makes the clause below mean anything.
  *
- * They used to be the strings `[country or state, and its courts]` and
- * `[arbitration body, and the rules it publishes]`, which read as unfinished in
- * the source exactly as intended — and then shipped, so readers of the live
- * Terms page met bracketed developer notes in the middle of a sentence about
- * giving up their right to a jury. Unfinished is fine; looking unfinished *to a
- * reader* while pretending to be a legal term is not.
+ * LACIAC is named rather than left general because an arbitration clause that
+ * does not name an institution and a set of rules leaves both sides arguing
+ * about procedure before anyone reaches the dispute. It is the Lagos Chamber of
+ * Commerce's centre, its rules are published, and it has an expedited procedure
+ * for smaller claims — which is what almost any dispute with a free reading app
+ * would be.
  *
- * Set both to a string and the clause reads normally, the notice disappears,
- * and `PENDING_JURISDICTION` goes false on its own.
+ * These were bracketed placeholders until now, and they shipped that way: a
+ * reader of the live page met `[country or state, and its courts]` in the
+ * middle of a sentence about giving up their day in court.
+ *
+ * Three phrases rather than one, because they sit in three different sentences.
+ * A single "Nigeria, and the courts of Lagos State" reads correctly after
+ * "governed by the law of…" and becomes "you simply keep Nigeria, and the courts
+ * of Lagos State instead" three paragraphs later. Each is written to fit its own
+ * sentence, and each still falls back to something true if the jurisdiction is
+ * ever reopened — an empty constant should degrade to an honest sentence and a
+ * visible notice, not to a broken one.
+ *
+ * Not legal advice, and not reviewed by a lawyer. Naming an institution commits
+ * to its fee schedule and its rules, so both are worth reading before this goes
+ * in front of a real dispute.
  */
-const GOVERNING_LAW: string | null = null;
-const ARBITRATION_BODY: string | null = null;
+const GOVERNING_LAW: string | null = "Nigeria";
+const COURTS: string | null = "the courts of Lagos State";
+const ARBITRATION_BODY: string | null =
+  "the Lagos Chamber of Commerce International Arbitration Centre (LACIAC), under the LACIAC Arbitration Rules";
 
-const PENDING_JURISDICTION = GOVERNING_LAW === null || ARBITRATION_BODY === null;
+const PENDING_JURISDICTION = GOVERNING_LAW === null || COURTS === null || ARBITRATION_BODY === null;
 
-/**
- * What a sentence says while the blank is still blank.
- *
- * Phrased so the sentence around it stays grammatical and truthful rather than
- * merely filled: "the courts where NeuroLens is established" is what the clause
- * will resolve to, and saying so is more honest than naming a jurisdiction
- * chosen to make the paragraph scan.
- */
-const COURTS = GOVERNING_LAW ?? "the courts where NeuroLens is established";
+const LAW = GOVERNING_LAW ?? "the place where NeuroLens is established";
+const FORUM = COURTS ?? "the courts where NeuroLens is established";
 const ARBITRATOR =
   ARBITRATION_BODY ?? "an established arbitration body under its published consumer rules";
 
@@ -263,18 +271,20 @@ function Terms() {
         </p>
         <p>
           <Term>Then arbitration, not a courtroom.</Term> If 60 days pass without resolution, a
-          dispute between us is settled by binding arbitration before {ARBITRATOR}, rather than by a
-          judge or a jury. Arbitration is usually faster and cheaper than a court case, and the
-          arbitrator can award the same remedies a court could — but it is more private, the grounds
-          for appeal are far narrower, and you are giving up a day in court. That is why it is named
-          in the summary at the top of this page rather than left down here to be discovered.
+          dispute between us is settled by binding arbitration before {ARBITRATOR}, seated in Lagos
+          and conducted under the Arbitration and Mediation Act 2023, by a single arbitrator and in
+          English. Arbitration is usually faster and cheaper than a court case, and the arbitrator
+          can award the same remedies a court could — but it is more private, an award can only be
+          set aside on the narrow grounds that Act allows, and you are giving up your day in court.
+          That is why it is named in the summary at the top of this page rather than left down here
+          to be discovered.
         </p>
         <p>
           <Term>You can opt out, and it costs you nothing.</Term> Within 30 days of first accepting
           these terms, email <Link to="/support">support</Link> with the words{" "}
           <Term>arbitration opt-out</Term> and the address you use here. That is the whole process.
           Nothing else in these terms changes, and we will not treat you differently for it — you
-          simply keep {COURTS} instead.
+          simply keep {FORUM} instead.
         </p>
         <p>
           <Term>One person at a time.</Term> Claims are brought individually: not as a class action,
@@ -284,15 +294,18 @@ function Terms() {
         </p>
         <p>
           <Term>Two things either of us can still take to court.</Term> A claim small enough for a
-          small claims court can go there instead, and either side can ask a court to stop misuse of
-          intellectual property without waiting on arbitration.
+          small claims court can go there instead — in Lagos that is the Small Claims Court of the
+          Magistrates' Court, which is designed to be used without a lawyer — and either side can
+          ask a court to stop misuse of intellectual property without waiting on arbitration.
         </p>
         <p>
           <Term>Where local law says otherwise, local law wins.</Term> Plenty of places — the EU and
           the UK among them — do not let a consumer be required to arbitrate in advance. If you live
           somewhere like that, this section takes nothing away from you: you keep your local courts,
-          and your mandatory consumer protections apply in full. These terms are otherwise governed
-          by the law of the place where NeuroLens is established.
+          and your mandatory consumer protections apply in full. Readers in Nigeria keep their
+          rights under the Federal Competition and Consumer Protection Act 2018, including the right
+          to complain to the FCCPC, and nothing here is an attempt to sign those away. These terms
+          are otherwise governed by the law of {LAW}.
         </p>
       </DocSection>
 

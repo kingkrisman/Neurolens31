@@ -318,7 +318,8 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                           : { chapter: resumable.target.part }),
                         progress: resumable.target.within,
                       }).then((opened) => {
-                        if (!opened) toast.error("Could not fetch that book. Check your connection.");
+                        if (!opened)
+                          toast.error("Could not fetch that book. Check your connection.");
                       });
                     }}
                   >
@@ -590,9 +591,15 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                   <div className="px-4 pt-5 pb-4 sm:px-5">
                     <p className="font-serif text-sm text-accent italic">Graduate student</p>
                     <h3 className="mt-2 font-serif text-2xl">A clearer first pass</h3>
+                    {/* Present tense, deliberately. These are three situations the
+                        app is built for, not three customers — the photographs are
+                        generated and nobody is being quoted. Past tense ("made
+                        research approachable") beside a role label and a portrait
+                        reads as a testimonial, which would be a claim we cannot
+                        back. See public/images/CREDITS.md. */}
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                      A calmer layout made intimidating research blocks approachable in shorter
-                      sessions.
+                      A calmer layout is meant to make intimidating research blocks approachable in
+                      shorter sessions.
                     </p>
                     <a
                       href="#reader-start"
@@ -610,14 +617,14 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                     alt: "Product documentation spread across a sunlit desk",
                     label: "Product team",
                     title: "Docs with less friction",
-                    text: "Shared documents became easier to scan when decisions had to move.",
+                    text: "Shared documents are easier to scan when a decision has to move.",
                   },
                   {
                     image: "/images/nook.jpg",
                     alt: "A reader in an armchair by a window",
                     label: "Daily reader",
                     title: "Energy for the last page",
-                    text: "A personalized rhythm made it easier to continue when attention was thin.",
+                    text: "A personalized rhythm helps you keep going when attention is thin.",
                   },
                 ].map((study, index) => (
                   <Reveal key={study.title} delay={index * 80}>

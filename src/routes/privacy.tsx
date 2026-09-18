@@ -23,7 +23,7 @@ export const Route = createFileRoute("/privacy")({
   component: Privacy,
 });
 
-const UPDATED = "15 September 2026";
+const UPDATED = "18 September 2026";
 
 const TOC = [
   { id: "summary", label: "At a glance" },
@@ -75,7 +75,10 @@ function Privacy() {
             {
               icon: BarChart3,
               title: "Usage is opt-in",
-              body: "Anonymous, off until you switch it on, and deletable any time.",
+              // Names the exception here rather than only in the section below.
+              // "Usage is opt-in" on its own reads as "nothing is sent unless
+              // you agree", and crash reports are not opt-in.
+              body: "Anonymous and off until you switch it on. Crash reports are the one exception.",
             },
             {
               icon: Lock,

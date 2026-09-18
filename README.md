@@ -119,6 +119,15 @@ between 3.88:1 and 4.34:1, and a reduced-motion rule that left text at
 `opacity: 0` until an observer fired, so a reader who asked for less motion got
 invisible paragraphs.
 
+### Images
+
+Everything in [`public/images/`](public/images/) is AI-generated — no
+photographs, no real people, no stock licences, nothing to attribute. See
+[`public/images/CREDITS.md`](public/images/CREDITS.md), which also explains why
+the "How it lands" section on the landing page is written in the present tense:
+a generated portrait beside a past-tense claim reads as a customer testimonial,
+and there are no customers being quoted.
+
 ## Notes for Windows
 
 - `npm install` prunes `@rolldown/binding-win32-x64-msvc`, and the build then
