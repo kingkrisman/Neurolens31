@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import * as sync from "@/lib/sync/notify";
 import {
   measureReadingStrain,
   recommendAdaptations,
@@ -204,6 +205,28 @@ interface AppState {
   requestJump: (section: number, lineIdx: number) => void;
   clearJump: () => void;
   hydrate: () => void;
+  /**
+   * Merge what an account holds into this device.
+   *
+   * The one way the sync engine writes to the store. A single action rather
+   * than a dozen setters because a pull is one event — a half-applied account,
+   * where the books arrived and the highlights did not, would render marks
+   * against the wrong text.
+   */
+  applyAccountData: (data: {
+    sessions: Session[];
+    highlights: Record<string, Highlight[]>;
+    ink: Record<string, InkStroke[]>;
+    bookmarks: Bookmark[];
+    settings?: {
+      profile?: ReadingProfile;
+      mode?: string;
+      targetWpm?: number;
+      lockedSettings?: string[];
+      savedProfiles?: SavedProfile[];
+      adaptiveMemory?: Record<string, unknown>;
+    };
+  }) => void;
   setTab: (tab: TabId) => void;
   startReading: (text: string, meta?: StartReadingMeta) => void;
   setPdfPage: (page: number) => void;
@@ -483,6 +506,56 @@ export const useAppStore = create<AppState>((set, get) => ({
   chapterIndex: 0,
   chapterCount: 0,
   restoreTo: 0,
+
+  applyAccountData: (data) => {
+    // Persisted as well as set: the device has to keep working offline after
+    // this, and state that only lives in memory is gone on the next reload.
+    persistSessions(data.sessions);
+    writeLocal(HIGHLIGHTS_KEY, JSON.stringify(data.highlights));
+    writeLocal(INK_KEY, JSON.stringify(data.ink));
+    writeLocal(BOOKMARKS_KEY, JSON.stringify(data.bookmarks));
+
+    const patch: Partial<AppState> = {
+      sessions: data.sessions,
+      highlights: data.highlights,
+      ink: data.ink,
+      bookmarks: data.bookmarks,
+    };
+
+    // Settings are applied field by field, because the account may hold fewer
+    // of them than this device does — a row written by an older build must not
+    // blank a setting it never knew about.
+    const settings = data.settings;
+    if (settings) {
+      if (settings.profile) {
+        const mode = (settings.mode as ReadingMode) ?? get().mode;
+        const profile = normalizeProfile(settings.profile);
+        persistProfile(profile, mode);
+        applyColorScheme(profile.theme);
+        patch.profile = profile;
+        patch.mode = mode;
+      }
+      if (typeof settings.targetWpm === "number") {
+        persistTargetWpm(settings.targetWpm);
+        patch.targetWpm = settings.targetWpm;
+      }
+      if (settings.lockedSettings) {
+        writeLocal(LOCKS_KEY, JSON.stringify(settings.lockedSettings));
+        patch.lockedSettings = settings.lockedSettings as LockableSetting[];
+      }
+      if (settings.savedProfiles) {
+        writeLocal(SAVED_KEY, JSON.stringify(settings.savedProfiles));
+        patch.savedProfiles = settings.savedProfiles;
+      }
+      if (settings.adaptiveMemory) {
+        const memory = settings.adaptiveMemory as AdaptiveMemory;
+        persistAdaptiveMemory(memory);
+        patch.adaptiveMemory = memory;
+      }
+    }
+
+    set(patch);
+  },
 
   hydrate: () => {
     if (get().hydrated || typeof window === "undefined") return;
@@ -1020,6 +1093,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const nextForKey = [...current.filter((item) => !overlaps(item)), merged];
     const highlights = { ...get().highlights, [key]: nextForKey };
     writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    sync.highlightsChanged(key);
     set({ highlights });
   },
 
@@ -1032,6 +1106,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (nextForKey.length === current.length) return;
     const highlights = { ...get().highlights, [key]: nextForKey };
     writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    sync.highlightsChanged(key);
     set({ highlights });
   },
 
@@ -1048,6 +1123,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     };
     writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    sync.highlightsChanged(key);
     set({ highlights });
   },
 
@@ -1079,6 +1155,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     };
     writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    sync.highlightsChanged(key);
     set({ highlights });
   },
 
@@ -1088,6 +1165,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next = trimStrokes([...current, { ...stroke, id: strokeId(), at: Date.now() }]);
     const ink = { ...get().ink, [key]: next };
     writeLocal(INK_KEY, JSON.stringify(ink));
+    sync.inkChanged(key, stroke.section);
     set({ ink });
   },
 
@@ -1100,6 +1178,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (next.length === current.length) return;
     const ink = { ...get().ink, [key]: next };
     writeLocal(INK_KEY, JSON.stringify(ink));
+    // An eraser drag can cross a section boundary, so every section that lost a
+    // stroke needs sending, not just the one under the cursor at the end.
+    for (const section of new Set(current.filter((s) => gone.has(s.id)).map((s) => s.section))) {
+      sync.inkChanged(key, section);
+    }
     set({ ink });
   },
 
@@ -1118,6 +1201,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const next = current.filter((_, i) => i !== lastIndex);
     const ink = { ...get().ink, [key]: next };
     writeLocal(INK_KEY, JSON.stringify(ink));
+    sync.inkChanged(key, section);
     set({ ink });
   },
 
@@ -1128,6 +1212,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (next.length === current.length) return;
     const ink = { ...get().ink, [key]: next };
     writeLocal(INK_KEY, JSON.stringify(ink));
+    sync.inkChanged(key, section);
     set({ ink });
   },
 
@@ -1177,12 +1262,14 @@ export const useAppStore = create<AppState>((set, get) => ({
           ...bookmarks,
         ].slice(0, 24);
     writeLocal(BOOKMARKS_KEY, JSON.stringify(next));
+    sync.bookmarksChanged();
     set({ bookmarks: next });
   },
 
   removeBookmark: (id) => {
     const next = get().bookmarks.filter((item) => item.id !== id);
     writeLocal(BOOKMARKS_KEY, JSON.stringify(next));
+    sync.bookmarksChanged();
     set({ bookmarks: next });
   },
 

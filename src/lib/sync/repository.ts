@@ -18,7 +18,7 @@ import {
   type InkRow,
   type LocalSettings,
   type SettingsRow,
-} from "./rows";
+} from "./rows.ts";
 
 /**
  * Every read and write the app makes against its own tables.
