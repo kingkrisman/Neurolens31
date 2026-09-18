@@ -9,6 +9,7 @@ import { processBionicText } from "@/lib/bionic";
 import { processDocument } from "@/lib/document-processor";
 import { DEMO_SENTENCE, SAMPLE_TEXTS } from "@/lib/samples";
 import { useAppStore } from "@/lib/store";
+import { openBook } from "@/lib/sync/open-book";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { Badge, Card, Media } from "@/components/ui/surfaces";
@@ -173,7 +174,12 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
     // the first seconds is not worth offering back, and being invited to
     // continue a book you completed reads as the app not having noticed.
     const latest = sessions.find(
-      (item) => ((item.progress ?? 0) > 0.01 || (item.section ?? 0) > 1) && item.content.trim(),
+      (item) =>
+        ((item.progress ?? 0) > 0.01 || (item.section ?? 0) > 1) &&
+        // Text on this device, or a row it can be fetched from. Requiring the
+        // text meant a book left half-read on another device was never offered
+        // back, which is the one thing syncing was for.
+        (item.content.trim() || item.remoteId),
     );
     if (!latest) return null;
     const position = positionOf(latest, targetWpm);
@@ -295,7 +301,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                     // the button across the hero.
                     className="h-auto min-h-11 w-full max-w-full py-2 pl-4 pr-3 text-left sm:w-auto sm:max-w-80"
                     onClick={() => {
-                      startReading(resumable.session.content, {
+                      // openBook rather than startReading: the book being
+                      // resumed may have come from another device, in which
+                      // case its text has not been fetched yet.
+                      void openBook(resumable.session, {
                         title: resumable.session.title,
                         kind: resumable.session.kind,
                         sourceId: resumable.session.sourceId,
@@ -308,6 +317,8 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                           ? { pdfPage: resumable.target.part }
                           : { chapter: resumable.target.part }),
                         progress: resumable.target.within,
+                      }).then((opened) => {
+                        if (!opened) toast.error("Could not fetch that book. Check your connection.");
                       });
                     }}
                   >

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, ChevronRight, Download, Highlighter, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { openBook, sourceFor } from "@/lib/sync/open-book";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { Media, Skeleton } from "@/components/ui/surfaces";
@@ -584,13 +585,18 @@ export function Library() {
                   <button
                     key={session.openedAt}
                     type="button"
-                    onClick={() =>
-                      startReading(session.content, {
+                    onClick={() => {
+                      // Through openBook, not startReading: a book synced from
+                      // another device has no text yet, and opening it directly
+                      // rendered an empty reader.
+                      void openBook(session, {
                         title: session.title,
                         kind: session.kind,
                         sourceId: session.sourceId,
-                      })
-                    }
+                      }).then((opened) => {
+                        if (!opened) toast.error("Could not fetch that book. Check your connection.");
+                      });
+                    }}
                     className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
                   >
                     <span className="block rounded-lg bg-bg px-4 py-4">
@@ -631,7 +637,11 @@ export function Library() {
                     <button
                       type="button"
                       onClick={() =>
-                        startReading(item.content, {
+                        // A bookmark pulled from the account has no text of its
+                        // own — the book's text lives in the books table rather
+                        // than being copied into every mark. So the matching
+                        // book supplies it.
+                        void openBook(sourceFor(item), {
                           title: item.title,
                           kind: item.kind,
                           sourceId: item.sourceId,

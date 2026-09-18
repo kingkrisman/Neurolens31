@@ -95,6 +95,7 @@ export function rowToSession(row: BookRow): Session & { id: string } {
 
   return {
     id: row.id,
+    remoteId: row.id,
     title: row.title,
     content: row.content,
     openedAt: ms(row.opened_at),

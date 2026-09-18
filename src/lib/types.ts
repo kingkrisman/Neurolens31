@@ -140,6 +140,15 @@ export interface Bookmark {
 export interface Session {
   title: string;
   content: string;
+  /**
+   * The account row this book came from, when it came from one.
+   *
+   * A book listed from the account arrives without its text — a library of
+   * twenty would be ten megabytes otherwise — and the local pairing is keyed by
+   * that text, so an empty one has no way back to its row. This is that way
+   * back, and without it a book synced from another device opens blank.
+   */
+  remoteId?: string;
   openedAt: number;
   progress?: number;
   currentWpm?: number | null;

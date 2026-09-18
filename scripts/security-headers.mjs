@@ -67,9 +67,12 @@ export function contentSecurityPolicy({ dev = false, extraConnect = [] } = {}) {
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],
-    // Framing is allowed only by this origin and the builder's live preview,
-    // which shows the app inside an iframe. Anywhere else cannot overlay it.
-    "frame-ancestors": ["'self'", "https://*.grok-sandbox.com"],
+    // Framing is allowed only by this origin, and in development by the
+    // builder's live preview, which shows the app inside an iframe. A deployed
+    // site allows nobody: the preview host has no business framing a reader's
+    // library, and letting it would leave the page overlayable by whoever holds
+    // a subdomain there.
+    "frame-ancestors": dev ? ["'self'", "https://*.grok-sandbox.com"] : ["'self'"],
   };
 
   const policy = Object.entries(directives).map(([name, values]) => `${name} ${values.join(" ")}`);
