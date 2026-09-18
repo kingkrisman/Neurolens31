@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { scopedKey } from "@/lib/storage-scope";
 import * as sync from "@/lib/sync/notify";
 import {
   measureReadingStrain,
@@ -206,6 +207,15 @@ interface AppState {
   clearJump: () => void;
   hydrate: () => void;
   /**
+   * Re-read everything for whoever is signed in now.
+   *
+   * `hydrate` runs once and refuses to run again, which is right for a page
+   * load and wrong for an account change: the store would keep showing the
+   * previous reader's library. This drops what is in memory and reads the new
+   * account's keys instead.
+   */
+  rehydrateForAccount: () => void;
+  /**
    * Merge what an account holds into this device.
    *
    * The one way the sync engine writes to the store. A single action rather
@@ -269,6 +279,9 @@ const TAB_ORDER: TabId[] = ["explore", "read", "library", "insights", "settings"
 function persistProfile(profile: ReadingProfile, mode: ReadingMode) {
   writeLocal(PROFILE_KEY, JSON.stringify(profile));
   writeLocal(MODE_KEY, mode);
+  // The reading profile is the most personal thing here — how somebody has
+  // learned to read comfortably — so it follows the account, not the device.
+  sync.settingsChanged();
 }
 
 const FONT_IDS: FontId[] = [
@@ -323,7 +336,7 @@ function writeLocal(key: string, value: string) {
 /** A write that reports whether the browser actually took it. */
 function tryWriteLocal(key: string, value: string): boolean {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(scopedKey(key), value);
     return true;
   } catch {
     /* private mode or quota */
@@ -333,7 +346,7 @@ function tryWriteLocal(key: string, value: string): boolean {
 
 function forgetLocal(keys: string[]) {
   try {
-    for (const key of keys) localStorage.removeItem(key);
+    for (const key of keys) localStorage.removeItem(scopedKey(key));
   } catch {
     /* private mode */
   }
@@ -341,14 +354,23 @@ function forgetLocal(keys: string[]) {
 
 function persistSessions(sessions: Session[]) {
   fitSessions(sessions, (payload) => tryWriteLocal(SESSIONS_KEY, payload));
+  // Queued here rather than at each call site: every session write goes through
+  // this function, so a book cannot reach local storage without also being
+  // offered to the account. Leaving this out was why nothing reached Supabase —
+  // highlights and ink were wired and books never were.
+  for (const session of sessions) {
+    if (session.content.trim()) sync.bookChanged(textKey(session.content));
+  }
 }
 
 function persistAdaptiveMemory(memory: AdaptiveMemory) {
   writeLocal(ADAPTIVE_MEMORY_KEY, JSON.stringify(memory));
+  sync.settingsChanged();
 }
 
 function persistTargetWpm(value: number) {
   writeLocal(TARGET_WPM_KEY, String(value));
+  sync.settingsChanged();
 }
 
 /**
@@ -557,35 +579,52 @@ export const useAppStore = create<AppState>((set, get) => ({
     set(patch);
   },
 
+  rehydrateForAccount: () => {
+    // Cleared first, so nothing of the previous reader's survives into the new
+    // account even if a key is missing from their storage and hydrate leaves
+    // that field untouched.
+    set({
+      hydrated: false,
+      sessions: [],
+      highlights: {},
+      ink: {},
+      bookmarks: [],
+      text: "",
+      sourceKind: "text",
+      sourceId: null,
+    });
+    get().hydrate();
+  },
+
   hydrate: () => {
     if (get().hydrated || typeof window === "undefined") return;
     try {
-      const sessions = JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]") as Session[];
+      const sessions = JSON.parse(localStorage.getItem(scopedKey(SESSIONS_KEY)) || "[]") as Session[];
       const adaptiveMemory = JSON.parse(
-        localStorage.getItem(ADAPTIVE_MEMORY_KEY) || "{}",
+        localStorage.getItem(scopedKey(ADAPTIVE_MEMORY_KEY)) || "{}",
       ) as AdaptiveMemory;
-      const savedProfile = localStorage.getItem(PROFILE_KEY);
-      const savedMode = (localStorage.getItem(MODE_KEY) as ReadingMode | null) ?? "default";
+      const savedProfile = localStorage.getItem(scopedKey(PROFILE_KEY));
+      const savedMode = (localStorage.getItem(scopedKey(MODE_KEY)) as ReadingMode | null) ?? "default";
       const mode = READING_PROFILES[savedMode] ? savedMode : "default";
       const profile = normalizeProfile(
         savedProfile
           ? ({ ...READING_PROFILES[mode], ...JSON.parse(savedProfile) } as ReadingProfile)
           : READING_PROFILES[mode],
       );
-      const savedWpm = Number(localStorage.getItem(TARGET_WPM_KEY));
-      const savedCvd = localStorage.getItem(CVD_KEY);
+      const savedWpm = Number(localStorage.getItem(scopedKey(TARGET_WPM_KEY)));
+      const savedCvd = localStorage.getItem(scopedKey(CVD_KEY));
       const cvdPreview = isCvdKind(savedCvd) ? savedCvd : "none";
       applyColorScheme(profile.theme, cvdPreview);
-      const lockedSettings = JSON.parse(localStorage.getItem(LOCKS_KEY) || "[]") as LockableSetting[];
-      const savedProfiles = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]") as SavedProfile[];
-      const bookmarks = JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || "[]") as Bookmark[];
-      const highlights = JSON.parse(localStorage.getItem(HIGHLIGHTS_KEY) || "{}") as Record<string, number[]>;
+      const lockedSettings = JSON.parse(localStorage.getItem(scopedKey(LOCKS_KEY)) || "[]") as LockableSetting[];
+      const savedProfiles = JSON.parse(localStorage.getItem(scopedKey(SAVED_KEY)) || "[]") as SavedProfile[];
+      const bookmarks = JSON.parse(localStorage.getItem(scopedKey(BOOKMARKS_KEY)) || "[]") as Bookmark[];
+      const highlights = JSON.parse(localStorage.getItem(scopedKey(HIGHLIGHTS_KEY)) || "{}") as Record<string, number[]>;
       // colorById settles an unknown or absent value, so a palette that changes
       // later cannot strand someone on a colour that no longer exists.
-      const markerColor = colorById(localStorage.getItem(MARKER_KEY) ?? undefined).id;
-      const ink = JSON.parse(localStorage.getItem(INK_KEY) || "{}") as Record<string, InkStroke[]>;
-      const inkTool = toolById(localStorage.getItem(INK_TOOL_KEY) ?? undefined).id;
-      const inkColor = inkColorById(localStorage.getItem(INK_COLOR_KEY) ?? undefined).id;
+      const markerColor = colorById(localStorage.getItem(scopedKey(MARKER_KEY)) ?? undefined).id;
+      const ink = JSON.parse(localStorage.getItem(scopedKey(INK_KEY)) || "{}") as Record<string, InkStroke[]>;
+      const inkTool = toolById(localStorage.getItem(scopedKey(INK_TOOL_KEY)) ?? undefined).id;
+      const inkColor = inkColorById(localStorage.getItem(scopedKey(INK_COLOR_KEY)) ?? undefined).id;
       if (!localStorage.getItem(LOOKUP_MIGRATION)) {
         profile.lookup = true;
         localStorage.setItem(LOOKUP_MIGRATION, "1");
@@ -1017,6 +1056,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const locked = get().lockedSettings;
     const next = locked.includes(setting) ? locked.filter((item) => item !== setting) : [...locked, setting];
     writeLocal(LOCKS_KEY, JSON.stringify(next));
+    sync.settingsChanged();
     set({ lockedSettings: next });
   },
 
@@ -1041,12 +1081,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
     const savedProfiles = [saved, ...get().savedProfiles].slice(0, 8);
     writeLocal(SAVED_KEY, JSON.stringify(savedProfiles));
+    sync.settingsChanged();
     set({ savedProfiles });
   },
 
   deleteSavedProfile: (id) => {
     const savedProfiles = get().savedProfiles.filter((item) => item.id !== id);
     writeLocal(SAVED_KEY, JSON.stringify(savedProfiles));
+    sync.settingsChanged();
     set({ savedProfiles });
   },
 
@@ -1304,6 +1346,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       SAVED_KEY,
       BOOKMARKS_KEY,
       HIGHLIGHTS_KEY,
+      INK_KEY,
       CVD_KEY,
       ADAPTIVE_MEMORY_KEY,
       "neurolens-coach",
