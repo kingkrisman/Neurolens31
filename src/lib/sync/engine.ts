@@ -2,14 +2,8 @@ import { useAppStore } from "@/lib/store";
 import { legacyBookKey } from "./rows.ts";
 import * as repo from "./repository.ts";
 import * as ids from "./identity.ts";
-import {
-  dequeue,
-  enqueue,
-  markFailed,
-  readQueue,
-  retryDelay,
-  type PendingWrite,
-} from "./queue.ts";
+import { dequeue, markFailed, readQueue, retryDelay, type PendingWrite } from "./queue.ts";
+import { isDeclined } from "./upload-choice.ts";
 
 /**
  * Keeping a device and an account in step.
@@ -111,13 +105,12 @@ export async function pull(): Promise<void> {
     return { ...book, content };
   });
 
-  // Books only on this device are kept and queued, not dropped. They are
-  // usually the ones added before signing in.
+  // Books only on this device are kept, and deliberately not queued. Signing in
+  // must not upload somebody's library as a side effect — every reader who used
+  // this before accounts was told their files stayed on their device, and the
+  // question is put to them instead (see migrate.ts, and UploadPrompt).
   const remoteTitles = new Set(merged.map((book) => book.title));
   const localOnly = store.sessions.filter((session) => !remoteTitles.has(session.title));
-  for (const session of localOnly) {
-    enqueue({ kind: "book", localId: legacyBookKey(session.content) });
-  }
 
   // Marks come back keyed by remote id; the store files them by text key.
   const highlights: typeof store.highlights = {};
@@ -153,6 +146,9 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       if (!session) return; // Deleted since it was queued; nothing to send.
       const existing = ids.remoteIdFor(session.content);
+      // Kept off the account on purpose. Editing it later must not be the thing
+      // that uploads it after the reader said no.
+      if (!existing && isDeclined(write.localId)) return;
       if (write.kind === "progress" && existing) {
         await repo.saveProgress(existing, session.progress ?? 0, session.section);
         return;
@@ -167,6 +163,7 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       // A book must exist remotely before anything can point at it.
       let bookId = session ? ids.remoteIdFor(session.content) : null;
+      if (!bookId && isDeclined(write.localId)) return;
       if (!bookId && session) {
         bookId = await repo.saveBook(session, userId);
         ids.remember(session.content, bookId);
@@ -179,6 +176,7 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
     case "ink": {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       let bookId = session ? ids.remoteIdFor(session.content) : null;
+      if (!bookId && isDeclined(write.localId)) return;
       if (!bookId && session) {
         bookId = await repo.saveBook(session, userId);
         ids.remember(session.content, bookId);

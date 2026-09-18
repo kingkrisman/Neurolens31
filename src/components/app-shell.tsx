@@ -16,6 +16,7 @@ import { Segmented } from "@/components/segmented";
 import { NavMenu } from "@/components/nav-menu";
 import { HeaderAccount } from "@/components/auth/header-account";
 import { AnalyticsConsent } from "@/components/analytics-consent";
+import { UploadPrompt } from "@/components/upload-prompt";
 import { useSmoothScroller } from "@/lib/smooth-scroll";
 import { GlassHeader } from "@/components/glass-header";
 import { Neuro } from "@/components/neuro";
@@ -448,6 +449,7 @@ export function AppShell() {
         <MotionCues />
         {/* Never while reading: that is the one moment an interruption costs most. */}
         <AnalyticsConsent hidden={reading} />
+        <UploadPrompt />
         <Neuro />
         <LiveAnnouncer />
         <FontLoader />
