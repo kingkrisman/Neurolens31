@@ -13,7 +13,7 @@
   --color-surface: #faf4ea;
   --color-fg: #1c1611;
   --color-muted: #5c5046;
-  --color-subtle: #7a6d60;
+  --color-subtle: #73665a;
   --color-primary: #3d2a1f;
   --color-primary-fg: #f4ece1;
   --color-accent: #7a4332;
@@ -924,17 +924,29 @@
     transform: scale(1);
   }
 
+  /* Reduced motion means no reveal, not a gentler one.
+     This used to keep `transition: opacity 220ms` and leave the element at
+     opacity 0 until the observer set [data-shown]. So a reader who asked for
+     less motion got a page whose text was invisible until something scrolled
+     it into view — and if the observer never fired, invisible for good. A
+     softened animation is still an animation somebody has to wait on; the
+     honest answer to "reduce motion" is that the words are simply there. */
   @media (prefers-reduced-motion: reduce) {
     :root[data-motion="ready"] [data-reveal],
-    :root[data-motion="ready"] [data-reveal="media"] {
+    :root[data-motion="ready"] [data-reveal="media"],
+    :root[data-motion="ready"] [data-reveal][data-shown],
+    :root[data-motion="ready"] [data-reveal="media"][data-shown] {
+      opacity: 1;
       transform: none;
       filter: none;
       clip-path: none;
-      transition: opacity 220ms ease;
+      transition: none;
     }
 
-    :root[data-motion="ready"] [data-reveal="media"] img {
+    :root[data-motion="ready"] [data-reveal="media"] img,
+    :root[data-motion="ready"] [data-reveal="media"][data-shown] img {
       transform: none;
+      transition: none;
     }
   }
 
@@ -2107,7 +2119,7 @@ html[data-scheme="forest"] {
   --color-surface: #faf4ea;
   --color-fg: #1c1611;
   --color-muted: #5c5046;
-  --color-subtle: #7a6d60;
+  --color-subtle: #73665a;
   --color-primary: #3d2a1f;
   --color-primary-fg: #f4ece1;
   --color-accent: #7a4332;
@@ -2159,7 +2171,7 @@ html[data-scheme="forest"] {
   --color-surface: #f3f7f2;
   --color-fg: #1b2319;
   --color-muted: #4d5a4b;
-  --color-subtle: #6b7868;
+  --color-subtle: #626e60;
   --color-primary: #2c3f30;
   --color-primary-fg: #f3f7f2;
   --color-accent: #3f5c45;
@@ -2198,7 +2210,7 @@ html[data-scheme="forest"] {
   --color-surface: #f4ead9;
   --color-fg: #2a1f14;
   --color-muted: #5c4a38;
-  --color-subtle: #7a6550;
+  --color-subtle: #715e4a;
   --color-primary: #3a2818;
   --color-primary-fg: #f4ead9;
   --color-accent: #8a4b32;
@@ -2213,7 +2225,7 @@ html[data-scheme="forest"] {
   --color-surface: #f4f8fb;
   --color-fg: #1a232b;
   --color-muted: #4a5964;
-  --color-subtle: #6a7882;
+  --color-subtle: #606d76;
   --color-primary: #1a232b;
   --color-primary-fg: #f4f8fb;
   --color-accent: #3d5c6e;
@@ -2239,7 +2251,7 @@ html[data-scheme="forest"] {
   --color-surface: #fffaf0;
   --color-fg: #2c2418;
   --color-muted: #5c5346;
-  --color-subtle: #7a7160;
+  --color-subtle: #756c5c;
   --color-primary: #2c2418;
   --color-primary-fg: #fffaf0;
   --color-accent: #8a4b32;
@@ -2273,7 +2285,7 @@ html[data-scheme="forest"] .grain {
   --color-surface: #faebe3;
   --color-fg: #2a1c16;
   --color-muted: #5c463c;
-  --color-subtle: #7a6258;
+  --color-subtle: #765f55;
   --color-primary: #2a1c16;
   --color-primary-fg: #faebe3;
   --color-accent: #8a4b32;
@@ -2288,7 +2300,7 @@ html[data-scheme="forest"] .grain {
   --color-surface: #f7f3d8;
   --color-fg: #2a2412;
   --color-muted: #5c5438;
-  --color-subtle: #7a7250;
+  --color-subtle: #716a4a;
   --color-primary: #2a2412;
   --color-primary-fg: #f7f3d8;
   --color-accent: #7a5c28;

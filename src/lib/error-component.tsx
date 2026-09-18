@@ -1,10 +1,13 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, useEffect, type ErrorInfo, type ReactNode } from "react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
+import { reportError } from "@/lib/telemetry/errors";
 
 export function isStaleChunkError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return /dynamically imported module|loading chunk \d+|Importing a module script failed/i.test(message);
+  return /dynamically imported module|loading chunk \d+|Importing a module script failed/i.test(
+    message,
+  );
 }
 
 export function friendlyViewError(error: unknown) {
@@ -27,6 +30,12 @@ export function reloadView(slot = "view") {
 }
 
 export function AppErrorComponent({ error }: ErrorComponentProps) {
+  // A whole-page failure, reported once per mount. This is the router's own
+  // boundary, so it catches what the per-tab boundaries are below.
+  useEffect(() => {
+    if (!isStaleChunkError(error)) reportError(error, "unknown");
+  }, [error]);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-bg px-6 text-center text-fg">
       <span className="text-danger" aria-hidden="true">
@@ -34,7 +43,8 @@ export function AppErrorComponent({ error }: ErrorComponentProps) {
       </span>
       <h1 className="text-lg font-medium">The page hit a snag</h1>
       <p className="max-w-md text-sm break-words text-muted">
-        {friendlyViewError(error) || "Reload and try again. If you were opening a file, paste the text instead."}
+        {friendlyViewError(error) ||
+          "Reload and try again. If you were opening a file, paste the text instead."}
       </p>
       <button
         type="button"
@@ -47,7 +57,10 @@ export function AppErrorComponent({ error }: ErrorComponentProps) {
   );
 }
 
-export class TabErrorBoundary extends Component<{ children: ReactNode; slot?: string }, { error: Error | null; nonce: number }> {
+export class TabErrorBoundary extends Component<
+  { children: ReactNode; slot?: string },
+  { error: Error | null; nonce: number }
+> {
   state: { error: Error | null; nonce: number } = { error: null, nonce: 0 };
 
   static getDerivedStateFromError(error: Error) {
@@ -56,7 +69,16 @@ export class TabErrorBoundary extends Component<{ children: ReactNode; slot?: st
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("NeuroLens view failed", error, info.componentStack);
-    if (isStaleChunkError(error)) reloadView(this.props.slot ?? "tab");
+    // Not reported: a stale chunk is a reader on an old build meeting a new
+    // deploy, which the reload below fixes. Sending those would bury the real
+    // crashes under one row per deploy per open tab.
+    if (isStaleChunkError(error)) {
+      reloadView(this.props.slot ?? "tab");
+      return;
+    }
+    // The component stack, not the JS stack: it names the components, which is
+    // what locates a render fault. `scrubStack` keeps only the `at` lines.
+    reportError(error, this.props.slot, info.componentStack ?? undefined);
   }
 
   render() {
@@ -64,7 +86,9 @@ export class TabErrorBoundary extends Component<{ children: ReactNode; slot?: st
       const stale = isStaleChunkError(this.state.error);
       return (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-          <p className="max-w-md text-sm text-pretty text-muted">{friendlyViewError(this.state.error)}</p>
+          <p className="max-w-md text-sm text-pretty text-muted">
+            {friendlyViewError(this.state.error)}
+          </p>
           <button
             type="button"
             className="h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-fg"
@@ -81,6 +105,10 @@ export class TabErrorBoundary extends Component<{ children: ReactNode; slot?: st
         </div>
       );
     }
-    return <div className="contents" key={this.state.nonce}>{this.props.children}</div>;
+    return (
+      <div className="contents" key={this.state.nonce}>
+        {this.props.children}
+      </div>
+    );
   }
 }

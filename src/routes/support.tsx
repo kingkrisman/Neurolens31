@@ -194,27 +194,27 @@ function Support() {
           <div className="overflow-hidden rounded-3xl bg-fg text-bg shadow-[0_24px_60px_-28px_rgba(22,22,21,0.55)]">
             <div className="flex items-center justify-between border-b border-bg/10 px-6 py-4">
               <p className="text-sm font-semibold">Your message</p>
-              <p className="font-mono text-[11px] text-bg/50">to {SUPPORT_EMAIL}</p>
+              <p className="font-mono text-[11px] text-bg/60">to {SUPPORT_EMAIL}</p>
             </div>
             <div className="max-h-[22rem] overflow-auto px-6 py-5">
-              <p className="text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-bg/60 uppercase">
                 Subject
               </p>
               <p className="mt-1 text-sm">NeuroLens — {topicLabel}</p>
-              <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+              <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/60 uppercase">
                 What happened
               </p>
               <p
                 className={cn(
                   "mt-1 text-sm leading-relaxed whitespace-pre-wrap",
-                  !what.trim() && "text-bg/40",
+                  !what.trim() && "text-bg/60",
                 )}
               >
                 {what.trim() || "Start typing on the left…"}
               </p>
               {expected.trim() ? (
                 <>
-                  <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase">
+                  <p className="mt-5 text-[11px] font-semibold tracking-[0.14em] text-bg/60 uppercase">
                     Expected
                   </p>
                   <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap">
@@ -223,9 +223,9 @@ function Support() {
                 </>
               ) : null}
               <details className="mt-5 group">
-                <summary className="cursor-pointer text-[11px] font-semibold tracking-[0.14em] text-bg/50 uppercase marker:content-none">
+                <summary className="cursor-pointer text-[11px] font-semibold tracking-[0.14em] text-bg/60 uppercase marker:content-none">
                   Technical details{" "}
-                  <span className="normal-case tracking-normal text-bg/40">
+                  <span className="normal-case tracking-normal text-bg/60">
                     · attached automatically
                   </span>
                 </summary>

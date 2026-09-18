@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # So a dependency or a browser update that breaks the suite is found on a
+  # Monday rather than during a release.
+  schedule:
+    - cron: "0 6 * * 1"
+
+# A second push to the same branch makes the first run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Everything that needs no network and no browser. Fast, so a typo is caught
+  # in under a minute instead of after a Chromium download.
+  check:
+    name: Types, lint and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` rather than `npm install`: the lockfile is the point of having
+      # one, and a CI run that resolves fresh versions is not testing the code
+      # that will ship.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Theme contrast
+        # No browser needed — the palettes are checked arithmetically, which is
+        # the only way to check all fifteen rather than whichever one a test
+        # page happened to load.
+        run: node scripts/audit-themes.mjs
+
+      - name: Auth invariant
+        run: npm run check:auth
+
+  # Separate job: this one downloads a browser and starts the app, so it is
+  # slower and should not hold up the answer to "does it compile".
+  a11y:
+    name: Accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Accessibility audit
+        run: npm run test:a11y
+        env:
+          # The dev server the suite starts needs these to boot past the
+          # "not configured" screen. Repository secrets, and both are values
+          # that ship to the browser anyway — the anon key is public by design,
+          # and row-level security is what actually protects the data.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build:dev
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+  # The check that would have caught the outage this file was written after:
+  # a misspelled Supabase host in the hosting provider's environment, which
+  # broke sign-in in production for days while every local check passed.
+  #
+  # Strict here, because unlike a deploy this run failing costs nothing but a
+  # red tick, and a red tick is exactly what was missing.
+  env-check:
+    name: Environment reachable
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only where the secrets exist. A fork's pull request has none, and failing
+    # somebody's first contribution on a secret they cannot set is rude.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Supabase is reachable and accepts the key
+        run: node scripts/check-env.mjs
+        env:
+          NEUROLENS_STRICT_ENV: "1"
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}

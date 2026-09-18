@@ -22,6 +22,7 @@ import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as WhatsNewRouteImport } from './routes/whats-new'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiDictionaryRouteImport } from './routes/api/dictionary'
+import { Route as ApiErrorsRouteImport } from './routes/api/errors'
 import { Route as ApiGutenbergRouteImport } from './routes/api/gutenberg'
 import { Route as ApiGutendexSplatRouteImport } from './routes/api/gutendex.$'
 import { Route as ApiOpenlibrarySplatRouteImport } from './routes/api/openlibrary.$'
@@ -91,6 +92,11 @@ const ApiDictionaryRoute = ApiDictionaryRouteImport.update({
   path: '/api/dictionary',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiErrorsRoute = ApiErrorsRouteImport.update({
+  id: '/api/errors',
+  path: '/api/errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGutenbergRoute = ApiGutenbergRouteImport.update({
   id: '/api/gutenberg',
   path: '/api/gutenberg',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/whats-new': typeof WhatsNewRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
+  '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/whats-new': typeof WhatsNewRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
+  '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/whats-new': typeof WhatsNewRoute
   '/api/analytics': typeof ApiAnalyticsRoute
   '/api/dictionary': typeof ApiDictionaryRoute
+  '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/whats-new'
     | '/api/analytics'
     | '/api/dictionary'
+    | '/api/errors'
     | '/api/gutenberg'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/whats-new'
     | '/api/analytics'
     | '/api/dictionary'
+    | '/api/errors'
     | '/api/gutenberg'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/whats-new'
     | '/api/analytics'
     | '/api/dictionary'
+    | '/api/errors'
     | '/api/gutenberg'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   WhatsNewRoute: typeof WhatsNewRoute
   ApiAnalyticsRoute: typeof ApiAnalyticsRoute
   ApiDictionaryRoute: typeof ApiDictionaryRoute
+  ApiErrorsRoute: typeof ApiErrorsRoute
   ApiGutenbergRoute: typeof ApiGutenbergRoute
   ApiGutendexSplatRoute: typeof ApiGutendexSplatRoute
   ApiOpenlibrarySplatRoute: typeof ApiOpenlibrarySplatRoute
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDictionaryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/errors': {
+      id: '/api/errors'
+      path: '/api/errors'
+      fullPath: '/api/errors'
+      preLoaderRoute: typeof ApiErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/gutenberg': {
       id: '/api/gutenberg'
       path: '/api/gutenberg'
@@ -369,6 +389,7 @@ const rootRouteChildren: RootRouteChildren = {
   WhatsNewRoute: WhatsNewRoute,
   ApiAnalyticsRoute: ApiAnalyticsRoute,
   ApiDictionaryRoute: ApiDictionaryRoute,
+  ApiErrorsRoute: ApiErrorsRoute,
   ApiGutenbergRoute: ApiGutenbergRoute,
   ApiGutendexSplatRoute: ApiGutendexSplatRoute,
   ApiOpenlibrarySplatRoute: ApiOpenlibrarySplatRoute,

@@ -1,0 +1,60 @@
+import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * Browser tests, for the things only a browser can answer.
+ *
+ * The unit suite covers the logic. What it cannot cover is whether the rendered
+ * page is usable: contrast, heading order, whether a control has a name a
+ * screen reader can read out. Those are properties of the DOM after it has been
+ * styled, and the only honest way to check them is to render it.
+ *
+ * Deliberately small. This is not a second copy of the unit tests — it is the
+ * accessibility audit, run automatically, because an app built for dyslexic and
+ * low-vision readers cannot treat that as something to check by hand and then
+ * forget.
+ */
+export default defineConfig({
+  testDir: "tests",
+  // Accessibility failures are not flaky. A retry would only hide a real one.
+  retries: 0,
+  // One worker: the dev server it drives is a single Vite process, and parallel
+  // page loads make the timings noisy without making the suite faster.
+  workers: 1,
+  timeout: 60_000,
+  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
+  use: {
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:8080",
+    // On failure only — a trace per passing test is hundreds of megabytes of
+    // artefacts nobody opens.
+    trace: "retain-on-failure",
+    /**
+     * Every browser test runs with reduced motion asked for.
+     *
+     * Not a convenience. Scroll-reveal animations mean most of a long page is
+     * at opacity 0 until an observer fires, and auditing that measures the
+     * contrast of text against itself — 83 "failures" at a ratio of 1.01, all
+     * of them text that is simply not shown yet. Reduced motion is also a real
+     * configuration that real readers use, and the one this app exists to serve
+     * well, so it is the right thing to be testing.
+     */
+    reducedMotion: "reduce",
+  },
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+
+  /**
+   * Starts the app unless something is already serving it.
+   *
+   * `reuseExistingServer` matters locally: a developer with `npm run dev`
+   * already open should not have a second one fight it for port 8080.
+   */
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: "npm run dev",
+        url: "http://127.0.0.1:8080",
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+        stdout: "ignore",
+        stderr: "pipe",
+      },
+});

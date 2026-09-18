@@ -7,16 +7,18 @@
     "nf3": "0.3.17"
   },
   "scripts": {
-    "dev": "node scripts/sync-pdf-worker.mjs && node scripts/build-seo-files.mjs && node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
-    "build": "node scripts/sync-pdf-worker.mjs && node scripts/build-seo-files.mjs && node scripts/with-app-env.mjs vite build && node scripts/stamp-sw.mjs && npm run db:migrate",
+    "dev": "node scripts/sync-pdf-worker.mjs && node scripts/check-env.mjs && node scripts/build-seo-files.mjs && node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
+    "build": "node scripts/sync-pdf-worker.mjs && node scripts/check-env.mjs && node scripts/build-seo-files.mjs && node scripts/with-app-env.mjs vite build && node scripts/stamp-sw.mjs && npm run db:migrate",
     "db:migrate": "node scripts/migrate.mjs",
     "build:dev": "node scripts/sync-pdf-worker.mjs && node scripts/build-seo-files.mjs && node scripts/with-app-env.mjs vite build --mode development && node scripts/stamp-sw.mjs",
     "preview": "node scripts/with-app-env.mjs vite preview",
     "preview:restart": "node scripts/preview.mjs restart",
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
+    "check:env": "node scripts/check-env.mjs",
     "check:auth": "node scripts/check-auth-invariant.mjs",
     "test": "node --experimental-strip-types --test \"scripts/**/*.test.mjs\" \"src/**/*.test.ts\"",
+    "test:a11y": "playwright test tests/a11y.spec.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
@@ -90,8 +92,10 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.20.0",
     "@iconify-json/ph": "^1.2.2",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.16.5",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.2.0",

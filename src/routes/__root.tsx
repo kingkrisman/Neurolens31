@@ -4,6 +4,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { WebVitals } from "@/components/web-vitals";
 import { SyncProvider } from "@/components/sync-provider";
+import { CrashReporter } from "@/components/crash-reporter";
 import { jsonLd, organizationJsonLd, seo, websiteJsonLd } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
@@ -68,6 +69,7 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <SmoothScroll />
         <WebVitals />
+        <CrashReporter />
         <SyncProvider />
         <AuthProvider>
           <Outlet />

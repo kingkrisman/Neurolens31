@@ -26,16 +26,39 @@ export const Route = createFileRoute("/terms")({
 const UPDATED = "17 September 2026";
 
 /**
- * Blanks, deliberately visible.
+ * Blanks, deliberately visible — but not as source placeholders.
  *
  * An arbitration clause does nothing until it names where a dispute is heard
- * and under whose rules, and those follow from where NeuroLens is established —
- * which is not something this file can invent. Left as bracketed text so they
- * read as unfinished on the page as well as in the source, rather than shipping
- * as a plausible-looking answer nobody checked.
+ * and under whose rules, and those follow from where NeuroLens is established,
+ * which is not something this file can invent. So they stay empty until
+ * somebody who knows fills them in.
+ *
+ * They used to be the strings `[country or state, and its courts]` and
+ * `[arbitration body, and the rules it publishes]`, which read as unfinished in
+ * the source exactly as intended — and then shipped, so readers of the live
+ * Terms page met bracketed developer notes in the middle of a sentence about
+ * giving up their right to a jury. Unfinished is fine; looking unfinished *to a
+ * reader* while pretending to be a legal term is not.
+ *
+ * Set both to a string and the clause reads normally, the notice disappears,
+ * and `PENDING_JURISDICTION` goes false on its own.
  */
-const GOVERNING_LAW = "[country or state, and its courts]";
-const ARBITRATION_BODY = "[arbitration body, and the rules it publishes]";
+const GOVERNING_LAW: string | null = null;
+const ARBITRATION_BODY: string | null = null;
+
+const PENDING_JURISDICTION = GOVERNING_LAW === null || ARBITRATION_BODY === null;
+
+/**
+ * What a sentence says while the blank is still blank.
+ *
+ * Phrased so the sentence around it stays grammatical and truthful rather than
+ * merely filled: "the courts where NeuroLens is established" is what the clause
+ * will resolve to, and saying so is more honest than naming a jurisdiction
+ * chosen to make the paragraph scan.
+ */
+const COURTS = GOVERNING_LAW ?? "the courts where NeuroLens is established";
+const ARBITRATOR =
+  ARBITRATION_BODY ?? "an established arbitration body under its published consumer rules";
 
 const TOC = [
   { id: "summary", label: "In short" },
@@ -225,6 +248,14 @@ function Terms() {
       </DocSection>
 
       <DocSection id="disputes" kicker="9" title="If we end up in a dispute">
+        {PENDING_JURISDICTION ? (
+          <p className="rounded-2xl border border-border bg-surface px-5 py-4 text-sm leading-relaxed text-muted">
+            <Term>This section is not final yet.</Term> The arbitration body and the governing law
+            are still being settled, and until they are named here this section is a statement of
+            intent rather than a term you are agreeing to. Your local consumer rights are unaffected
+            either way — see the last paragraph.
+          </p>
+        ) : null}
         <p>
           <Term>Talk to us first.</Term> Nearly everything is a misunderstanding or a bug. Send{" "}
           <Link to="/support">support</Link> a description of the problem and what you would like
@@ -232,19 +263,18 @@ function Terms() {
         </p>
         <p>
           <Term>Then arbitration, not a courtroom.</Term> If 60 days pass without resolution, a
-          dispute between us is settled by binding arbitration before {ARBITRATION_BODY}, rather
-          than by a judge or a jury. Arbitration is usually faster and cheaper than a court case,
-          and the arbitrator can award the same remedies a court could — but it is more private, the
-          grounds for appeal are far narrower, and you are giving up a day in court. That is why it
-          is named in the summary at the top of this page rather than left down here to be
-          discovered.
+          dispute between us is settled by binding arbitration before {ARBITRATOR}, rather than by a
+          judge or a jury. Arbitration is usually faster and cheaper than a court case, and the
+          arbitrator can award the same remedies a court could — but it is more private, the grounds
+          for appeal are far narrower, and you are giving up a day in court. That is why it is named
+          in the summary at the top of this page rather than left down here to be discovered.
         </p>
         <p>
           <Term>You can opt out, and it costs you nothing.</Term> Within 30 days of first accepting
           these terms, email <Link to="/support">support</Link> with the words{" "}
           <Term>arbitration opt-out</Term> and the address you use here. That is the whole process.
           Nothing else in these terms changes, and we will not treat you differently for it — you
-          simply keep the courts in {GOVERNING_LAW} instead.
+          simply keep {COURTS} instead.
         </p>
         <p>
           <Term>One person at a time.</Term> Claims are brought individually: not as a class action,
@@ -262,7 +292,7 @@ function Terms() {
           the UK among them — do not let a consumer be required to arbitrate in advance. If you live
           somewhere like that, this section takes nothing away from you: you keep your local courts,
           and your mandatory consumer protections apply in full. These terms are otherwise governed
-          by the law of {GOVERNING_LAW}.
+          by the law of the place where NeuroLens is established.
         </p>
       </DocSection>
 

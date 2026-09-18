@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { sanitize, type EventName } from "@/lib/analytics";
-import { getSql } from "@/lib/db";
+import { insertRows, telemetryConfigured } from "@/lib/telemetry/insert";
 
 /**
  * Where usage events land, if the reader agreed to send them.
@@ -15,6 +15,12 @@ import { getSql } from "@/lib/db";
  * What is deliberately not read: the IP address, the user agent, the referer,
  * and any account. None is touched, none is stored, and the table has no column
  * for any of them.
+ *
+ * Events go to Supabase. They used to go to `getSql()`, which on this host is
+ * PGLite — an in-process database on a serverless function's own filesystem.
+ * Every insert succeeded, returned 200, and was destroyed with the container
+ * minutes later. Nothing surfaced it because a write that vanishes looks
+ * exactly like a write that worked.
  */
 
 /** A body bigger than this is not a queue flush, it is somebody probing. */
@@ -50,7 +56,7 @@ export const Route = createFileRoute("/api/analytics")({
         const events: Incoming[] = Array.isArray(payload)
           ? payload
           : Array.isArray((payload as { events?: unknown })?.events)
-            ? ((payload as { events: Incoming[] }).events)
+            ? (payload as { events: Incoming[] }).events
             : [];
         if (!events.length) return Response.json({ stored: 0 });
         if (events.length > MAX_EVENTS) {
@@ -58,7 +64,13 @@ export const Route = createFileRoute("/api/analytics")({
         }
 
         const now = Date.now();
-        const rows: Array<{ name: string; props: string; hour: string }> = [];
+        const rows: Array<{
+          name: string;
+          props: Record<string, string | boolean>;
+          hour: string;
+          day: string;
+        }> = [];
+
         for (const event of events.slice(0, MAX_EVENTS)) {
           if (typeof event?.e !== "string") continue;
           const props = sanitize(
@@ -73,46 +85,40 @@ export const Route = createFileRoute("/api/analytics")({
           // broken clock or a forgery; either way it is not evidence of
           // anything, so it is clamped rather than trusted or dropped.
           const clamped = Math.min(Math.max(time, now - MAX_AGE_MS), now + MAX_FUTURE_MS);
+          const iso = new Date(clamped).toISOString();
           rows.push({
             name: event.e as EventName,
-            props: JSON.stringify(props),
-            hour: new Date(clamped).toISOString(),
+            props,
+            hour: iso,
+            // Same instant, date only. Stored rather than derived so the
+            // by-day index is a plain column and not an expression.
+            day: iso.slice(0, 10),
           });
         }
 
         if (!rows.length) return Response.json({ stored: 0 });
 
-        try {
-          const sql = await getSql();
-          // One statement rather than a loop: a queue flush arriving after a
-          // long offline stretch can be hundreds of rows, and hundreds of
-          // round trips is how an analytics endpoint becomes the slowest thing
-          // in the app.
-          await sql.query(
-            `insert into analytics_events (name, props, hour, day)
-             select * from unnest(
-               $1::text[],
-               $2::jsonb[],
-               $3::timestamptz[],
-               $4::date[]
-             )`,
-            [
-              rows.map((row) => row.name),
-              rows.map((row) => row.props),
-              rows.map((row) => row.hour),
-              rows.map((row) => row.hour),
-            ],
-          );
-        } catch {
-          // The reader is not told, and nothing is retried into a loop: a
-          // failure to record usage is our problem, never theirs.
+        // No keys on this deploy. Saying 503 would make the client retry
+        // forever against something that is never going to accept it, so the
+        // queue is released instead: usage data is the one thing in this app
+        // that is allowed to be lost.
+        if (!telemetryConfigured) {
+          return Response.json({ stored: 0 }, { headers: { "cache-control": "no-store" } });
+        }
+
+        // One request rather than a loop: a queue flush arriving after a long
+        // offline stretch can be hundreds of rows, and hundreds of round trips
+        // is how an analytics endpoint becomes the slowest thing in the app.
+        const result = await insertRows("analytics_events", rows);
+        if (!result.ok) {
+          // Logged server-side and nowhere else. The reader is not told, and
+          // nothing is retried into a loop: a failure to record usage is our
+          // problem, never theirs.
+          console.error("[analytics] insert failed:", result.reason);
           return Response.json({ error: "Could not store" }, { status: 503 });
         }
 
-        return Response.json(
-          { stored: rows.length },
-          { headers: { "cache-control": "no-store" } },
-        );
+        return Response.json({ stored: rows.length }, { headers: { "cache-control": "no-store" } });
       },
     },
   },

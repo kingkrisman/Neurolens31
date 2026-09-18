@@ -29,6 +29,7 @@ const TOC = [
   { id: "summary", label: "At a glance" },
   { id: "device", label: "Your books" },
   { id: "usage", label: "Usage analytics" },
+  { id: "crashes", label: "When something breaks" },
   { id: "accounts", label: "Accounts" },
   { id: "services", label: "Outside services" },
   { id: "security", label: "How it is protected" },
@@ -146,6 +147,49 @@ function Privacy() {
             If your browser sends Global Privacy Control or Do Not Track, you are never asked.
           </li>
           <li>The account page shows every recorded event, word for word, before it is sent.</li>
+          <li>
+            Events are deleted after 90 days, automatically. Nothing older than that answers the
+            question "how is the app used", so there is no reason to keep it.
+          </li>
+        </ul>
+      </DocSection>
+
+      <DocSection id="crashes" title="When something breaks">
+        <p>
+          If part of NeuroLens fails while you are using it, it sends a short report so the fault
+          can be found and fixed. This is separate from analytics above, and it is the one thing
+          that is not switched off by default — a reading app that only hears about crashes from
+          people who went looking for a settings page does not hear about them at all.
+        </p>
+        <p>
+          The awkward part is that an error message is written by whatever broke, and a file reader
+          that chokes on a page will quote that page back in its complaint. So the message is
+          rewritten on your device before it is sent:{" "}
+          <Term>anything in quotation marks is replaced</Term>, along with every web address, every
+          email address and every number. What is left is the shape of the fault —{" "}
+          <em>Unexpected token &lt;q&gt; in JSON at position &lt;n&gt;</em> — which tells a
+          developer what to fix and tells them nothing about what you were reading.
+        </p>
+        <ul>
+          <li>
+            What is sent: that rewritten message, which part of the app it came from, the list of
+            components involved, and the app version.
+          </li>
+          <li>
+            What is not: your account, your address, your name, your IP address, your browser, the
+            page you were on, and any part of your text. The table it is stored in has no column for
+            any of them.
+          </li>
+          <li>The same crash is sent once, not once per attempt, and at most ten per visit.</li>
+          <li>
+            Reports are deleted after 30 days — a crash report is useless once the version it came
+            from is gone.
+          </li>
+          <li>
+            <Term>Switching analytics off also stops these.</Term> If you have told NeuroLens not to
+            send things, that covers this too, and a browser sending Global Privacy Control or Do
+            Not Track is never asked and never reports.
+          </li>
         </ul>
       </DocSection>
 
