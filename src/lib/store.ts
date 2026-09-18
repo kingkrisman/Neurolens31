@@ -284,6 +284,12 @@ function persistProfile(profile: ReadingProfile, mode: ReadingMode) {
   sync.settingsChanged();
 }
 
+/** Persist without queueing, for data that has just come from the account. */
+function persistProfileQuietly(profile: ReadingProfile, mode: ReadingMode) {
+  writeLocal(PROFILE_KEY, JSON.stringify(profile));
+  writeLocal(MODE_KEY, mode);
+}
+
 const FONT_IDS: FontId[] = [
   "sans",
   "serif",
@@ -352,15 +358,17 @@ function forgetLocal(keys: string[]) {
   }
 }
 
+/**
+ * Write the library to this device.
+ *
+ * Deliberately does not queue anything. It is called on every progress save and
+ * by the pull that applies an account's own data, so queueing here meant
+ * O(books) storage writes per save and — worse — sent the whole library back to
+ * the server immediately after receiving it. The two call sites that represent
+ * a real edit queue the one book that changed instead.
+ */
 function persistSessions(sessions: Session[]) {
   fitSessions(sessions, (payload) => tryWriteLocal(SESSIONS_KEY, payload));
-  // Queued here rather than at each call site: every session write goes through
-  // this function, so a book cannot reach local storage without also being
-  // offered to the account. Leaving this out was why nothing reached Supabase —
-  // highlights and ink were wired and books never were.
-  for (const session of sessions) {
-    if (session.content.trim()) sync.bookChanged(textKey(session.content));
-  }
 }
 
 function persistAdaptiveMemory(memory: AdaptiveMemory) {
@@ -552,7 +560,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (settings.profile) {
         const mode = (settings.mode as ReadingMode) ?? get().mode;
         const profile = normalizeProfile(settings.profile);
-        persistProfile(profile, mode);
+        // Quietly: this came from the account, and echoing it back would be a
+        // write per pull, forever.
+        persistProfileQuietly(profile, mode);
         applyColorScheme(profile.theme);
         patch.profile = profile;
         patch.mode = mode;
@@ -592,6 +602,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       text: "",
       sourceKind: "text",
       sourceId: null,
+      // Away from the reader as well. Clearing the text while the reader is
+      // still open leaves it mounted over nothing — a page reading "0 words"
+      // and waiting — so the new account arrives at their library instead.
+      tab: "explore",
+      autoScrolling: false,
+      controlsOpen: false,
     });
     get().hydrate();
   },
@@ -628,7 +644,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (!localStorage.getItem(LOOKUP_MIGRATION)) {
         profile.lookup = true;
         localStorage.setItem(LOOKUP_MIGRATION, "1");
-        persistProfile(profile, mode);
+        persistProfileQuietly(profile, mode);
       }
       set({
         sessions: Array.isArray(sessions) ? sessions : [],
@@ -687,6 +703,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       ),
     ].slice(0, 12);
     persistSessions(sessions);
+    // A book being opened is the edit worth sending, and only this book.
+    if (text.trim()) sync.bookChanged(textKey(text));
     const pdfChapters = kind === "pdf" ? detectChapters(pages) : [];
     // Same fallback the reader uses: a long book whose headings the parser
     // cannot see still gets divided, rather than arriving as one document that
@@ -947,7 +965,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       Math.abs((existing.progress ?? 0) - reading.progress) >= 0.05 ||
       (existing.pauseCount ?? 0) !== reading.pauses.length ||
       (existing.rereadCount ?? 0) !== reading.rereads.length;
-    if (shouldPersist) persistSessions(sessions);
+    if (shouldPersist) {
+      persistSessions(sessions);
+      // Position, not the whole book: this fires as somebody reads.
+      const open = get().text;
+      if (open.trim()) sync.progressChanged(textKey(open));
+    }
   },
 
   applyRecommendation: () => {
