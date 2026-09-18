@@ -8,7 +8,7 @@ export const Route = createFileRoute("/privacy")({
     ...seo({
       title: "Privacy",
       description:
-        "What NeuroLens collects, which is almost nothing: your files never leave your device, and usage analytics are opt-in, anonymous and schema-locked.",
+        "What NeuroLens stores and where: books stay on your device until you choose to upload them, accounts hold only your email, and usage analytics are opt-in, anonymous and schema-locked.",
       path: "/privacy",
     }),
     scripts: [
@@ -27,7 +27,7 @@ const UPDATED = "15 September 2026";
 
 const TOC = [
   { id: "summary", label: "At a glance" },
-  { id: "device", label: "What stays on your device" },
+  { id: "device", label: "Your books" },
   { id: "usage", label: "Usage analytics" },
   { id: "accounts", label: "Accounts" },
   { id: "services", label: "Outside services" },
@@ -48,7 +48,7 @@ function Privacy() {
     <PublicLayout
       eyebrow="Privacy"
       title="Your reading stays with you."
-      lead="NeuroLens keeps your books on your device and does not collect who you are. The small amount it can learn about how the app is used, it only learns if you say yes."
+      lead="Your books stay on this device until you choose to upload them. When you do, they are stored in your account so they reach your other devices — readable by you, and by nobody else."
       meta={
         <>
           <span>Updated {UPDATED}</span>
@@ -63,13 +63,13 @@ function Privacy() {
           items={[
             {
               icon: HardDrive,
-              title: "Your books stay here",
-              body: "Files, highlights, notes and drawings never leave this device.",
+              title: "Uploading is your choice",
+              body: "Books stay on this device until you say otherwise, and reading works offline.",
             },
             {
               icon: UserX,
-              title: "No personal data",
-              body: "We do not collect your name, email, or anything you read.",
+              title: "Only your email",
+              body: "An account stores your address and nothing else about who you are.",
             },
             {
               icon: BarChart3,
@@ -85,15 +85,33 @@ function Privacy() {
         />
       </section>
 
-      <DocSection id="device" title="What stays on your device">
+      <DocSection id="device" title="Your books, and where they are">
         <p>
-          Files you upload are read inside your browser. Their contents — and everything you do with
-          them: highlights, notes, drawings, bookmarks, reading position and settings — are kept in
-          your browser's storage and are never sent to us.
+          Files you open are read inside your browser and kept on this device. They stay there, and
+          only there, until you choose to upload them — the first time you sign in with books
+          already saved, NeuroLens asks, tells you exactly how many, and does nothing unless you
+          agree. <Term>Declining leaves everything where it is.</Term>
         </p>
         <p>
+          Once you do upload, a book and everything you have done to it — highlights, notes,
+          drawings, bookmarks, reading position and settings — are stored in your account so they
+          reach whatever you next read on. A copy stays on the device, which is what lets you keep
+          reading with no connection.
+        </p>
+        <ul>
+          <li>Stored in NeuroLens's database, hosted by Supabase in Ireland, inside the EU.</li>
+          <li>Encrypted on the way there, and encrypted where it rests.</li>
+          <li>
+            <Term>Readable by your account alone.</Term> The database refuses to return one reader's
+            rows to another — a rule enforced by the database itself, not by application code that
+            could forget.
+          </li>
+          <li>Never read by us for any purpose, never sold, and never used to train anything.</li>
+        </ul>
+        <p>
           You can download all of it, or erase all of it, from{" "}
-          <Link to="/account">your account</Link> at any time.
+          <Link to="/account">your account</Link> at any time. Erasing removes it from your account
+          and from this device.
         </p>
       </DocSection>
 
@@ -166,8 +184,10 @@ function Privacy() {
           </li>
         </ul>
         <p>
-          Because your books live on your device, its passcode and the browser extensions you trust
-          protect them too — an extension allowed to read every site can read what a site stores.
+          Because a copy of your books stays on this device, its passcode and the browser extensions
+          you trust protect them too — an extension allowed to read every site can read what a site
+          stores. Your account password protects the other copy, which is why signing in uses Google
+          rather than a password we would have to hold.
         </p>
       </DocSection>
 

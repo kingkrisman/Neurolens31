@@ -27,7 +27,7 @@ export const SITE = {
   ogImage: "/og.jpg",
   ogImageAlt: "NeuroLens — adaptive reading for ADHD, dyslexia and cognitive fatigue",
   description:
-    "NeuroLens turns dense text into a calmer, more accessible read. Adaptive formatting, bionic fixation and a focus-friendly rhythm for ADHD, dyslexia and cognitive fatigue — free, and your files never leave your device.",
+    "NeuroLens turns dense text into a calmer, more accessible read. Adaptive formatting, bionic fixation and a focus-friendly rhythm for ADHD, dyslexia and cognitive fatigue — free, and your library follows you to any device you read on.",
 } as const;
 
 export type SeoOptions = {

@@ -215,8 +215,8 @@ const TOPICS: Topic[] = [
     body: (
       <>
         <p>
-          An open book stays on your device, so you can read it with no connection. Uploaded
-          documents never leave your browser.
+          An open book is kept on your device as well as in your account, so you can read it with no
+          connection. Anything you change while offline is sent the next time you have one.
         </p>
         <p>
           Browsers limit storage, so a very large library may drop the oldest books. Download

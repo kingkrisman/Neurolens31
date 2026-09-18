@@ -31,6 +31,6 @@ export const FAQ = [
   {
     question: "Is my text used to train a model?",
     answer:
-      "Reading preferences and recent sessions stay in your browser. You can clear them from Settings at any time.",
+      "No. Books you upload are stored in your account so they reach your other devices, and nothing you read is used to train anything or shown to anyone else. You can erase all of it from your account page.",
   },
 ] as const;

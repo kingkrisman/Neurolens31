@@ -8,7 +8,7 @@ export const Route = createFileRoute("/terms")({
     ...seo({
       title: "Terms",
       description:
-        "Plain terms for a reading app — what you may upload, what we promise, what we do not, and how a dispute is settled.",
+        "Plain terms for a reading app — what you may upload, where it is stored, what we promise, what we do not, and how a dispute is settled.",
       path: "/terms",
     }),
     scripts: [
@@ -63,8 +63,9 @@ const TOC = [
  * terms are cited by clause.
  *
  * Two clauses carry more weight than the rest and are written accordingly. The
- * one about content says plainly that nothing here is moderated, because the
- * files never arrive. The one about disputes gives up a right people usually
+ * one about content says plainly that nothing here is moderated — neither what
+ * stays on a device nor what is uploaded. The one about disputes gives up a
+ * right people usually
  * are not told they are giving up, so it says so in the summary, keeps its
  * opt-out in the open rather than in a footnote, and does not pretend to
  * override consumer law that says arbitration cannot be forced.
@@ -92,7 +93,7 @@ function Terms() {
             {
               icon: FileCheck2,
               title: "Free, and yours",
-              body: "What you upload stays on your device and remains entirely yours.",
+              body: "Uploading is your choice, and what you upload remains entirely yours.",
             },
             {
               icon: ShieldCheck,
@@ -102,7 +103,7 @@ function Terms() {
             {
               icon: Copyright,
               title: "Yours to answer for",
-              body: "We never receive your files, so nothing you open is checked or approved by us.",
+              body: "Nothing you open is checked or approved by us, wherever it is kept.",
             },
             {
               icon: Scale,
@@ -133,13 +134,20 @@ function Terms() {
 
       <DocSection id="documents" kicker="2" title="Your documents stay yours">
         <p>
-          Files you upload are read inside your browser and stored on your device. They are not sent
-          to us, we cannot see them, and we do not use them to train anything.
+          Files you open are read inside your browser and kept on your device. They stay there until
+          you choose to upload them to your account; NeuroLens asks before it sends anything, and
+          declining leaves everything where it is.
         </p>
         <p>
-          Because they live on your device, browser storage limits apply, and clearing browser data
-          removes them. Keeping a copy of anything important is your responsibility —{" "}
-          <Link to="/account">your account</Link> exports everything as one file.
+          Uploaded or not, they remain yours. You keep every right you already had in them, we
+          acquire none, we do not read them, and we do not use them to train anything. What an
+          account changes is reach — the same book, on whatever you next read on — not ownership.
+        </p>
+        <p>
+          A copy stays on the device either way, which is what lets you read offline, so browser
+          storage limits still apply and clearing browser data still clears that copy. Anything in
+          your account survives it. <Link to="/account">Your account</Link> exports everything as
+          one file, and erases everything on request.
         </p>
       </DocSection>
 
@@ -157,10 +165,10 @@ function Terms() {
           yours. It is also yours to answer for.
         </p>
         <p>
-          Nothing you open here is reviewed, moderated or approved by us, because none of it reaches
-          us: it is read and kept on your device.{" "}
-          <Term>Nothing being blocked is not the same as something being checked.</Term> We have no
-          way to know what you have opened, and no way to vet it.
+          Nothing you open here is reviewed, moderated or approved by us. What you keep on your
+          device never reaches us at all; what you upload is stored for you and read by nobody.{" "}
+          <Term>Nothing being blocked is not the same as something being checked.</Term> No person
+          looks at what you open, and no system vets it.
         </p>
         <p>
           So having the right to read, copy and adapt what you bring in is on you, as is what you do
@@ -171,9 +179,10 @@ function Terms() {
           consumer.
         </p>
         <p>
-          We also cannot take a file off your device — only you can do that. Where something is
-          being used unlawfully, that sits between you and whoever holds the rights. If we ever host
-          material ourselves, tell <Link to="/support">support</Link> and we will act on it.
+          We cannot take a file off your device — only you can do that, and the account page erases
+          what you have uploaded. Where something is being used unlawfully, that sits between you
+          and whoever holds the rights; where it sits in an account and we are told,{" "}
+          <Link to="/support">support</Link> is how to reach us, and we will act on it.
         </p>
       </DocSection>
 

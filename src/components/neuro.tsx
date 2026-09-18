@@ -96,7 +96,10 @@ export function Neuro() {
           setProfile({ ...current, bionicStrength: action.value });
           break;
         case "adjustBionic":
-          setProfile({ ...current, bionicStrength: clamp(current.bionicStrength + action.delta, 0, 1) });
+          setProfile({
+            ...current,
+            bionicStrength: clamp(current.bionicStrength + action.delta, 0, 1),
+          });
           break;
         case "adjustFontSize":
           setProfile({ ...current, fontSize: clamp(current.fontSize + action.delta, 14, 28) });
@@ -225,7 +228,11 @@ export function Neuro() {
 
   // Pressing anywhere else closes it. `rootRef` covers the panel and the orb
   // together, so the orb still toggles instead of closing and reopening.
-  useDismiss(rootRef, open, useCallback(() => setOpen(false), []));
+  useDismiss(
+    rootRef,
+    open,
+    useCallback(() => setOpen(false), []),
+  );
 
   // Escape closes the panel before it closes anything behind it.
   useEffect(() => {
@@ -337,7 +344,11 @@ export function Neuro() {
         // Dragging is handled on the wrapper; the button only reports its state.
         onClick={(event) => event.preventDefault()}
       >
-        <Companion mood={mood} follow className="size-16 drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]" />
+        <Companion
+          mood={mood}
+          follow
+          className="size-16 drop-shadow-[0_6px_16px_rgba(0,0,0,0.18)]"
+        />
       </button>
 
       {open ? (
@@ -363,7 +374,9 @@ export function Neuro() {
           </div>
 
           {said ? (
-            <p className="mb-3 rounded-md bg-bg px-3 py-2.5 text-sm leading-relaxed text-pretty">{said}</p>
+            <p className="mb-3 rounded-md bg-bg px-3 py-2.5 text-sm leading-relaxed text-pretty">
+              {said}
+            </p>
           ) : null}
 
           {looking ? (
@@ -383,7 +396,13 @@ export function Neuro() {
                   aria-label={`Hear ${sense.word}`}
                   className="icon-group ml-auto rounded-sm p-1 text-muted hover:text-fg"
                 >
-                  <Icon icon={speakerHigh} width={14} height={14} aria-hidden className="icon-motion icon-lift" />
+                  <Icon
+                    icon={speakerHigh}
+                    width={14}
+                    height={14}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                 </button>
               </div>
               <p className="mt-1 text-xs text-subtle italic">{sense.partOfSpeech}</p>
@@ -420,10 +439,18 @@ export function Neuro() {
                 className={cn(
                   "icon-group flex size-9 shrink-0 items-center justify-center rounded-md",
                   "transition-[background-color,color] duration-[140ms] ease-[var(--ease-out)]",
-                  dictating ? "nl-neuro-listening bg-accent/15 text-accent" : "text-muted hover:bg-fg/6 hover:text-fg",
+                  dictating
+                    ? "nl-neuro-listening bg-accent/15 text-accent"
+                    : "text-muted hover:bg-fg/6 hover:text-fg",
                 )}
               >
-                <Icon icon={microphone} width={17} height={17} aria-hidden className="icon-motion icon-lift" />
+                <Icon
+                  icon={microphone}
+                  width={17}
+                  height={17}
+                  aria-hidden
+                  className="icon-motion icon-lift"
+                />
               </button>
             ) : null}
           </form>
@@ -485,7 +512,7 @@ export function Neuro() {
                     ? `Listening stopped: ${voiceError}.`
                     : heard
                       ? `Heard “${heard}”. Say “Neuro” and I will open.`
-                      : "Listening for my name. Your browser sends audio to its speech service to do this — everything else in NeuroLens stays on your device."}
+                      : "Listening for my name. Your browser sends audio to its speech service to do this — NeuroLens never receives the recording."}
             </p>
           ) : null}
         </div>
@@ -493,4 +520,3 @@ export function Neuro() {
     </div>
   );
 }
-

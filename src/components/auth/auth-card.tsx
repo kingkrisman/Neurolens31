@@ -182,8 +182,8 @@ export function AuthCard({ mode }: { mode: "signin" | "signup" }) {
               <li className="flex gap-2.5">
                 <CloudOff size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
                 <span>
-                  <span className="font-medium text-fg">Your books stay on your device.</span> An
-                  account carries your settings across, not the files you upload.
+                  <span className="font-medium text-fg">You choose what is uploaded.</span> Books
+                  stay on this device until you say otherwise, and reading works offline either way.
                 </span>
               </li>
               <li className="flex gap-2.5">
