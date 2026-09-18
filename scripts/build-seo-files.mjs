@@ -21,7 +21,7 @@ const PUBLIC_DIR = join(ROOT, "public");
 /** Kept out of the index: private, or a duplicate of somewhere else. */
 export const PRIVATE_ROUTES = new Set(["account", "login", "signup"]);
 
-const SITE_URL = (process.env.VITE_SITE_URL || "https://neurolens.app").replace(/\/+$/, "");
+const SITE_URL = (process.env.VITE_SITE_URL || "https://neurolens.space").replace(/\/+$/, "");
 
 /**
  * Priority is a hint, and only a relative one — every page at 1.0 says nothing.

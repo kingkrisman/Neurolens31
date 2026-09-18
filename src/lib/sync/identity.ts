@@ -1,4 +1,5 @@
 import { legacyBookKey } from "./rows.ts";
+import { scopedKey } from "../storage-scope.ts";
 
 /**
  * Which local book is which remote book.
@@ -17,7 +18,16 @@ import { legacyBookKey } from "./rows.ts";
  * pairing from the titles and text that come back; it never costs a book.
  */
 
-const KEY = "neurolens-book-ids";
+/**
+ * Per account, like everything else that describes a reader's library.
+ *
+ * Unscoped, two accounts on one device shared one set of pairings: the second
+ * reader's edits were written against the first reader's rows, and a book whose
+ * pairing had been claimed by the other account was inserted again rather than
+ * updated — which is where duplicate books come from.
+ */
+const BASE_KEY = "neurolens-book-ids";
+const KEY = () => scopedKey(BASE_KEY);
 
 type Pairs = Record<string, string>;
 
@@ -31,7 +41,7 @@ function storage(): Storage | null {
 
 function read(): Pairs {
   try {
-    const raw = storage()?.getItem(KEY);
+    const raw = storage()?.getItem(KEY());
     const parsed = raw ? (JSON.parse(raw) as unknown) : {};
     return parsed && typeof parsed === "object" ? (parsed as Pairs) : {};
   } catch {
@@ -41,7 +51,7 @@ function read(): Pairs {
 
 function write(pairs: Pairs): void {
   try {
-    storage()?.setItem(KEY, JSON.stringify(pairs));
+    storage()?.setItem(KEY(), JSON.stringify(pairs));
   } catch {
     // Without this the app still works; every lookup simply misses and the
     // book is treated as new, which the caller resolves by matching on title.
@@ -97,7 +107,7 @@ export function keepOnly(remoteIds: string[]): void {
 
 export function clearPairs(): void {
   try {
-    storage()?.removeItem(KEY);
+    storage()?.removeItem(KEY());
   } catch {
     /* nothing to clear */
   }

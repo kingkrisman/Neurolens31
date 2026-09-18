@@ -40,7 +40,7 @@ export const Route = createFileRoute("/support")({
  * Where support mail goes. A placeholder until there is an address meant to be
  * public: a personal address on a public page is scraped the day it ships.
  */
-const SUPPORT_EMAIL = "support@neurolens.app";
+const SUPPORT_EMAIL = "support@neurolens.space";
 
 const TOPICS: Array<{
   id: string;

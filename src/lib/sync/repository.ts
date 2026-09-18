@@ -94,6 +94,24 @@ export async function saveBook(
   return saved.id;
 }
 
+/**
+ * An existing book with this title, if the account already has one.
+ *
+ * The fallback for a lost pairing. Without it, a device that forgets which
+ * remote row a book belongs to inserts a second copy — which is exactly how a
+ * library ends up listing the same book twice.
+ */
+export async function findBookIdByTitle(title: string): Promise<string | null> {
+  const { data, error } = await client()
+    .from("books")
+    .select("id")
+    .eq("title", title)
+    .order("opened_at", { ascending: false })
+    .limit(1);
+  if (error) return null;
+  return (data as Array<{ id: string }> | null)?.[0]?.id ?? null;
+}
+
 /** Progress moves constantly; this writes only the columns that carry it. */
 export async function saveProgress(
   bookId: string,

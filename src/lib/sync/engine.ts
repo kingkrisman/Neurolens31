@@ -136,26 +136,47 @@ export async function pull(): Promise<void> {
 
 /* ── Push ───────────────────────────────────────────────────────────────── */
 
-/** Send one queued intent. Throws so the caller can count the failure. */
-async function send(write: PendingWrite, userId: string): Promise<void> {
+/**
+ * What became of one queued intent.
+ *
+ *  sent  — the server has it, and it can be dropped from the queue
+ *  gone  — there is nothing left to send; dropping it loses nothing
+ *  defer — not sendable yet, and must stay queued
+ *
+ * The distinction is the whole point. Returning nothing meant every early exit
+ * read as success, so a highlight whose book could not be resolved was dropped
+ * from the queue and destroyed — silently, and for good.
+ */
+type Outcome = "sent" | "gone" | "defer";
+
+/** Send one queued intent. Throws only on a real failure. */
+async function send(write: PendingWrite, userId: string): Promise<Outcome> {
   const store = useAppStore.getState();
 
   switch (write.kind) {
     case "book":
     case "progress": {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
-      if (!session) return; // Deleted since it was queued; nothing to send.
-      const existing = ids.remoteIdFor(session.content);
+      // Deleted since it was queued; there is nothing left to send.
+      if (!session) return "gone";
+      let existing = ids.remoteIdFor(session.content);
       // Kept off the account on purpose. Editing it later must not be the thing
       // that uploads it after the reader said no.
-      if (!existing && isDeclined(write.localId)) return;
+      if (!existing && isDeclined(write.localId)) return "gone";
+      // No pairing on this device does not mean no book in the account — a
+      // second device, or a cleared cache, arrives here with the same library.
+      // Looking first is what stops it being inserted all over again.
+      if (!existing) {
+        existing = await repo.findBookIdByTitle(session.title);
+        if (existing) ids.remember(session.content, existing);
+      }
       if (write.kind === "progress" && existing) {
         await repo.saveProgress(existing, session.progress ?? 0, session.section);
-        return;
+        return "sent";
       }
       const id = await repo.saveBook(session, userId, existing ?? undefined);
       ids.remember(session.content, id);
-      return;
+      return "sent";
     }
 
     case "highlights": {
@@ -163,28 +184,31 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       // A book must exist remotely before anything can point at it.
       let bookId = session ? ids.remoteIdFor(session.content) : null;
-      if (!bookId && isDeclined(write.localId)) return;
+      if (!bookId && isDeclined(write.localId)) return "gone";
       if (!bookId && session) {
-        bookId = await repo.saveBook(session, userId);
+        bookId = (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
         ids.remember(session.content, bookId);
       }
-      if (!bookId) return;
+      // The book is not in the account yet — usually because its own write is
+      // further along this same queue. Keep the marks and try again rather than
+      // throwing them away.
+      if (!bookId) return "defer";
       await repo.replaceHighlights(bookId, marks, userId);
-      return;
+      return "sent";
     }
 
     case "ink": {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       let bookId = session ? ids.remoteIdFor(session.content) : null;
-      if (!bookId && isDeclined(write.localId)) return;
+      if (!bookId && isDeclined(write.localId)) return "gone";
       if (!bookId && session) {
-        bookId = await repo.saveBook(session, userId);
+        bookId = (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
         ids.remember(session.content, bookId);
       }
-      if (!bookId) return;
+      if (!bookId) return "defer";
       const strokes = store.ink[write.localId] ?? [];
       await repo.saveInk(bookId, write.section, strokes, userId);
-      return;
+      return "sent";
     }
 
     case "bookmarks": {
@@ -198,7 +222,7 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
         const bookId = session ? ids.remoteIdFor(session.content) : null;
         await repo.saveBookmark(bookmark, userId, bookId);
       }
-      return;
+      return "sent";
     }
 
     case "settings": {
@@ -213,7 +237,7 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
         },
         userId,
       );
-      return;
+      return "sent";
     }
   }
 }
@@ -226,7 +250,7 @@ async function send(write: PendingWrite, userId: string): Promise<void> {
  * would race that. A reading app's queue is short; the simplicity is worth more
  * than the parallelism.
  */
-export async function flush(): Promise<void> {
+export async function flush(settlePass = false): Promise<void> {
   if (flushing || !currentUser) return;
   const queue = readQueue();
   if (queue.length === 0) return;
@@ -235,22 +259,41 @@ export async function flush(): Promise<void> {
   update({ phase: "pushing", error: null });
 
   try {
+    let deferred = 0;
     for (const item of queue) {
       try {
-        await send(item.write, currentUser);
+        const outcome = await send(item.write, currentUser);
+        // "defer" keeps it queued: the book it depends on is usually further
+        // along this same queue, and dropping it would lose the reader's marks.
+        if (outcome === "defer") {
+          deferred += 1;
+          continue;
+        }
         dequeue(item.write);
       } catch (error) {
         markFailed(item.write);
         const message = error instanceof Error ? error.message : "Could not sync.";
         const offline = typeof navigator !== "undefined" && navigator.onLine === false;
         update({ phase: offline ? "offline" : "error", error: message });
-        // Stop at the first failure rather than hammering a server that is
-        // down, or sending the rest of a chain whose first link did not land.
+        // Stop at a real failure rather than hammering a server that is down,
+        // or sending the rest of a chain whose first link did not land.
         scheduleRetry(item.tries + 1);
         return;
       }
     }
+
     update({ phase: "idle", lastSyncedAt: Date.now(), error: null });
+
+    // Anything deferred was waiting on something earlier in this pass, which
+    // has now been sent. One more go resolves it; without this the marks sit
+    // there until the next edit happens to trigger a flush.
+    // Bounded to a single extra pass. A dependency that is still unresolved
+    // after one settle will not resolve by being asked again in a loop, and an
+    // unbounded retry here would spin forever on it.
+    if (deferred > 0 && !settlePass) {
+      flushing = false;
+      await flush(true);
+    }
   } finally {
     flushing = false;
   }

@@ -21,7 +21,7 @@ const CONFIGURED_SITE_URL =
 export const SITE = {
   name: "NeuroLens",
   /** Trailing slash trimmed so `${SITE.url}${path}` never doubles it. */
-  url: CONFIGURED_SITE_URL.replace(/\/+$/, "") || "https://neurolens.app",
+  url: CONFIGURED_SITE_URL.replace(/\/+$/, "") || "https://neurolens.space",
   locale: "en",
   /** 1200×630, the size both Facebook and X crop least badly. */
   ogImage: "/og.jpg",
