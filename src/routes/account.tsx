@@ -8,7 +8,7 @@ import { PageEnter } from "@/components/gsap-motion";
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { AvatarPicker } from "@/components/auth/avatar-picker";
 import { AnalyticsSettings } from "@/components/analytics-settings";
-import { signOut, useAuthUser } from "@/lib/auth-ui/session";
+import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -150,7 +150,8 @@ function Account() {
                     <p className="truncate text-sm font-medium">{user.name}</p>
                     <p className="truncate text-xs text-muted">{user.email}</p>
                     <p className="mt-1 text-[11px] text-subtle">
-                      Reading here since {new Date(user.createdAt).toLocaleDateString()}
+                      Signed in with {PROVIDER_LABEL[user.provider]} · since{" "}
+                      {new Date(user.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </Card>

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/auth/user-avatar";
-import { signOut, useAuthUser } from "@/lib/auth-ui/session";
+import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 
 /**
  * The header's account control: a sign-in button, or the person's badge.
@@ -85,7 +85,7 @@ export function HeaderAccount() {
           </DropdownMenuItem>
         </div>
         <p className="border-t border-fg/10 px-2 pt-2 pb-1 text-[11px] text-subtle">
-          Signed in as {user.email}
+          Signed in with {PROVIDER_LABEL[user.provider]}
         </p>
       </DropdownMenuContent>
     </DropdownMenu>

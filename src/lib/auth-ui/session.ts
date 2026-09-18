@@ -2,25 +2,27 @@ import { useEffect, useState } from "react";
 import { getSupabase, supabaseConfigured, type User } from "@/lib/supabase/client";
 
 /**
- * The signed-in person, from Supabase, by email and password.
+ * The signed-in person, from Supabase.
  *
- * This was provider sign-in (Google, Apple) and before that a localStorage
- * stand-in. Password sign-in is less work to set up — no OAuth client, no
- * consent screen, no redirect URI to get wrong — but it moves work into the
- * app, and that is what most of this file is:
+ * This file used to be a stand-in: a localStorage key holding an invented user
+ * so the signed-in interface could be designed before a backend existed. Its
+ * own header said it must not ship. The shape it exposed is kept exactly —
+ * `useAuthUser`, `signInWith`, `signOut`, `PROVIDER_LABEL` — so the header, the
+ * account page and the sign-in cards did not have to change; only what sits
+ * behind them did.
  *
- *  - A new account has to confirm its address before it can be used, so
- *    `signUpWithEmail` can succeed without producing a session. The interface
- *    has to say "check your email", not "you are in".
- *  - A forgotten password needs a way back, so there is a reset request and a
- *    reset completion, which are two different moments in two different page
- *    loads.
- *  - Supabase's errors are written for developers. They are translated here,
- *    once, rather than in every form that can hit them.
+ * What is different now, and matters:
+ *
+ *  - A session is a signed token from Supabase, not a value the browser can
+ *    edit. Writing the old key by hand no longer signs anybody in.
+ *  - Signing in leaves the page and comes back. The OAuth redirect is handled
+ *    by the client (`detectSessionInUrl`), so `signInWith` resolves to nothing
+ *    useful — the session arrives on the next load, through the listener.
+ *  - The name and picture come from the provider, and may be absent. An account
+ *    with neither still has to render, so both have fallbacks.
  */
 
-/** Kept as a type because the account page and header still name it. */
-export type AuthProvider = "email";
+export type AuthProvider = "google" | "apple";
 
 export interface AuthUser {
   id: string;
@@ -30,75 +32,52 @@ export interface AuthUser {
   /** Seed for the generated avatar, so a person keeps the same face. */
   avatarSeed: string;
   createdAt: number;
-  /** False until the address has been confirmed. */
-  confirmed: boolean;
 }
 
 export const PROVIDER_LABEL: Record<AuthProvider, string> = {
-  email: "email",
+  google: "Google",
+  apple: "Apple",
 };
 
-/** The shortest password this app will accept. Supabase itself allows six. */
-export const MIN_PASSWORD = 8;
-
+/**
+ * Supabase's user, in the shape the interface already speaks.
+ *
+ * The avatar seed is the user id rather than the email: the id never changes,
+ * and an email can — a person who changes theirs should not also lose the face
+ * they have been reading next to.
+ */
 function toAuthUser(user: User | null): AuthUser | null {
   if (!user) return null;
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const provider = (user.app_metadata?.provider === "apple" ? "apple" : "google") as AuthProvider;
   const name =
-    (typeof metadata.name === "string" && metadata.name.trim()) ||
+    (typeof metadata.full_name === "string" && metadata.full_name) ||
+    (typeof metadata.name === "string" && metadata.name) ||
+    // Apple's private relay gives no name at all after the first sign-in.
     (user.email ? user.email.split("@")[0] : "") ||
     "Reader";
   return {
     id: user.id,
     name,
     email: user.email ?? "",
-    provider: "email",
-    // The id, not the email: an address can change, and changing it should not
-    // also take away the face somebody has been reading next to.
+    provider,
     avatarSeed: user.id,
     createdAt: user.created_at ? Date.parse(user.created_at) : Date.now(),
-    confirmed: Boolean(user.email_confirmed_at ?? user.confirmed_at),
   };
 }
 
 /**
- * Supabase's message, in the words of somebody trying to read a book.
+ * The signed-in user, or null.
  *
- * The originals name the mechanism ("Invalid login credentials", "User already
- * registered"), which tells a reader nothing about what to do next. Deliberately
- * vague about which half of a wrong sign-in was wrong: saying "no account with
- * that address" to anybody who asks turns the form into a way of testing
- * whether a given person has an account here.
+ * Deliberately not `useSyncExternalStore`: Supabase resolves the session
+ * asynchronously, so there is no snapshot to read on the first render. Null
+ * until it answers — which is also what the server renders, so hydration
+ * matches. Use `useAuthStatus` where the difference between "no account" and
+ * "not known yet" matters, because showing a signed-out page to somebody who is
+ * in fact signed in is its own kind of wrong.
  */
-export function friendlyAuthError(message: string): string {
-  const text = message.toLowerCase();
-  if (text.includes("invalid login credentials")) {
-    return "That email and password do not match an account.";
-  }
-  if (text.includes("email not confirmed")) {
-    return "Confirm your email first — check your inbox for the link we sent.";
-  }
-  if (text.includes("already registered") || text.includes("already been registered")) {
-    return "There is already an account with that address. Try signing in instead.";
-  }
-  if (text.includes("password should be at least") || text.includes("password is too short")) {
-    return `Use at least ${MIN_PASSWORD} characters.`;
-  }
-  if (text.includes("weak password") || text.includes("pwned")) {
-    return "That password is too easy to guess. Try a longer one.";
-  }
-  if (text.includes("rate limit") || text.includes("too many requests")) {
-    // Worth naming, because this project sends email through Supabase's own
-    // sender, which allows only a few messages an hour.
-    return "Too many attempts for now. Wait a few minutes and try again.";
-  }
-  if (text.includes("unable to validate email") || text.includes("invalid email")) {
-    return "That does not look like an email address.";
-  }
-  if (text.includes("failed to fetch") || text.includes("networkerror")) {
-    return "Could not reach the server. Check your connection.";
-  }
-  return message || "Something went wrong. Try again.";
+export function useAuthUser(): AuthUser | null {
+  return useAuthStatus().user;
 }
 
 /**
@@ -164,8 +143,8 @@ export function useAuthStatus(): AuthStatus {
       setState({ user, loading: false, configured: true });
     });
 
-    // Fires on sign-in, sign-out, token refresh, password recovery, and in this
-    // tab when another tab does any of them.
+    // Fires on sign-in, sign-out, token refresh, and in this tab when another
+    // tab does any of them.
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!live) return;
       const user = toAuthUser(session?.user ?? null);
@@ -182,91 +161,27 @@ export function useAuthStatus(): AuthStatus {
   return state;
 }
 
-/** The signed-in user, or null. Null while the session is still resolving. */
-export function useAuthUser(): AuthUser | null {
-  return useAuthStatus().user;
-}
-
-function client() {
+/**
+ * Begin an OAuth sign-in.
+ *
+ * Returns nothing: the browser leaves for the provider and comes back to
+ * `redirectTo`, where the client reads the session out of the URL. Anything
+ * this function returned would be read after the page had already gone.
+ */
+export async function signInWith(provider: AuthProvider): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Sign-in is not configured yet.");
-  return supabase;
-}
 
-/** Where Supabase should send somebody after they click a link in an email. */
-function emailRedirect(path: string): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  return `${window.location.origin}${path}`;
-}
-
-export type SignUpOutcome =
-  /** Confirmation is on: an email has gone out and there is no session yet. */
-  | { status: "confirm"; email: string }
-  /** Confirmation is off: they are signed in already. */
-  | { status: "signed-in" };
-
-/**
- * Create an account.
- *
- * Supabase answers the same way whether the address is new or already taken —
- * deliberately, so a sign-up form cannot be used to find out who has an
- * account. That means a "check your inbox" screen is the honest response to
- * both, and somebody who already had an account gets an email saying so.
- */
-export async function signUpWithEmail(
-  email: string,
-  password: string,
-  name?: string,
-): Promise<SignUpOutcome> {
-  const { data, error } = await client().auth.signUp({
-    email: email.trim(),
-    password,
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider,
     options: {
-      data: name?.trim() ? { name: name.trim() } : undefined,
-      emailRedirectTo: emailRedirect("/"),
+      // Back to where they started, not always the home page — somebody who
+      // signed in from the account page should land back on it.
+      redirectTo: typeof window !== "undefined" ? window.location.origin + window.location.pathname : undefined,
+      queryParams: provider === "google" ? { access_type: "offline", prompt: "consent" } : undefined,
     },
   });
-  if (error) throw new Error(friendlyAuthError(error.message));
-  if (data.session) return { status: "signed-in" };
-  return { status: "confirm", email: email.trim() };
-}
-
-export async function signInWithEmail(email: string, password: string): Promise<void> {
-  const { error } = await client().auth.signInWithPassword({
-    email: email.trim(),
-    password,
-  });
-  if (error) throw new Error(friendlyAuthError(error.message));
-}
-
-/**
- * Ask for a reset link.
- *
- * Resolves the same way whether or not the address has an account, for the
- * reason above. The link lands on /reset-password, which is where the new
- * password is actually set.
- */
-export async function requestPasswordReset(email: string): Promise<void> {
-  const { error } = await client().auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: emailRedirect("/reset-password"),
-  });
-  if (error) throw new Error(friendlyAuthError(error.message));
-}
-
-/** Set a new password. Only works while the recovery session is live. */
-export async function updatePassword(password: string): Promise<void> {
-  const { error } = await client().auth.updateUser({ password });
-  if (error) throw new Error(friendlyAuthError(error.message));
-}
-
-/** Send the confirmation email again, for the one that never arrived. */
-export async function resendConfirmation(email: string): Promise<void> {
-  const { error } = await client().auth.resend({
-    type: "signup",
-    email: email.trim(),
-    options: { emailRedirectTo: emailRedirect("/") },
-  });
-  if (error) throw new Error(friendlyAuthError(error.message));
+  if (error) throw new Error(error.message);
 }
 
 export async function signOut(): Promise<void> {
