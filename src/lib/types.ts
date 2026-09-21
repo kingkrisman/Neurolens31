@@ -2,18 +2,24 @@ import type { HighlightColorId } from "./highlight-colors.ts";
 import type { ReadingPatternId } from "./reading-patterns.ts";
 
 export type ReadingMode =
-  | "default"
-  | "adhd"
-  | "dyslexia"
-  | "focus"
-  | "academic"
-  | "speed"
-  | "adaptive";
+  "default" | "adhd" | "dyslexia" | "focus" | "academic" | "speed" | "adaptive";
 
 export type TabId = "explore" | "read" | "library" | "insights" | "settings";
 
 export type AlignId = "left" | "justify";
-export type ThemeId = "paper" | "night" | "contrast" | "sage" | "ink" | "sepia" | "mist" | "dusk" | "cream" | "forest" | "peach" | "butter";
+export type ThemeId =
+  | "paper"
+  | "night"
+  | "contrast"
+  | "sage"
+  | "ink"
+  | "sepia"
+  | "mist"
+  | "dusk"
+  | "cream"
+  | "forest"
+  | "peach"
+  | "butter";
 export type TintId = "none" | "adhd" | "dyslexia" | "focus" | "academic";
 export type RhythmCurve = "steady" | "sentence" | "breath";
 export type ReadingFeel = "slow" | "right" | "fast";
@@ -52,6 +58,31 @@ export interface ReadingProfile {
   letterGuide?: boolean;
   wordGuide?: boolean;
   readingMask?: boolean;
+  /**
+   * How far the mask quiets everything but the live line.
+   *
+   * A single level was the wrong shape for this. How faint the surrounding
+   * text should be is the whole feature, it is a matter of taste and of
+   * eyesight, and picking one number for everyone means picking wrong for most
+   * of them — a level that genuinely silences the page for one reader leaves
+   * another unable to glance back a line.
+   */
+  maskStrength?: MaskStrength;
+  /**
+   * When this account finished, or skipped, the first-run survey.
+   *
+   * Not a reading setting, and it knows it. It lives on the profile because the
+   * profile is the only per-account thing that already syncs — so the survey is
+   * asked once per person rather than once per device, which is the whole point
+   * of asking it. A column on `reading_settings` would be the tidier home and
+   * needs a migration; if one is ever applied, this moves there and nothing
+   * else about the survey changes.
+   *
+   * Set on skip as well as on finish. "Asked and declined" and "answered" are
+   * the same thing to this flag, because re-asking somebody who said no is
+   * worse than never asking.
+   */
+  onboardedAt?: number;
   dimChrome?: boolean;
   lookup?: boolean;
   attentionFollow?: AttentionMode;
@@ -316,7 +347,13 @@ export const NAMED_PRESETS: SavedProfile[] = [
     id: "night",
     name: "Night Reading",
     targetWpm: 200,
-    profile: { ...READING_PROFILES.default, name: "Night Reading", theme: "night", fontSize: 20, lineHeight: 1.8 },
+    profile: {
+      ...READING_PROFILES.default,
+      name: "Night Reading",
+      theme: "night",
+      fontSize: 20,
+      lineHeight: 1.8,
+    },
   },
   {
     id: "bible-study",
@@ -334,18 +371,88 @@ export const COLOR_SCHEMES: {
   room: "light" | "dark";
   line: string;
 }[] = [
-  { id: "paper", label: "Paper", swatch: "#f0e8dc", ink: "#3d2a1f", room: "light", line: "Warm page" },
-  { id: "cream", label: "Cream", swatch: "#f7f1e3", ink: "#2c2418", room: "light", line: "BDA cream · less glare" },
-  { id: "peach", label: "Peach", swatch: "#f4ddd2", ink: "#2a1c16", room: "light", line: "Warm peach · less glare" },
-  { id: "butter", label: "Butter", swatch: "#f2ebc4", ink: "#2a2412", room: "light", line: "Pale yellow · less glare" },
-  { id: "sage", label: "Sage", swatch: "#e7eee6", ink: "#2c3f30", room: "light", line: "Calm green" },
-  { id: "mist", label: "Mist", swatch: "#e8eef2", ink: "#1a232b", room: "light", line: "Cool daylight" },
-  { id: "sepia", label: "Sepia", swatch: "#e9dcc8", ink: "#3a2818", room: "light", line: "Study lamp" },
-  { id: "contrast", label: "Contrast", swatch: "#fffdf6", ink: "#100c08", room: "light", line: "Highest ink · more glare" },
-  { id: "night", label: "Night", swatch: "#1a1612", ink: "#f3eadf", room: "dark", line: "Low glare" },
+  {
+    id: "paper",
+    label: "Paper",
+    swatch: "#f0e8dc",
+    ink: "#3d2a1f",
+    room: "light",
+    line: "Warm page",
+  },
+  {
+    id: "cream",
+    label: "Cream",
+    swatch: "#f7f1e3",
+    ink: "#2c2418",
+    room: "light",
+    line: "BDA cream · less glare",
+  },
+  {
+    id: "peach",
+    label: "Peach",
+    swatch: "#f4ddd2",
+    ink: "#2a1c16",
+    room: "light",
+    line: "Warm peach · less glare",
+  },
+  {
+    id: "butter",
+    label: "Butter",
+    swatch: "#f2ebc4",
+    ink: "#2a2412",
+    room: "light",
+    line: "Pale yellow · less glare",
+  },
+  {
+    id: "sage",
+    label: "Sage",
+    swatch: "#e7eee6",
+    ink: "#2c3f30",
+    room: "light",
+    line: "Calm green",
+  },
+  {
+    id: "mist",
+    label: "Mist",
+    swatch: "#e8eef2",
+    ink: "#1a232b",
+    room: "light",
+    line: "Cool daylight",
+  },
+  {
+    id: "sepia",
+    label: "Sepia",
+    swatch: "#e9dcc8",
+    ink: "#3a2818",
+    room: "light",
+    line: "Study lamp",
+  },
+  {
+    id: "contrast",
+    label: "Contrast",
+    swatch: "#fffdf6",
+    ink: "#100c08",
+    room: "light",
+    line: "Highest ink · more glare",
+  },
+  {
+    id: "night",
+    label: "Night",
+    swatch: "#1a1612",
+    ink: "#f3eadf",
+    room: "dark",
+    line: "Low glare",
+  },
   { id: "dusk", label: "Dusk", swatch: "#1c1418", ink: "#f3e6dc", room: "dark", line: "Warm dark" },
   { id: "ink", label: "Ink", swatch: "#14161a", ink: "#f2f4f8", room: "dark", line: "Cool slate" },
-  { id: "forest", label: "Forest", swatch: "#152019", ink: "#e6f0e8", room: "dark", line: "Deep green" },
+  {
+    id: "forest",
+    label: "Forest",
+    swatch: "#152019",
+    ink: "#e6f0e8",
+    room: "dark",
+    line: "Deep green",
+  },
 ];
 
 export const DARK_SCHEMES: ThemeId[] = ["night", "ink", "dusk", "forest"];
@@ -353,23 +460,118 @@ export const DARK_SCHEMES: ThemeId[] = ["night", "ink", "dusk", "forest"];
 /** Cream/peach/butter: BDA + Rello. Sage: green paper. Pure white is the one to avoid. */
 export const DYSLEXIA_THEMES: ThemeId[] = ["cream", "peach", "butter", "sage", "paper"];
 
-export const FONT_CHOICES: { id: FontId; label: string; hint: string; group: FontGroup; sample: string }[] = [
-  { id: "sans", label: "Sans", hint: "System UI", group: "readable", sample: "Read with less effort." },
-  { id: "sourcesans", label: "Source Sans", hint: "Humanist sans", group: "readable", sample: "Read with less effort." },
-  { id: "inclusive", label: "Inclusive", hint: "Accessible sans", group: "readable", sample: "Read with less effort." },
-  { id: "atkinson", label: "Atkinson", hint: "Distinct I, l, 1", group: "readable", sample: "I, l, 1 stay distinct." },
-  { id: "opendyslexic", label: "OpenDyslexic", hint: "Preference · distinct b/d", group: "dyslexia", sample: "b d p q stay distinct." },
-  { id: "lexend", label: "Lexend", hint: "Low crowding", group: "dyslexia", sample: "Letters keep their space." },
-  { id: "andika", label: "Andika", hint: "Literacy sans", group: "dyslexia", sample: "Built for new readers." },
-  { id: "serif", label: "Newsreader", hint: "Literary serif", group: "literary", sample: "A quieter long page." },
-  { id: "literata", label: "Literata", hint: "Reading serif", group: "literary", sample: "Made for long form." },
-  { id: "comicneue", label: "Comic Neue", hint: "Informal, distinct", group: "literary", sample: "Friendly, unmirrored." },
+export const FONT_CHOICES: {
+  id: FontId;
+  label: string;
+  hint: string;
+  group: FontGroup;
+  sample: string;
+}[] = [
+  {
+    id: "sans",
+    label: "Sans",
+    hint: "System UI",
+    group: "readable",
+    sample: "Read with less effort.",
+  },
+  {
+    id: "sourcesans",
+    label: "Source Sans",
+    hint: "Humanist sans",
+    group: "readable",
+    sample: "Read with less effort.",
+  },
+  {
+    id: "inclusive",
+    label: "Inclusive",
+    hint: "Accessible sans",
+    group: "readable",
+    sample: "Read with less effort.",
+  },
+  {
+    id: "atkinson",
+    label: "Atkinson",
+    hint: "Distinct I, l, 1",
+    group: "readable",
+    sample: "I, l, 1 stay distinct.",
+  },
+  {
+    id: "opendyslexic",
+    label: "OpenDyslexic",
+    hint: "Preference · distinct b/d",
+    group: "dyslexia",
+    sample: "b d p q stay distinct.",
+  },
+  {
+    id: "lexend",
+    label: "Lexend",
+    hint: "Low crowding",
+    group: "dyslexia",
+    sample: "Letters keep their space.",
+  },
+  {
+    id: "andika",
+    label: "Andika",
+    hint: "Literacy sans",
+    group: "dyslexia",
+    sample: "Built for new readers.",
+  },
+  {
+    id: "serif",
+    label: "Newsreader",
+    hint: "Literary serif",
+    group: "literary",
+    sample: "A quieter long page.",
+  },
+  {
+    id: "literata",
+    label: "Literata",
+    hint: "Reading serif",
+    group: "literary",
+    sample: "Made for long form.",
+  },
+  {
+    id: "comicneue",
+    label: "Comic Neue",
+    hint: "Informal, distinct",
+    group: "literary",
+    sample: "Friendly, unmirrored.",
+  },
 ];
 
 export const FONT_GROUPS: { id: FontGroup; label: string; hint: string }[] = [
   { id: "readable", label: "Clear sans", hint: "Everyday reading" },
-  { id: "dyslexia", label: "Dyslexia-friendly", hint: "Spacing and distinct shapes do the work. Weighted-base fonts are a preference, not a proven boost." },
+  {
+    id: "dyslexia",
+    label: "Dyslexia-friendly",
+    hint: "Spacing and distinct shapes do the work. Weighted-base fonts are a preference, not a proven boost.",
+  },
   { id: "literary", label: "Literary", hint: "Long-form serifs and informal faces" },
+];
+
+/**
+ * The three levels of the reading mask, and what each measures.
+ *
+ * The contrast figures are the dimmed text against the page, measured across
+ * all fifteen palettes rather than eyeballed in one. They are in the labels'
+ * hints only as a reminder of what was chosen and why:
+ *
+ *   soft    ~4.5:1  still fully readable; a nudge, not a mask
+ *   medium  ~3.0:1  clearly secondary, glanceable
+ *   strong  ~1.8:1  the page really does go quiet
+ *
+ * `strong` is the default because that is what the mask is for — somebody who
+ * turns it on has asked for the rest of the page to stop competing. `soft`
+ * exists for readers who need the surrounding text to stay legible, and
+ * `prefers-contrast: more` lifts every level regardless of this setting.
+ */
+export const MASK_STRENGTHS = ["soft", "medium", "strong"] as const;
+export type MaskStrength = (typeof MASK_STRENGTHS)[number];
+
+export const MASK_CHOICES: { id: MaskStrength; label: string; hint: string }[] = [
+  { id: "soft", label: "Soft", hint: "Other lines stay easy to read" },
+  { id: "medium", label: "Medium", hint: "Clearly quieter, still glanceable" },
+  { id: "strong", label: "Strong", hint: "The rest of the page goes quiet" },
 ];
 
 export const RHYTHM_CHOICES: { id: RhythmCurve; label: string; hint: string }[] = [

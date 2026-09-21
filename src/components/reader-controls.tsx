@@ -2,6 +2,7 @@ import { Lock, Maximize2, Unlock, X } from "lucide-react";
 import {
   NAMED_PRESETS,
   READING_PROFILES,
+  MASK_CHOICES,
   RHYTHM_CHOICES,
   type LockableSetting,
   type ReadingMode,
@@ -397,6 +398,41 @@ export function ReaderControls({ onClose }: { onClose: () => void }) {
               checked={Boolean(profile.readingMask)}
               onChange={(checked) => setProfile({ ...profile, readingMask: checked })}
             />
+            {profile.readingMask ? (
+              <div>
+                <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">
+                  How quiet
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {MASK_CHOICES.map((level) => (
+                    <button
+                      key={level.id}
+                      type="button"
+                      aria-pressed={(profile.maskStrength ?? "strong") === level.id}
+                      onClick={() => setProfile({ ...profile, maskStrength: level.id })}
+                      className={cn(
+                        "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2 text-left",
+                        (profile.maskStrength ?? "strong") === level.id
+                          ? "bg-fg text-primary-fg"
+                          : "bg-fg/4 hover:bg-fg/8",
+                      )}
+                    >
+                      <span className="text-sm font-medium whitespace-nowrap">{level.label}</span>
+                      <span
+                        className={cn(
+                          "text-xs leading-snug text-pretty",
+                          (profile.maskStrength ?? "strong") === level.id
+                            ? "text-primary-fg/70"
+                            : "text-muted",
+                        )}
+                      >
+                        {level.hint}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <ToggleRow
               id="lookup"
               label="Tap definitions"

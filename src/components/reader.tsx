@@ -990,6 +990,7 @@ export function Reader() {
         // page behind it.
         profile.readingMask && "has-reading-mask",
       )}
+      data-mask={profile.readingMask ? (profile.maskStrength ?? "strong") : undefined}
     >
       <Sheet open={controlsOpen} onOpenChange={setControlsOpen} title="Reading options">
         <ReaderControls onClose={() => setControlsOpen(false)} />

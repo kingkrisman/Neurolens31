@@ -1,6 +1,6 @@
 import { isThemeId } from "./scheme.ts";
 import { resolveRhythmCurve } from "./rhythm.ts";
-import type { FontId, ReadingProfile } from "./types.ts";
+import { MASK_STRENGTHS, type FontId, type MaskStrength, type ReadingProfile } from "./types.ts";
 
 /**
  * The single point every reading profile passes through before it is stored.
@@ -46,6 +46,15 @@ export function normalizeProfile(profile: ReadingProfile): ReadingProfile {
     letterGuide: Boolean(profile.letterGuide),
     wordGuide: Boolean(profile.wordGuide),
     readingMask: Boolean(profile.readingMask),
+    maskStrength: MASK_STRENGTHS.includes(profile.maskStrength as MaskStrength)
+      ? (profile.maskStrength as MaskStrength)
+      : "strong",
+    // Preserved rather than normalised: it is a timestamp, and rewriting it
+    // would re-ask the survey. Anything non-numeric is treated as never asked.
+    onboardedAt:
+      typeof profile.onboardedAt === "number" && profile.onboardedAt > 0
+        ? profile.onboardedAt
+        : undefined,
     /**
      * Pinned off, deliberately — the one exception in this function.
      *

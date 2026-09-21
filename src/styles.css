@@ -248,14 +248,32 @@
      the word guide uses, which rides a line as its box moves rather than
      picking whatever is nearest the middle. See src/lib/reading-line.ts. */
 
-  /* 45% puts the dimmed text at 2.9–3.5:1 against the page across all fifteen
-     palettes — measured, not guessed. That is the band this wants: clearly
-     secondary, still glanceable, so you can look back a line without switching
-     the mask off. The first cut was 26%, which measured 1.8:1 and had turned
-     the surrounding text into a smudge; a reader who wants to re-read the
-     previous line should not have to reach for a setting. */
+  /* How far the page goes quiet, as a mix toward the background. The three
+     percentages were measured across all fifteen palettes rather than picked
+     by eye — dimmed text against the page:
+
+       soft    62%  ~4.5:1   readable; a nudge rather than a mask
+       medium  45%  ~3.0:1   clearly secondary, still glanceable
+       strong  26%  ~1.8:1   the page really does go quiet   (default)
+
+     One level was the wrong shape for this. How faint the rest of the page
+     should be is the whole feature and it is a matter of eyesight as much as
+     taste; a level that silences the page for one reader leaves another unable
+     to look back a line. */
+  .has-reading-mask {
+    --mask-dim: 26%;
+  }
+
+  .has-reading-mask[data-mask="soft"] {
+    --mask-dim: 62%;
+  }
+
+  .has-reading-mask[data-mask="medium"] {
+    --mask-dim: 45%;
+  }
+
   .has-reading-mask .reading-line {
-    color: color-mix(in oklab, var(--color-fg) 45%, var(--color-bg));
+    color: color-mix(in oklab, var(--color-fg) var(--mask-dim), var(--color-bg));
     transition:
       color var(--motion-fast) var(--ease-standard),
       box-shadow var(--motion-fast) var(--ease-standard);
@@ -299,12 +317,15 @@
       inset 0 -1px 0 var(--color-accent);
   }
 
-  /* Asked for more contrast: dim less, so the surrounding text stays legible
-     rather than becoming an obstacle. Someone who needs contrast is the last
-     person who should be given a 26% grey. */
+  /* Asked for more contrast: never dim past the softest level, whatever is
+     chosen. Someone who needs contrast is the last person to be given a 26%
+     grey, and a browser-level request outranks an in-app preference — so this
+     overrides the setting rather than scaling with it. */
   @media (prefers-contrast: more) {
-    .has-reading-mask .reading-line {
-      color: color-mix(in oklab, var(--color-fg) 62%, var(--color-bg));
+    .has-reading-mask,
+    .has-reading-mask[data-mask="medium"],
+    .has-reading-mask[data-mask="strong"] {
+      --mask-dim: 62%;
     }
   }
 
