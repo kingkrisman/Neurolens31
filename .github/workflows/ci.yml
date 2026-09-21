@@ -48,6 +48,15 @@ jobs:
       # locally from the same lockfile, warm cache and cold, and there was no
       # way to find out why from outside. An error nobody can read is an error
       # nobody can fix.
+      # The npm that wrote the lockfile, not the one bundled with Node.
+      # Node 22.12 ships npm 10; this lockfile is written by npm 11, and the
+      # two resolve differently enough that `npm ci` under npm 10 rejected it
+      # outright — "Missing: lru-cache@11.5.3 from lock file" for a package
+      # nothing in the recorded tree asks for. A lockfile is only a contract
+      # between a resolver and itself, so CI has to hold the same one.
+      - name: Use the npm the lockfile was written with
+        run: npm install --global npm@11
+
       - name: Install
         shell: bash
         run: |
@@ -55,13 +64,16 @@ jobs:
           if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
             exit 0
           fi
+          # Annotations are capped at ten per step and are the only part of a
+          # run this account can read back through the API, so the versions go
+          # first — they are what says whether the resolver still disagrees.
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           echo "::group::npm ci output (tail)"
           tail -n 120 /tmp/npm-ci.log
           echo "::endgroup::"
-          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | grep -viE "^npm error (Usage:|$|Clean install)" | head -n 8 | while IFS= read -r line; do
             echo "::error title=npm ci::${line}"
           done
-          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           exit 1
 
       - name: Typecheck
@@ -108,6 +120,15 @@ jobs:
       # locally from the same lockfile, warm cache and cold, and there was no
       # way to find out why from outside. An error nobody can read is an error
       # nobody can fix.
+      # The npm that wrote the lockfile, not the one bundled with Node.
+      # Node 22.12 ships npm 10; this lockfile is written by npm 11, and the
+      # two resolve differently enough that `npm ci` under npm 10 rejected it
+      # outright — "Missing: lru-cache@11.5.3 from lock file" for a package
+      # nothing in the recorded tree asks for. A lockfile is only a contract
+      # between a resolver and itself, so CI has to hold the same one.
+      - name: Use the npm the lockfile was written with
+        run: npm install --global npm@11
+
       - name: Install
         shell: bash
         run: |
@@ -115,13 +136,16 @@ jobs:
           if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
             exit 0
           fi
+          # Annotations are capped at ten per step and are the only part of a
+          # run this account can read back through the API, so the versions go
+          # first — they are what says whether the resolver still disagrees.
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           echo "::group::npm ci output (tail)"
           tail -n 120 /tmp/npm-ci.log
           echo "::endgroup::"
-          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | grep -viE "^npm error (Usage:|$|Clean install)" | head -n 8 | while IFS= read -r line; do
             echo "::error title=npm ci::${line}"
           done
-          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           exit 1
 
       - name: Install Chromium
@@ -167,6 +191,15 @@ jobs:
       # locally from the same lockfile, warm cache and cold, and there was no
       # way to find out why from outside. An error nobody can read is an error
       # nobody can fix.
+      # The npm that wrote the lockfile, not the one bundled with Node.
+      # Node 22.12 ships npm 10; this lockfile is written by npm 11, and the
+      # two resolve differently enough that `npm ci` under npm 10 rejected it
+      # outright — "Missing: lru-cache@11.5.3 from lock file" for a package
+      # nothing in the recorded tree asks for. A lockfile is only a contract
+      # between a resolver and itself, so CI has to hold the same one.
+      - name: Use the npm the lockfile was written with
+        run: npm install --global npm@11
+
       - name: Install
         shell: bash
         run: |
@@ -174,13 +207,16 @@ jobs:
           if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
             exit 0
           fi
+          # Annotations are capped at ten per step and are the only part of a
+          # run this account can read back through the API, so the versions go
+          # first — they are what says whether the resolver still disagrees.
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           echo "::group::npm ci output (tail)"
           tail -n 120 /tmp/npm-ci.log
           echo "::endgroup::"
-          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | grep -viE "^npm error (Usage:|$|Clean install)" | head -n 8 | while IFS= read -r line; do
             echo "::error title=npm ci::${line}"
           done
-          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
           exit 1
 
       # `build:dev` rather than `build`: it skips the deploy-time migration and
