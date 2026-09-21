@@ -1,7 +1,53 @@
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { Landing } from "@/components/landing";
 import { Mark } from "@/components/mark";
 import { PreferredSourceBadge } from "@/components/preferred-source";
+
+/**
+ * Tell the stylesheet when the page has left its top.
+ *
+ * The glass capsule tints via `html[data-scrolled="true"] .nl-glass-tint`, and
+ * on this page nothing ever set that attribute — the only writer was the app
+ * shell's pane `onScroll`, and the shell does not render for a signed-out
+ * visitor. So the header sat permanently in its at-rest state: transparent,
+ * with the tint that exists to separate it from the content behind it never
+ * arriving. The effect was built, correct, and unreachable on the busiest page
+ * on the site.
+ *
+ * Window scroll rather than a pane, because this page scrolls the document.
+ * rAF-throttled for the same reason the document header does it: the listener
+ * fires per frame and the stylesheet only needs a boolean.
+ *
+ * Cleared on unmount. The shell's own writer short-circuits when the value has
+ * not changed, so a stale "true" left behind at sign-in would stick until
+ * somebody scrolled a pane down and back up again.
+ */
+function useScrolledFlag() {
+  useEffect(() => {
+    let frame = 0;
+    let last: boolean | null = null;
+
+    const update = () => {
+      frame = 0;
+      const scrolled = window.scrollY > 16;
+      if (scrolled === last) return;
+      last = scrolled;
+      document.documentElement.dataset.scrolled = scrolled ? "true" : "false";
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      cancelAnimationFrame(frame);
+      delete document.documentElement.dataset.scrolled;
+    };
+  }, []);
+}
 
 /**
  * The home page for somebody who is not signed in.
@@ -15,6 +61,8 @@ import { PreferredSourceBadge } from "@/components/preferred-source";
  * open any of them is an invitation to bounce off five locked doors.
  */
 export function PublicHome() {
+  useScrolledFlag();
+
   return (
     <div className="min-h-dvh bg-bg text-fg">
       <a href="#main-content" className="skip-link">
@@ -22,7 +70,13 @@ export function PublicHome() {
       </a>
       <div className="grain" aria-hidden />
 
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-40">
+      {/* Fixed, not absolute. Absolute meant the header scrolled away with the
+          hero and never came back, so for the whole length of a very long
+          landing page a signed-out visitor had no way to sign in — and the
+          glass, which only tints once content is behind it, was never on screen
+          in the state it was built for. `main` already reserves the height
+          below, so this is a drop-in. */}
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-40">
         <div className="nl-glass relative">
           <div className="nl-glass-pane pointer-events-none absolute inset-0" aria-hidden />
           <div className="nl-glass-tint pointer-events-none absolute inset-0" aria-hidden />

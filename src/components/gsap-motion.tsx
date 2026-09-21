@@ -1,5 +1,5 @@
 import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
-import { useReducedMotion } from "@/lib/prefers-reduced-motion";
+import { prefersReducedMotion, useReducedMotion } from "@/lib/prefers-reduced-motion";
 import { useInView } from "@/lib/use-in-view";
 import { cn } from "@/lib/utils";
 import {
@@ -28,7 +28,7 @@ export function PageEnter({
   useGSAP(
     () => {
       const root = ref.current;
-      if (!root || reduce) return;
+      if (!root || reduce || prefersReducedMotion()) return;
       const items = root.querySelectorAll<HTMLElement>("[data-enter]");
       const targets = items.length ? items : root.querySelectorAll<HTMLElement>(":scope > *");
       if (!targets.length) return;
@@ -78,7 +78,7 @@ export function GsapStagger({
   useGSAP(
     () => {
       const root = ref.current;
-      if (!root || reduce) return;
+      if (!root || reduce || prefersReducedMotion()) return;
       const items = root.querySelectorAll<HTMLElement>(selector);
       if (!items.length) return;
       gsap.fromTo(
@@ -121,7 +121,7 @@ export function GsapCount({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (reduce) {
+    if (reduce || prefersReducedMotion()) {
       el.textContent = `${value}${suffix}`;
       return;
     }
@@ -162,7 +162,7 @@ export function Magnetic({
   useGSAP(
     () => {
       const el = ref.current;
-      if (!el || reduce || !finePointer()) return;
+      if (!el || reduce || prefersReducedMotion() || !finePointer()) return;
       const xTo = gsap.quickTo(el, "x", { duration: 0.45, ease: easeOut });
       const yTo = gsap.quickTo(el, "y", { duration: 0.45, ease: easeOut });
       const onMove = (event: PointerEvent) => {
@@ -204,7 +204,7 @@ export function ScrollScene({ children, className, replayKey }: { children: Reac
 
   useEffect(() => {
     const root = ref.current;
-    if (!root || reduce) return;
+    if (!root || reduce || prefersReducedMotion()) return;
     if (typeof IntersectionObserver === "undefined") return;
     const scroller = root.closest(".pane-scroll, .reader-scroll");
     const nodes = [
@@ -275,7 +275,7 @@ export function StaggerWords({
   useGSAP(
     () => {
       const root = ref.current;
-      if (!root || reduce) return;
+      if (!root || reduce || prefersReducedMotion()) return;
       gsap.fromTo(
         root.querySelectorAll("[data-word]"),
         { y: 10, autoAlpha: 0 },
@@ -318,7 +318,7 @@ export function StaggerBlock({
   useGSAP(
     () => {
       const el = ref.current;
-      if (!el || reduce) return;
+      if (!el || reduce || prefersReducedMotion()) return;
       gsap.fromTo(
         el,
         { y: 14, autoAlpha: 0 },

@@ -40,3 +40,7 @@ public/sitemap.xml
 test-results/
 playwright-report/
 .playwright/
+
+# Preview screenshots, written by hand when checking a change. Regenerated,
+# never reviewed as source.
+.preview/
