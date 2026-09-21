@@ -68,7 +68,13 @@ export default defineConfig({
            * A real value in the environment still wins.
            */
           VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co",
-          VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || "placeholder-anon-key",
+          // Shaped like a real anon key, because `scripts/check-env.mjs`
+          // rightly warns that a twenty-character one is truncated, and a
+          // warning that fires on every test run is a warning people stop
+          // reading. Not a real key and not a real project.
+          VITE_SUPABASE_ANON_KEY:
+            process.env.VITE_SUPABASE_ANON_KEY ||
+            `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${"placeholder".repeat(16)}.not-a-real-key`,
         },
       },
 });

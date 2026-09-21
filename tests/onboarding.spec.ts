@@ -120,3 +120,35 @@ test("skipping also counts as asked", async ({ page }) => {
     "re-asking somebody who declined is worse than never asking",
   ).toBeHidden();
 });
+
+test("the avatar is saved to the account, not the device", async ({ page }) => {
+  // It used to live under a device-wide localStorage key that the sync layer
+  // did not know about: two accounts on one machine shared a face, and a
+  // choice made here never reached anywhere else.
+  await signInFresh(page, "55555555-5555-4555-8555-555555555555");
+  await page.getByRole("button", { name: "Skip" }).click();
+  await page.waitForTimeout(500);
+
+  await page.goto("/account", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1500);
+
+  const picked = page.getByRole("button", { name: /Shuffle|Doodle|Big smile/ }).first();
+  await expect(picked).toBeVisible();
+  await picked.click();
+  await page.waitForTimeout(800);
+
+  const stored = await page.evaluate(() => {
+    const scoped = Object.keys(localStorage).find((k) => k.startsWith("neurolens-profile::"));
+    const profile = scoped ? JSON.parse(localStorage.getItem(scoped)!) : null;
+    return {
+      onAccountProfile: Boolean(profile?.avatar),
+      style: profile?.avatar?.style ?? null,
+      // The old device-wide key must not be what carries the choice any more.
+      deviceWideKeyWritten: localStorage.getItem("neurolens-avatar") !== null,
+    };
+  });
+
+  expect(stored.onAccountProfile, "the avatar should be on the account's profile").toBe(true);
+  expect(stored.style).toBeTruthy();
+  expect(stored.deviceWideKeyWritten, "nothing should still write the device-wide key").toBe(false);
+});

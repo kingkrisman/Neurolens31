@@ -83,6 +83,16 @@ export interface ReadingProfile {
    * worse than never asking.
    */
   onboardedAt?: number;
+  /**
+   * The generated face this reader picked — style, shuffle and background.
+   *
+   * Here for the same reason as `onboardedAt`: not a reading setting, but the
+   * profile is the only per-account object that is both namespaced per reader
+   * and synced, and an avatar needs to be both. Shaped by `AvatarPrefs` in
+   * `lib/avatar-prefs.ts`; typed loosely here so `types.ts` stays a leaf and
+   * the normaliser does not pull the avatar module into a cycle.
+   */
+  avatar?: { style: string; shuffle: number; background: string };
   dimChrome?: boolean;
   lookup?: boolean;
   attentionFollow?: AttentionMode;

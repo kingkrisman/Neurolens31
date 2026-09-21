@@ -1,11 +1,21 @@
-import { useSyncExternalStore } from "react";
+import { useMemo } from "react";
+import { useAppStore } from "@/lib/store";
 
 /**
  * How a person has chosen to look.
  *
- * Kept on the device, beside the rest of their settings. It is appearance, not
- * identity: the face is generated from a seed, so nothing here is a photo and
- * nothing here needs to leave the browser.
+ * It is appearance, not identity: the face is generated from a seed, so nothing
+ * here is a photo and nothing here identifies anybody.
+ *
+ * Stored on the reading profile, which is not where it belongs conceptually and
+ * is exactly where it belongs practically. It used to have its own
+ * `neurolens-avatar` key in raw localStorage, and that was wrong twice over:
+ * the key is device-wide, so two accounts on one machine shared a face — the
+ * same leak the library had before storage was scoped — and nothing in the sync
+ * layer knew about it, so a choice made on a laptop never reached a phone and
+ * died with the browser data. The profile is the one per-account object that is
+ * already namespaced per reader and already synced, so this inherits both
+ * without a migration or a new column.
  */
 
 export const AVATAR_STYLES = [
@@ -26,7 +36,16 @@ export const AVATAR_STYLES = [
 export type AvatarStyleId = (typeof AVATAR_STYLES)[number]["id"];
 
 /** Soft grounds that sit on the app's paper in both themes. "" means none. */
-export const AVATAR_BACKGROUNDS = ["", "f3e8d8", "e7d7f2", "d6e9f5", "d8efdf", "fbe0c9", "f7d4dc", "e3e3e3"] as const;
+export const AVATAR_BACKGROUNDS = [
+  "",
+  "f3e8d8",
+  "e7d7f2",
+  "d6e9f5",
+  "d8efdf",
+  "fbe0c9",
+  "f7d4dc",
+  "e3e3e3",
+] as const;
 
 export interface AvatarPrefs {
   style: AvatarStyleId;
@@ -35,17 +54,28 @@ export interface AvatarPrefs {
   background: string;
 }
 
-export const DEFAULT_AVATAR: AvatarPrefs = { style: "notionists-neutral", shuffle: 0, background: "" };
+export const DEFAULT_AVATAR: AvatarPrefs = {
+  style: "notionists-neutral",
+  shuffle: 0,
+  background: "",
+};
 
+/** The old device-wide key. Read from, never written to. See `legacyAvatar`. */
 const KEY = "neurolens-avatar";
-const listeners = new Set<() => void>();
 
 /** Repair whatever was stored into something renderable. */
 export function normalizeAvatar(value: unknown): AvatarPrefs {
   const input = (value && typeof value === "object" ? value : {}) as Partial<AvatarPrefs>;
-  const style = AVATAR_STYLES.some((s) => s.id === input.style) ? (input.style as AvatarStyleId) : DEFAULT_AVATAR.style;
-  const shuffle = Number.isInteger(input.shuffle) && (input.shuffle as number) >= 0 ? (input.shuffle as number) : 0;
-  const background = (AVATAR_BACKGROUNDS as readonly string[]).includes(String(input.background ?? ""))
+  const style = AVATAR_STYLES.some((s) => s.id === input.style)
+    ? (input.style as AvatarStyleId)
+    : DEFAULT_AVATAR.style;
+  const shuffle =
+    Number.isInteger(input.shuffle) && (input.shuffle as number) >= 0
+      ? (input.shuffle as number)
+      : 0;
+  const background = (AVATAR_BACKGROUNDS as readonly string[]).includes(
+    String(input.background ?? ""),
+  )
     ? String(input.background ?? "")
     : "";
   return { style, shuffle, background };
@@ -56,50 +86,40 @@ export function avatarSeed(base: string, prefs: AvatarPrefs): string {
   return prefs.shuffle > 0 ? `${base}#${prefs.shuffle}` : base;
 }
 
-let cachedRaw: string | null | undefined;
-let cached: AvatarPrefs = DEFAULT_AVATAR;
-
-function snapshot(): AvatarPrefs {
-  let raw: string | null = null;
+/**
+ * What the old device-wide key held.
+ *
+ * Read only as a fallback, and never copied into an account: somebody who
+ * picked a face before this moved keeps seeing it, and the moment they change
+ * anything the choice is written to their profile where it belongs. Nothing
+ * migrates it for them, because writing one account's old avatar into whichever
+ * account happens to sign in next is the bug this is fixing.
+ */
+function legacyAvatar(): AvatarPrefs | null {
   try {
-    raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY);
+    return raw ? normalizeAvatar(JSON.parse(raw)) : null;
   } catch {
-    raw = null;
+    return null;
   }
-  if (raw !== cachedRaw) {
-    cachedRaw = raw;
-    try {
-      cached = normalizeAvatar(raw ? JSON.parse(raw) : null);
-    } catch {
-      cached = DEFAULT_AVATAR;
-    }
-  }
-  return cached;
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === KEY) listener();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
-  };
 }
 
 export function useAvatarPrefs(): AvatarPrefs {
-  return useSyncExternalStore(subscribe, snapshot, () => DEFAULT_AVATAR);
+  // Selected by reference. A selector that normalised inline would return a
+  // fresh object on every render and zustand compares with Object.is, so the
+  // component would re-render forever.
+  const stored = useAppStore((state) => state.profile.avatar);
+  return useMemo(() => normalizeAvatar(stored ?? legacyAvatar()), [stored]);
 }
 
 export function setAvatarPrefs(next: Partial<AvatarPrefs>): AvatarPrefs {
-  const merged = normalizeAvatar({ ...snapshot(), ...next });
-  try {
-    localStorage.setItem(KEY, JSON.stringify(merged));
-  } catch {
-    /* private mode — the choice lasts for this page only */
-  }
-  for (const listener of listeners) listener();
+  const profile = useAppStore.getState().profile;
+  const merged = normalizeAvatar({
+    ...(profile.avatar ?? legacyAvatar() ?? DEFAULT_AVATAR),
+    ...next,
+  });
+  // Through the store, so it lands under this reader's own key and is queued
+  // for their account exactly like every other setting.
+  useAppStore.getState().setProfile({ ...profile, avatar: merged });
   return merged;
 }
