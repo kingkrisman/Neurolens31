@@ -1,7 +1,20 @@
-import { applyCvdPaint, isCvdKind, type CvdKind } from "./color-vision";
-import { DARK_SCHEMES, type ThemeId } from "./types";
+import { applyCvdPaint, isCvdKind, type CvdKind } from "./color-vision.ts";
+import { DARK_SCHEMES, type ThemeId } from "./types.ts";
 
-const SCHEMES: ThemeId[] = ["paper", "night", "contrast", "sage", "ink", "sepia", "mist", "dusk", "cream", "forest", "peach", "butter"];
+const SCHEMES: ThemeId[] = [
+  "paper",
+  "night",
+  "contrast",
+  "sage",
+  "ink",
+  "sepia",
+  "mist",
+  "dusk",
+  "cream",
+  "forest",
+  "peach",
+  "butter",
+];
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === "string" && SCHEMES.includes(value as ThemeId);

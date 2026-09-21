@@ -21,6 +21,7 @@ import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { fitSessions } from "./session-storage.ts";
 import { track } from "./analytics.ts";
+import { normalizeProfile } from "./profile-normalize.ts";
 
 /** Settings whose changes are counted — by name only, never by value. */
 const TRACKED_SETTINGS = [
@@ -51,7 +52,14 @@ const TRACKED_SETTINGS = [
  */
 const lastSettingEvent = new Map<string, number>();
 import { DEFAULT_HIGHLIGHT_COLOR, colorById, type HighlightColorId } from "./highlight-colors.ts";
-import { inkColorById, strokeId, toolById, trimStrokes, type InkStroke, type InkToolId } from "./ink.ts";
+import {
+  inkColorById,
+  strokeId,
+  toolById,
+  trimStrokes,
+  type InkStroke,
+  type InkToolId,
+} from "./ink.ts";
 import type { NeuralEvent } from "./neural.ts";
 import { applyColorScheme, isThemeId } from "./scheme";
 import { resolveRhythmCurve } from "./rhythm";
@@ -259,7 +267,12 @@ interface AppState {
   removeHighlight: (lineIdx: number, section: number, start: number) => void;
   annotateHighlight: (lineIdx: number, section: number, start: number, note: string) => void;
   setMarkerColor: (color: HighlightColorId) => void;
-  recolorHighlight: (lineIdx: number, section: number, start: number, color: HighlightColorId) => void;
+  recolorHighlight: (
+    lineIdx: number,
+    section: number,
+    start: number,
+    color: HighlightColorId,
+  ) => void;
   addStroke: (stroke: Omit<InkStroke, "id" | "at">) => void;
   eraseStrokes: (ids: string[]) => void;
   undoStroke: (section: number) => void;
@@ -288,44 +301,6 @@ function persistProfile(profile: ReadingProfile, mode: ReadingMode) {
 function persistProfileQuietly(profile: ReadingProfile, mode: ReadingMode) {
   writeLocal(PROFILE_KEY, JSON.stringify(profile));
   writeLocal(MODE_KEY, mode);
-}
-
-const FONT_IDS: FontId[] = [
-  "sans",
-  "serif",
-  "lexend",
-  "atkinson",
-  "inclusive",
-  "andika",
-  "opendyslexic",
-  "literata",
-  "comicneue",
-  "sourcesans",
-];
-
-function normalizeProfile(profile: ReadingProfile): ReadingProfile {
-  const rhythmCurve = resolveRhythmCurve(profile.rhythmCurve, profile.rhythmOptimization);
-  return {
-    ...profile,
-    fontFamily: FONT_IDS.includes(profile.fontFamily) ? profile.fontFamily : "sans",
-    theme: isThemeId(profile.theme) ? profile.theme : "paper",
-    rhythmCurve,
-    rhythmOptimization: rhythmCurve !== "steady",
-    syllables: Boolean(profile.syllables),
-    letterGuide: Boolean(profile.letterGuide),
-    wordGuide: Boolean(profile.wordGuide),
-    readingMask: false,
-    focusHighlight: false,
-    dimChrome: Boolean(profile.dimChrome),
-    lookup: profile.lookup !== false,
-    attentionFollow: profile.attentionFollow === "pointer" ? "pointer" : "line",
-    focusBand: profile.focusBand === 2 || profile.focusBand === 3 ? profile.focusBand : 1,
-    plainLanguage: Boolean(profile.plainLanguage),
-    motionCues: Boolean(profile.motionCues),
-    // Present unless the reader has turned it off, so an existing profile that
-    // predates the companion still gets one.
-    companion: profile.companion !== false,
-  };
 }
 
 function persistAndApply(profile: ReadingProfile, mode: ReadingMode) {
@@ -399,7 +374,9 @@ function readHighlights(raw: unknown): Record<string, Highlight[]> {
     const kept = value
       .filter(
         (item): item is Highlight =>
-          Boolean(item) && typeof item === "object" && typeof (item as Highlight).lineIdx === "number",
+          Boolean(item) &&
+          typeof item === "object" &&
+          typeof (item as Highlight).lineIdx === "number",
       )
       // Marks saved before highlighting had an extent covered a whole sentence,
       // so that is exactly what they are restored as: the range they always
@@ -458,7 +435,13 @@ function refreshRecommendation(
   );
 }
 
-function withSessionMetrics(sessions: Session[], text: string, reading: ReadingSnapshot, targetWpm: number, section: number): Session[] {
+function withSessionMetrics(
+  sessions: Session[],
+  text: string,
+  reading: ReadingSnapshot,
+  targetWpm: number,
+  section: number,
+): Session[] {
   if (!text) return sessions;
   const idleMs = reading.pausedAt ? Math.max(0, Date.now() - reading.pausedAt) : 0;
   const pattern = classifyReading({
@@ -492,7 +475,11 @@ function withSessionMetrics(sessions: Session[], text: string, reading: ReadingS
   );
 }
 
-function previousFor(setting: AdaptiveRecommendation["setting"], profile: ReadingProfile, targetWpm: number) {
+function previousFor(
+  setting: AdaptiveRecommendation["setting"],
+  profile: ReadingProfile,
+  targetWpm: number,
+) {
   if (setting === "targetWpm") return targetWpm;
   if (setting === "lineHeight") return profile.lineHeight;
   if (setting === "theme") return profile.theme;
@@ -615,12 +602,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   hydrate: () => {
     if (get().hydrated || typeof window === "undefined") return;
     try {
-      const sessions = JSON.parse(localStorage.getItem(scopedKey(SESSIONS_KEY)) || "[]") as Session[];
+      const sessions = JSON.parse(
+        localStorage.getItem(scopedKey(SESSIONS_KEY)) || "[]",
+      ) as Session[];
       const adaptiveMemory = JSON.parse(
         localStorage.getItem(scopedKey(ADAPTIVE_MEMORY_KEY)) || "{}",
       ) as AdaptiveMemory;
       const savedProfile = localStorage.getItem(scopedKey(PROFILE_KEY));
-      const savedMode = (localStorage.getItem(scopedKey(MODE_KEY)) as ReadingMode | null) ?? "default";
+      const savedMode =
+        (localStorage.getItem(scopedKey(MODE_KEY)) as ReadingMode | null) ?? "default";
       const mode = READING_PROFILES[savedMode] ? savedMode : "default";
       const profile = normalizeProfile(
         savedProfile
@@ -631,14 +621,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       const savedCvd = localStorage.getItem(scopedKey(CVD_KEY));
       const cvdPreview = isCvdKind(savedCvd) ? savedCvd : "none";
       applyColorScheme(profile.theme, cvdPreview);
-      const lockedSettings = JSON.parse(localStorage.getItem(scopedKey(LOCKS_KEY)) || "[]") as LockableSetting[];
-      const savedProfiles = JSON.parse(localStorage.getItem(scopedKey(SAVED_KEY)) || "[]") as SavedProfile[];
-      const bookmarks = JSON.parse(localStorage.getItem(scopedKey(BOOKMARKS_KEY)) || "[]") as Bookmark[];
-      const highlights = JSON.parse(localStorage.getItem(scopedKey(HIGHLIGHTS_KEY)) || "{}") as Record<string, number[]>;
+      const lockedSettings = JSON.parse(
+        localStorage.getItem(scopedKey(LOCKS_KEY)) || "[]",
+      ) as LockableSetting[];
+      const savedProfiles = JSON.parse(
+        localStorage.getItem(scopedKey(SAVED_KEY)) || "[]",
+      ) as SavedProfile[];
+      const bookmarks = JSON.parse(
+        localStorage.getItem(scopedKey(BOOKMARKS_KEY)) || "[]",
+      ) as Bookmark[];
+      const highlights = JSON.parse(
+        localStorage.getItem(scopedKey(HIGHLIGHTS_KEY)) || "{}",
+      ) as Record<string, number[]>;
       // colorById settles an unknown or absent value, so a palette that changes
       // later cannot strand someone on a colour that no longer exists.
       const markerColor = colorById(localStorage.getItem(scopedKey(MARKER_KEY)) ?? undefined).id;
-      const ink = JSON.parse(localStorage.getItem(scopedKey(INK_KEY)) || "{}") as Record<string, InkStroke[]>;
+      const ink = JSON.parse(localStorage.getItem(scopedKey(INK_KEY)) || "{}") as Record<
+        string,
+        InkStroke[]
+      >;
       const inkTool = toolById(localStorage.getItem(scopedKey(INK_TOOL_KEY)) ?? undefined).id;
       const inkColor = inkColorById(localStorage.getItem(scopedKey(INK_COLOR_KEY)) ?? undefined).id;
       if (!localStorage.getItem(LOOKUP_MIGRATION)) {
@@ -648,8 +649,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({
         sessions: Array.isArray(sessions) ? sessions : [],
-        adaptiveMemory:
-          adaptiveMemory && typeof adaptiveMemory === "object" ? adaptiveMemory : {},
+        adaptiveMemory: adaptiveMemory && typeof adaptiveMemory === "object" ? adaptiveMemory : {},
         profile,
         mode,
         targetWpm: Number.isFinite(savedWpm) && savedWpm >= 120 ? savedWpm : 220,
@@ -676,7 +676,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const current = get().tab;
     if (tab === "read" && !get().text) return;
     const direction = TAB_ORDER.indexOf(tab) >= TAB_ORDER.indexOf(current) ? 1 : -1;
-    set({ tab, direction, autoScrolling: false, controlsOpen: tab === "read" ? get().controlsOpen : false });
+    set({
+      tab,
+      direction,
+      autoScrolling: false,
+      controlsOpen: tab === "read" ? get().controlsOpen : false,
+    });
     if (tab !== current) track("tab_view", { tab });
   },
 
@@ -695,7 +700,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     } else {
       forgetPdfDocument();
     }
-    const title = meta?.title || text.split(/\n/).find((line) => line.trim())?.slice(0, 60) || "Untitled reading";
+    const title =
+      meta?.title ||
+      text
+        .split(/\n/)
+        .find((line) => line.trim())
+        ?.slice(0, 60) ||
+      "Untitled reading";
     const sessions = [
       { title, content: text, openedAt: Date.now(), progress: 0, kind, sourceId: meta?.sourceId },
       ...get().sessions.filter(
@@ -712,10 +723,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     // zero while the reader is showing parts.
     const declaredChapters = kind === "text" ? splitTextChapters(text) : [];
     const textChapters =
-      kind === "text" && declaredChapters.length === 0
-        ? paginateLongText(text)
-        : declaredChapters;
-    const chapterCount = kind === "pdf" ? pdfChapters.length : textChapters.length > 1 ? textChapters.length : 0;
+      kind === "text" && declaredChapters.length === 0 ? paginateLongText(text) : declaredChapters;
+    const chapterCount =
+      kind === "pdf" ? pdfChapters.length : textChapters.length > 1 ? textChapters.length : 0;
     const initialPage =
       kind === "pdf" ? Math.min(pages.length, Math.max(1, meta?.pdfPage ?? 1)) : 0;
     const chapterIndex =
@@ -789,7 +799,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         chapterIndex: next,
         pdfPage: start,
         autoScrolling: false,
-        reading: { ...reading, progress: state.pdfPageCount ? start / state.pdfPageCount : next / state.chapterCount },
+        reading: {
+          ...reading,
+          progress: state.pdfPageCount ? start / state.pdfPageCount : next / state.chapterCount,
+        },
       });
       return;
     }
@@ -806,10 +819,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const base = READING_PROFILES[mode];
       if (!base) return;
       const current = get().profile;
-      const next = persistAndApply(
-        { ...base, theme: current.theme, align: current.align },
-        mode,
-      );
+      const next = persistAndApply({ ...base, theme: current.theme, align: current.align }, mode);
       const state = get();
       set({
         mode,
@@ -916,11 +926,29 @@ export const useAppStore = create<AppState>((set, get) => ({
       reading.longDwellCount === (prev.longDwellCount ?? 0) &&
       reading.forwardSteps === (prev.forwardSteps ?? 0);
     const sameNeural = (reading.neuralEvents?.length ?? 0) === (prev.neuralEvents?.length ?? 0);
-    if (sameProgress && sameWpm && samePauses && sameRereads && sameSkips && samePaused && sameWords && sameDwell && sameNeural) return;
+    if (
+      sameProgress &&
+      sameWpm &&
+      samePauses &&
+      sameRereads &&
+      sameSkips &&
+      samePaused &&
+      sameWords &&
+      sameDwell &&
+      sameNeural
+    )
+      return;
     // A PDF is divided by page and a text by part, and the two are counted
     // separately — pass whichever one this book is actually using.
-    const section = state.pdfPageCount > 1 ? state.pdfPage : state.chapterCount > 1 ? state.chapterIndex : 0;
-    const sessions = withSessionMetrics(state.sessions, state.text, reading, state.targetWpm, section);
+    const section =
+      state.pdfPageCount > 1 ? state.pdfPage : state.chapterCount > 1 ? state.chapterIndex : 0;
+    const sessions = withSessionMetrics(
+      state.sessions,
+      state.text,
+      reading,
+      state.targetWpm,
+      section,
+    );
 
     // Close the loop before choosing again: score any change already made
     // against how reading has gone since, so a lever that did not help this
@@ -957,8 +985,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // book against a dozen stored books character-by-character is the kind of
     // cost that only shows up once someone has actually used the app a while.
     const existing = state.sessions.find(
-      (session) =>
-        session.content.length === state.text.length && session.content === state.text,
+      (session) => session.content.length === state.text.length && session.content === state.text,
     );
     const shouldPersist =
       !existing ||
@@ -984,20 +1011,48 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
     const previousValue = previousFor(recommendation.setting, profile, targetWpm);
-    if (recommendation.setting === "targetWpm" && typeof recommendation.recommendedValue === "number") {
+    if (
+      recommendation.setting === "targetWpm" &&
+      typeof recommendation.recommendedValue === "number"
+    ) {
       persistTargetWpm(recommendation.recommendedValue);
       set({ targetWpm: recommendation.recommendedValue });
-    } else if (recommendation.setting === "lineHeight" && typeof recommendation.recommendedValue === "number") {
-      const next = persistAndApply({ ...profile, lineHeight: recommendation.recommendedValue }, get().mode);
+    } else if (
+      recommendation.setting === "lineHeight" &&
+      typeof recommendation.recommendedValue === "number"
+    ) {
+      const next = persistAndApply(
+        { ...profile, lineHeight: recommendation.recommendedValue },
+        get().mode,
+      );
       set({ profile: next });
-    } else if (recommendation.setting === "fontSize" && typeof recommendation.recommendedValue === "number") {
-      const next = persistAndApply({ ...profile, fontSize: recommendation.recommendedValue }, get().mode);
+    } else if (
+      recommendation.setting === "fontSize" &&
+      typeof recommendation.recommendedValue === "number"
+    ) {
+      const next = persistAndApply(
+        { ...profile, fontSize: recommendation.recommendedValue },
+        get().mode,
+      );
       set({ profile: next });
-    } else if (recommendation.setting === "focusHighlight" && typeof recommendation.recommendedValue === "boolean") {
-      const next = persistAndApply({ ...profile, focusHighlight: recommendation.recommendedValue }, get().mode);
+    } else if (
+      recommendation.setting === "focusHighlight" &&
+      typeof recommendation.recommendedValue === "boolean"
+    ) {
+      const next = persistAndApply(
+        { ...profile, focusHighlight: recommendation.recommendedValue },
+        get().mode,
+      );
       set({ profile: next });
-    } else if (recommendation.setting === "theme" && typeof recommendation.recommendedValue === "string" && isThemeId(recommendation.recommendedValue)) {
-      const next = persistAndApply({ ...profile, theme: recommendation.recommendedValue }, get().mode);
+    } else if (
+      recommendation.setting === "theme" &&
+      typeof recommendation.recommendedValue === "string" &&
+      isThemeId(recommendation.recommendedValue)
+    ) {
+      const next = persistAndApply(
+        { ...profile, theme: recommendation.recommendedValue },
+        get().mode,
+      );
       set({ profile: next });
     }
     // Remember the strain this lever was reaching for, so its effect can be
@@ -1065,11 +1120,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
     if (change.setting === "focusHighlight" && typeof change.previousValue === "boolean") {
-      const next = persistAndApply({ ...profile, focusHighlight: change.previousValue }, get().mode);
+      const next = persistAndApply(
+        { ...profile, focusHighlight: change.previousValue },
+        get().mode,
+      );
       set({ profile: next, lastAdaptiveChange: null });
       return;
     }
-    if (change.setting === "theme" && typeof change.previousValue === "string" && isThemeId(change.previousValue)) {
+    if (
+      change.setting === "theme" &&
+      typeof change.previousValue === "string" &&
+      isThemeId(change.previousValue)
+    ) {
       const next = persistAndApply({ ...profile, theme: change.previousValue }, get().mode);
       set({ profile: next, lastAdaptiveChange: null });
     }
@@ -1077,7 +1139,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleLock: (setting) => {
     const locked = get().lockedSettings;
-    const next = locked.includes(setting) ? locked.filter((item) => item !== setting) : [...locked, setting];
+    const next = locked.includes(setting)
+      ? locked.filter((item) => item !== setting)
+      : [...locked, setting];
     writeLocal(LOCKS_KEY, JSON.stringify(next));
     sync.settingsChanged();
     set({ lockedSettings: next });
@@ -1298,17 +1362,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   setInkMode: (on) => set({ inkMode: on }),
 
   toggleBookmark: () => {
-    const { text, reading, bookmarks, sourceKind, sourceId, pdfPage, chapterIndex, sessions } = get();
+    const { text, reading, bookmarks, sourceKind, sourceId, pdfPage, chapterIndex, sessions } =
+      get();
     if (!text) return;
     const match = (item: Bookmark) =>
       sourceId ? item.sourceId === sourceId : item.content === text;
     const existing = bookmarks.find(match);
     const title =
       sessions[0]?.title ||
-      text.split(/\n/).find((line) => line.trim())?.slice(0, 60) ||
+      text
+        .split(/\n/)
+        .find((line) => line.trim())
+        ?.slice(0, 60) ||
       "Bookmark";
     const start = Math.max(0, Math.floor(reading.progress * Math.max(0, text.length - 90)));
-    const excerpt = text.replace(/\s+/g, " ").slice(start, start + 90).trim();
+    const excerpt = text
+      .replace(/\s+/g, " ")
+      .slice(start, start + 90)
+      .trim();
     const next = existing
       ? bookmarks.filter((item) => item.id !== existing.id)
       : [
