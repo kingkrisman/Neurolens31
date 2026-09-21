@@ -42,8 +42,27 @@ jobs:
       # if what it holds is bad the failure is permanent and looks like a code
       # problem. Thirty seconds a run is worth not having a failure mode that
       # cannot be told apart from a real one.
+      # Reports its own failure, because the raw logs cannot be read without
+      # admin rights on the repository — the API answers 403 — while check-run
+      # annotations can. `npm ci` was failing here on every push and succeeding
+      # locally from the same lockfile, warm cache and cold, and there was no
+      # way to find out why from outside. An error nobody can read is an error
+      # nobody can fix.
       - name: Install
-        run: npm ci --no-audit --no-fund
+        shell: bash
+        run: |
+          set -o pipefail
+          if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
+            exit 0
+          fi
+          echo "::group::npm ci output (tail)"
+          tail -n 120 /tmp/npm-ci.log
+          echo "::endgroup::"
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+            echo "::error title=npm ci::${line}"
+          done
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
+          exit 1
 
       - name: Typecheck
         run: npm run typecheck
@@ -83,8 +102,27 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Reports its own failure, because the raw logs cannot be read without
+      # admin rights on the repository — the API answers 403 — while check-run
+      # annotations can. `npm ci` was failing here on every push and succeeding
+      # locally from the same lockfile, warm cache and cold, and there was no
+      # way to find out why from outside. An error nobody can read is an error
+      # nobody can fix.
       - name: Install
-        run: npm ci --no-audit --no-fund
+        shell: bash
+        run: |
+          set -o pipefail
+          if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
+            exit 0
+          fi
+          echo "::group::npm ci output (tail)"
+          tail -n 120 /tmp/npm-ci.log
+          echo "::endgroup::"
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+            echo "::error title=npm ci::${line}"
+          done
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
+          exit 1
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -123,8 +161,27 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Reports its own failure, because the raw logs cannot be read without
+      # admin rights on the repository — the API answers 403 — while check-run
+      # annotations can. `npm ci` was failing here on every push and succeeding
+      # locally from the same lockfile, warm cache and cold, and there was no
+      # way to find out why from outside. An error nobody can read is an error
+      # nobody can fix.
       - name: Install
-        run: npm ci --no-audit --no-fund
+        shell: bash
+        run: |
+          set -o pipefail
+          if npm ci --no-audit --no-fund 2>&1 | tee /tmp/npm-ci.log; then
+            exit 0
+          fi
+          echo "::group::npm ci output (tail)"
+          tail -n 120 /tmp/npm-ci.log
+          echo "::endgroup::"
+          grep -E "^npm (error|ERR!)" /tmp/npm-ci.log | head -n 25 | while IFS= read -r line; do
+            echo "::error title=npm ci::${line}"
+          done
+          echo "::error title=npm ci::node $(node -v) npm $(npm -v) on $(uname -sm)"
+          exit 1
 
       # `build:dev` rather than `build`: it skips the deploy-time migration and
       # the environment check, so it proves the app compiles without needing
