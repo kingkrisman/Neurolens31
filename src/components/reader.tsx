@@ -1,4 +1,12 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import {
   Bookmark,
@@ -58,7 +66,12 @@ import { ReadingCoach } from "@/components/reading-coach";
 import { ReconnectDock } from "@/components/reconnect-card";
 import { PdfPageCanvas, ReaderPager } from "@/components/pdf-pager";
 import { splitPdfPages, joinPdfPages } from "@/lib/pdf-pages";
-import { detectChapters, joinTextChapters, paginateLongText, splitTextChapters } from "@/lib/chapters";
+import {
+  detectChapters,
+  joinTextChapters,
+  paginateLongText,
+  splitTextChapters,
+} from "@/lib/chapters";
 import { searchBook } from "@/lib/book-search";
 import { exportHighlights } from "@/lib/data-export";
 import {
@@ -98,7 +111,14 @@ import { copyReading, downloadReading } from "@/lib/reading-export";
 import { easeOut, gsap, registerGsap, useGSAP } from "@/lib/gsap";
 import { useReducedMotion } from "@/lib/prefers-reduced-motion";
 import { buildCheckpoints, scoreComprehension } from "@/lib/comprehension";
-import { pauseSpeech, rateFromWpm, resumeSpeech, speakText, speechSupported, stopSpeech } from "@/lib/speech";
+import {
+  pauseSpeech,
+  rateFromWpm,
+  resumeSpeech,
+  speakText,
+  speechSupported,
+  stopSpeech,
+} from "@/lib/speech";
 
 registerGsap();
 
@@ -114,13 +134,31 @@ function afterMenu(fn: () => void) {
 
 /** IconSwap takes components, so the Phosphor data is wrapped to match. */
 const PhPause = (props: { size?: number; className?: string }) => (
-  <Icon icon={phPause} width={props.size ?? 19} height={props.size ?? 19} aria-hidden className={props.className} />
+  <Icon
+    icon={phPause}
+    width={props.size ?? 19}
+    height={props.size ?? 19}
+    aria-hidden
+    className={props.className}
+  />
 );
 const PhPlay = (props: { size?: number; className?: string }) => (
-  <Icon icon={phPlay} width={props.size ?? 19} height={props.size ?? 19} aria-hidden className={props.className} />
+  <Icon
+    icon={phPlay}
+    width={props.size ?? 19}
+    height={props.size ?? 19}
+    aria-hidden
+    className={props.className}
+  />
 );
 const PhSpeaker = (props: { size?: number; className?: string }) => (
-  <Icon icon={speakerHigh} width={props.size ?? 19} height={props.size ?? 19} aria-hidden className={props.className} />
+  <Icon
+    icon={speakerHigh}
+    width={props.size ?? 19}
+    height={props.size ?? 19}
+    aria-hidden
+    className={props.className}
+  />
 );
 
 export function Reader() {
@@ -222,11 +260,14 @@ export function Reader() {
     () => (sourceKind === "pdf" ? detectChapters(pdfPages) : []),
     [sourceKind, pdfPages],
   );
-  const chapters = sourceKind === "pdf" ? pdfChapters : textChapters.map((chapter, index) => ({
-    title: chapter.title,
-    startPage: index + 1,
-    endPage: index + 1,
-  }));
+  const chapters =
+    sourceKind === "pdf"
+      ? pdfChapters
+      : textChapters.map((chapter, index) => ({
+          title: chapter.title,
+          startPage: index + 1,
+          endPage: index + 1,
+        }));
   const pageCount = pdfPageCount || pdfPages.length;
   const paged = sourceKind === "pdf" && pageCount > 0;
   const chaptered = chapterCount > 1;
@@ -272,7 +313,9 @@ export function Reader() {
     if (node) {
       if (prev != null) node.querySelector(`#line-${prev}`)?.classList.remove("active");
       if (lineIdx == null) {
-        node.querySelectorAll(".reading-line.active").forEach((el) => el.classList.remove("active"));
+        node
+          .querySelectorAll(".reading-line.active")
+          .forEach((el) => el.classList.remove("active"));
       } else {
         node.querySelector(`#line-${lineIdx}`)?.classList.add("active");
         node.dispatchEvent(new Event("nl-line"));
@@ -364,7 +407,9 @@ export function Reader() {
     speechIndex.current = index;
     markActiveLine(item.lineIdx);
     followStateRef.current = { id: item.lineIdx, boxIndex: 0 };
-    document.getElementById(`line-${item.lineIdx}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document
+      .getElementById(`line-${item.lineIdx}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
     speakText(profile.plainLanguage ? applyPlainLanguage(item.text) : item.text, {
       rate: rateFromWpm(targetWpm),
       onBoundary: (charIndex) => {
@@ -401,14 +446,23 @@ export function Reader() {
     setIsPaused(false);
     announce("Reading aloud");
     const current = activeLineRef.current;
-    const start = current == null ? 0 : Math.max(0, lines.findIndex((line) => line.lineIdx === current));
+    const start =
+      current == null
+        ? 0
+        : Math.max(
+            0,
+            lines.findIndex((line) => line.lineIdx === current),
+          );
     speakAt(start);
   }
 
-  useEffect(() => () => {
-    stopSpeech();
-    window.clearTimeout(resumeTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      stopSpeech();
+      window.clearTimeout(resumeTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     // Taken once, and taken away — the placement effect below runs on every
@@ -484,7 +538,11 @@ export function Reader() {
   useEffect(() => {
     const node = scrollRef.current;
     if (!node || isSpeaking) return;
-    if (!profile.wordGuide) return;
+    // Both features need to know which line is being read, and they are
+    // independent: the mask dims everything else, the guide marks the line.
+    // This used to check the guide alone, so turning the mask on tracked
+    // nothing and every line stayed dimmed.
+    if (!profile.wordGuide && !profile.readingMask) return;
     let frame = 0;
     const sync = () => {
       frame = 0;
@@ -506,7 +564,7 @@ export function Reader() {
       window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [viewText, isSpeaking, profile.wordGuide, lines.length, markActiveLine]);
+  }, [viewText, isSpeaking, profile.wordGuide, profile.readingMask, lines.length, markActiveLine]);
 
   // Cmd/Ctrl-F is what everyone reaches for, so it opens the in-book find
   // rather than the browser's — which would only search the section on screen
@@ -525,7 +583,14 @@ export function Reader() {
     if (!paged && !chaptered) return;
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      )
+        return;
       if (event.key === "ArrowRight" || event.key === "PageDown") {
         event.preventDefault();
         if (chaptered) setChapter(chapterIndex < 1 ? 1 : chapterIndex + 1);
@@ -713,7 +778,15 @@ export function Reader() {
     return () => {
       for (const name of allRegistryNames()) registry.delete(name);
     };
-  }, [marksHere, viewText, profile.fontSize, profile.lineHeight, profile.bionicStrength, profile.fontFamily, profile.theme]);
+  }, [
+    marksHere,
+    viewText,
+    profile.fontSize,
+    profile.lineHeight,
+    profile.bionicStrength,
+    profile.fontFamily,
+    profile.theme,
+  ]);
 
   /**
    * Mark whatever was dragged over.
@@ -835,7 +908,8 @@ export function Reader() {
         programmaticScroll.current = false;
         carry -= px;
       }
-      const line = lines[Math.min(lines.length - 1, Math.max(0, Math.floor(localProgress * lines.length)))];
+      const line =
+        lines[Math.min(lines.length - 1, Math.max(0, Math.floor(localProgress * lines.length)))];
       if (line) markActiveLine(line.lineIdx);
       if (node.scrollTop + node.clientHeight >= node.scrollHeight - 4) {
         setAutoScrolling(false);
@@ -887,7 +961,13 @@ export function Reader() {
   );
 
   const sessionTitle = useAppStore((s) => s.sessions[0]?.title);
-  const readingTitle = sessionTitle || text.split(/\n/).find((line) => line.trim())?.slice(0, 80) || "Untitled reading";
+  const readingTitle =
+    sessionTitle ||
+    text
+      .split(/\n/)
+      .find((line) => line.trim())
+      ?.slice(0, 80) ||
+    "Untitled reading";
 
   useGSAP(
     () => {
@@ -905,6 +985,10 @@ export function Reader() {
         TINT_CLASS[profile.tint] ?? "bg-bg",
         rhythmCurve === "breath" && "rhythm-breath",
         autoScrolling && "is-autoscrolling",
+        // Dims every line but the one being read. The class goes here rather
+        // than on the scroller so the rules can reach both the text and the
+        // page behind it.
+        profile.readingMask && "has-reading-mask",
       )}
     >
       <Sheet open={controlsOpen} onOpenChange={setControlsOpen} title="Reading options">
@@ -926,190 +1010,207 @@ export function Reader() {
           data-resume={resumeLine ?? undefined}
         >
           <article
-          aria-labelledby="reading-title"
-          className={cn(
-            // `relative` so the ink surface can cover exactly this column, and
-            // scroll with it rather than with the viewport.
-            "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
-            FONT_CLASS[profile.fontFamily] ?? "font-sans",
-            "break-words",
-            profile.wordGuide && "word-guide-on",
-            profile.align === "justify" && !titlePage && "text-justify",
-            titlePage && "is-title-page",
-          )}
-          style={{
-            fontSize: profile.fontSize,
-            lineHeight: profile.lineHeight,
-            letterSpacing: `${profile.letterSpacing}em`,
-            wordSpacing: `${profile.wordSpacing}em`,
-          }}
-        >
-          <InkLayer
-            strokes={bookInk}
-            section={section}
-            tool={inkTool}
-            color={inkColor}
-            inkMode={inkMode}
-            containerRef={scrollRef}
-            layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}`}
-            onCommit={({ lineIdx, points }) => {
-              addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points });
-              track("ink_stroke", { tool: inkTool });
+            aria-labelledby="reading-title"
+            className={cn(
+              // `relative` so the ink surface can cover exactly this column, and
+              // scroll with it rather than with the viewport.
+              "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
+              FONT_CLASS[profile.fontFamily] ?? "font-sans",
+              "break-words",
+              profile.wordGuide && "word-guide-on",
+              profile.align === "justify" && !titlePage && "text-justify",
+              titlePage && "is-title-page",
+            )}
+            style={{
+              fontSize: profile.fontSize,
+              lineHeight: profile.lineHeight,
+              letterSpacing: `${profile.letterSpacing}em`,
+              wordSpacing: `${profile.wordSpacing}em`,
             }}
-            onErase={eraseStrokes}
-          />
-          <h1 id="reading-title" className="sr-only">
-            {readingTitle}
-          </h1>
-          <p className="mb-8 text-xs font-medium tracking-wide text-muted uppercase">
-            <span className="sr-only">
-              {chaptered && chapterIndex > 0 ? `Chapter ${chapterIndex} of ${chapterCount}. ` : ""}
-              {paged ? `Page ${pdfPage} of ${pageCount}. ` : ""}
-              {wordCount(viewText).toLocaleString()} words
-              {paged || chaptered ? " in this section." : "."}
-              {mode === "adaptive" ? " Adaptive is watching pace, pauses, and rereads." : ""}
-              {` Contrast ${formatContrastRatio(contrast.body)}, ${contrast.bodyLevel}.`}
-              <ReaderLiveStats autoScrolling={autoScrolling} targetWpm={targetWpm} />
-            </span>
-            <span aria-hidden="true">
-              {chaptered && chapterIndex > 0 ? `Chapter ${chapterIndex} of ${chapterCount} · ` : ""}
-              {paged ? `Page ${pdfPage} of ${pageCount} · ` : ""}
-              {wordCount(viewText).toLocaleString()} words
-            </span>
-          </p>
-          {chaptered && chapterIndex > 0 && !titlePage ? (
-            <h2 className="mb-6 font-serif text-3xl">{chapters[chapterIndex - 1]?.title}</h2>
-          ) : null}
-          {/*
+          >
+            <InkLayer
+              strokes={bookInk}
+              section={section}
+              tool={inkTool}
+              color={inkColor}
+              inkMode={inkMode}
+              containerRef={scrollRef}
+              layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}`}
+              onCommit={({ lineIdx, points }) => {
+                addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points });
+                track("ink_stroke", { tool: inkTool });
+              }}
+              onErase={eraseStrokes}
+            />
+            <h1 id="reading-title" className="sr-only">
+              {readingTitle}
+            </h1>
+            <p className="mb-8 text-xs font-medium tracking-wide text-muted uppercase">
+              <span className="sr-only">
+                {chaptered && chapterIndex > 0
+                  ? `Chapter ${chapterIndex} of ${chapterCount}. `
+                  : ""}
+                {paged ? `Page ${pdfPage} of ${pageCount}. ` : ""}
+                {wordCount(viewText).toLocaleString()} words
+                {paged || chaptered ? " in this section." : "."}
+                {mode === "adaptive" ? " Adaptive is watching pace, pauses, and rereads." : ""}
+                {` Contrast ${formatContrastRatio(contrast.body)}, ${contrast.bodyLevel}.`}
+                <ReaderLiveStats autoScrolling={autoScrolling} targetWpm={targetWpm} />
+              </span>
+              <span aria-hidden="true">
+                {chaptered && chapterIndex > 0
+                  ? `Chapter ${chapterIndex} of ${chapterCount} · `
+                  : ""}
+                {paged ? `Page ${pdfPage} of ${pageCount} · ` : ""}
+                {wordCount(viewText).toLocaleString()} words
+              </span>
+            </p>
+            {chaptered && chapterIndex > 0 && !titlePage ? (
+              <h2 className="mb-6 font-serif text-3xl">{chapters[chapterIndex - 1]?.title}</h2>
+            ) : null}
+            {/*
             The reader's job is the reformatted text, so the book's own page is
             not drawn alongside it — printing both put the original PDF on top
             of the very text it was extracted from, which is the layout the
             reader exists to replace. A page with no text at all is the one
             exception: there the scan is the only thing there is to show.
           */}
-          {paged && blocks.length === 0 ? (
-            <>
-              <PdfPageCanvas page={pdfPage} />
-              <p className="mb-6 text-sm leading-relaxed text-muted">
-                This page is a picture, shown as the book printed it — there is no text on it to reformat.
-              </p>
-            </>
-          ) : null}
-          {blocks.map((block, blockIndex) => {
-            const renderSentences = (itemIndex = 0) => {
-              const sentenceNodes = lines.filter(
-                (line) => line.blockIndex === blockIndex && line.itemIndex === itemIndex,
-              );
-              return sentenceNodes.map((line, index) => (
-                <Fragment key={line.lineIdx}>
-                  {index > 0 ? " " : null}
-                  <span
-                    id={`line-${line.lineIdx}`}
-                    className={cn(
-                      "reading-line cursor-pointer",
-                      rhythmCurve !== "steady" && /[.!?…]["'”’)]*$/.test(line.text.trim()) && "rhythm-cadence",
-                      resumeLine === line.lineIdx && "is-resume",
-                    )}
-                    onClick={(event) => {
-                      if (isSpeaking) {
-                        const found = lines.findIndex((item) => item.lineIdx === line.lineIdx);
-                        if (found !== -1) speakAt(found);
-                        return;
-                      }
-                      if (profile.lookup !== false) {
-                        const word = wordFromPoint(event.clientX, event.clientY, event.currentTarget as HTMLElement);
-                        if (word) setLookup(word);
-                      }
-                      // Marking is no longer a click. A click has no extent, so
-                      // it could only ever mark the whole sentence — which is
-                      // not what marking a passage means. Dragging says where it
-                      // starts and where it stops; see the selection handler on
-                      // the scroll container.
-                      {
-                        markActiveLine(line.lineIdx);
-                        const boxes = lineBoxesOf(event.currentTarget);
-                        let boxIndex = 0;
-                        for (let i = 0; i < boxes.length; i += 1) {
-                          const box = boxes[i]!;
-                          if (event.clientY >= box.top && event.clientY <= box.bottom) {
-                            boxIndex = i;
-                            break;
-                          }
+            {paged && blocks.length === 0 ? (
+              <>
+                <PdfPageCanvas page={pdfPage} />
+                <p className="mb-6 text-sm leading-relaxed text-muted">
+                  This page is a picture, shown as the book printed it — there is no text on it to
+                  reformat.
+                </p>
+              </>
+            ) : null}
+            {blocks.map((block, blockIndex) => {
+              const renderSentences = (itemIndex = 0) => {
+                const sentenceNodes = lines.filter(
+                  (line) => line.blockIndex === blockIndex && line.itemIndex === itemIndex,
+                );
+                return sentenceNodes.map((line, index) => (
+                  <Fragment key={line.lineIdx}>
+                    {index > 0 ? " " : null}
+                    <span
+                      id={`line-${line.lineIdx}`}
+                      className={cn(
+                        "reading-line cursor-pointer",
+                        rhythmCurve !== "steady" &&
+                          /[.!?…]["'”’)]*$/.test(line.text.trim()) &&
+                          "rhythm-cadence",
+                        resumeLine === line.lineIdx && "is-resume",
+                      )}
+                      onClick={(event) => {
+                        if (isSpeaking) {
+                          const found = lines.findIndex((item) => item.lineIdx === line.lineIdx);
+                          if (found !== -1) speakAt(found);
+                          return;
                         }
-                        followStateRef.current = { id: line.lineIdx, boxIndex };
-                      }
-                    }}
+                        if (profile.lookup !== false) {
+                          const word = wordFromPoint(
+                            event.clientX,
+                            event.clientY,
+                            event.currentTarget as HTMLElement,
+                          );
+                          if (word) setLookup(word);
+                        }
+                        // Marking is no longer a click. A click has no extent, so
+                        // it could only ever mark the whole sentence — which is
+                        // not what marking a passage means. Dragging says where it
+                        // starts and where it stops; see the selection handler on
+                        // the scroll container.
+                        {
+                          markActiveLine(line.lineIdx);
+                          const boxes = lineBoxesOf(event.currentTarget);
+                          let boxIndex = 0;
+                          for (let i = 0; i < boxes.length; i += 1) {
+                            const box = boxes[i]!;
+                            if (event.clientY >= box.top && event.clientY <= box.bottom) {
+                              boxIndex = i;
+                              break;
+                            }
+                          }
+                          followStateRef.current = { id: line.lineIdx, boxIndex };
+                        }
+                      }}
+                    >
+                      <WordRun
+                        text={line.text}
+                        html={line.html}
+                        lineIdx={line.lineIdx}
+                        highlightIndex={activeWord?.line === line.lineIdx ? activeWord.index : null}
+                        guides={guides}
+                        bionic={profile.bionicStrength}
+                        rhythm={profile.rhythmOptimization}
+                        plainLanguage={Boolean(profile.plainLanguage)}
+                      />
+                    </span>
+                  </Fragment>
+                ));
+              };
+
+              if (block.kind === "list" && block.items?.length) {
+                const ListTag = block.ordered ? "ol" : "ul";
+                return (
+                  <ListTag
+                    key={blockIndex}
+                    className={cn(
+                      "reading-list reading-block mb-6",
+                      block.ordered ? "is-ordered" : "is-bulleted",
+                    )}
                   >
-                    <WordRun
-                      text={line.text}
-                      html={line.html}
-                      lineIdx={line.lineIdx}
-                      highlightIndex={activeWord?.line === line.lineIdx ? activeWord.index : null}
-                      guides={guides}
-                      bionic={profile.bionicStrength}
-                      rhythm={profile.rhythmOptimization}
-                      plainLanguage={Boolean(profile.plainLanguage)}
-                    />
-                  </span>
-                </Fragment>
-              ));
-            };
+                    {block.items.map((_, itemIndex) => (
+                      <li key={itemIndex}>
+                        <span className="min-w-0">{renderSentences(itemIndex)}</span>
+                      </li>
+                    ))}
+                  </ListTag>
+                );
+              }
 
-            if (block.kind === "list" && block.items?.length) {
-              const ListTag = block.ordered ? "ol" : "ul";
+              if (block.kind === "title") {
+                return (
+                  <h2 key={blockIndex} className="reading-title reading-block mb-6 font-serif">
+                    {renderSentences()}
+                  </h2>
+                );
+              }
+              if (block.kind === "kicker") {
+                return (
+                  <p key={blockIndex} className="reading-kicker reading-block mb-3">
+                    {renderSentences()}
+                  </p>
+                );
+              }
+              if (block.kind === "heading") {
+                return (
+                  <h3
+                    key={blockIndex}
+                    className="reading-heading reading-block mb-4 mt-8 font-serif text-2xl"
+                  >
+                    {renderSentences()}
+                  </h3>
+                );
+              }
+              if (block.kind === "quote") {
+                return (
+                  <blockquote key={blockIndex} className="reading-quote reading-block mb-6">
+                    {renderSentences()}
+                  </blockquote>
+                );
+              }
               return (
-                <ListTag
+                <p
                   key={blockIndex}
-                  className={cn("reading-list reading-block mb-6", block.ordered ? "is-ordered" : "is-bulleted")}
+                  className={cn("reading-block mb-6", block.kind === "lead" && "reading-lead")}
                 >
-                  {block.items.map((_, itemIndex) => (
-                    <li key={itemIndex}>
-                      <span className="min-w-0">{renderSentences(itemIndex)}</span>
-                    </li>
-                  ))}
-                </ListTag>
-              );
-            }
-
-            if (block.kind === "title") {
-              return (
-                <h2 key={blockIndex} className="reading-title reading-block mb-6 font-serif">
-                  {renderSentences()}
-                </h2>
-              );
-            }
-            if (block.kind === "kicker") {
-              return (
-                <p key={blockIndex} className="reading-kicker reading-block mb-3">
                   {renderSentences()}
                 </p>
               );
-            }
-            if (block.kind === "heading") {
-              return (
-                <h3 key={blockIndex} className="reading-heading reading-block mb-4 mt-8 font-serif text-2xl">
-                  {renderSentences()}
-                </h3>
-              );
-            }
-            if (block.kind === "quote") {
-              return (
-                <blockquote key={blockIndex} className="reading-quote reading-block mb-6">
-                  {renderSentences()}
-                </blockquote>
-              );
-            }
-            return (
-              <p
-                key={blockIndex}
-                className={cn("reading-block mb-6", block.kind === "lead" && "reading-lead")}
-              >
-                {renderSentences()}
-              </p>
-            );
-          })}
+            })}
 
-          {/* The end of a Part, marked.
+            {/* The end of a Part, marked.
               Reaching one used to pass in silence — the text simply stopped —
               which threw away a completion the reader had actually earned and
               the app had already computed. Dopamine follows closing a loop, and
@@ -1120,47 +1221,53 @@ export function Reader() {
               completion is friction at the exact moment somebody felt good, and
               a toast is gone before it is read. This is a landing, not a gate:
               Continue is right there, and closing the app is equally fine. */}
-          {partDone ? (
-            <div className="nl-part-done mt-10 rounded-lg bg-surface p-4 shadow-border sm:p-5">
-              <p className="text-sm font-medium">
-                {chaptered && chapters[chapterIndex - 1]?.title
-                  ? `${chapters[chapterIndex - 1]!.title} finished`
-                  : `Part ${section} finished`}
-              </p>
-              {/* What you did, not what you owe. No bar creeping toward a
+            {partDone ? (
+              <div className="nl-part-done mt-10 rounded-lg bg-surface p-4 shadow-border sm:p-5">
+                <p className="text-sm font-medium">
+                  {chaptered && chapters[chapterIndex - 1]?.title
+                    ? `${chapters[chapterIndex - 1]!.title} finished`
+                    : `Part ${section} finished`}
+                </p>
+                {/* What you did, not what you owe. No bar creeping toward a
                   distant end, no score — the effort, reported back while it
                   still feels like yours. */}
-              <p className="mt-1 text-sm text-muted tabular-nums">{partDone.summary}</p>
-              {partDone.next ? (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  {/* Anticipation rather than obligation: dopamine tracks the
+                <p className="mt-1 text-sm text-muted tabular-nums">{partDone.summary}</p>
+                {partDone.next ? (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    {/* Anticipation rather than obligation: dopamine tracks the
                       expectation more than the receipt, and a chapter title is
                       a far better reason to go on than a number would be. */}
-                  <p className="text-sm text-muted">Next: {partDone.next}</p>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (paged) setPdfPage(pdfPage + 1);
-                      else setChapter(chapterIndex < 1 ? 2 : chapterIndex + 1);
-                    }}
-                  >
-                    Continue
-                    <Icon icon={caretRight} width={14} height={14} aria-hidden className="icon-motion icon-shift" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-muted">That was the last part.</p>
-              )}
-            </div>
-          ) : null}
-        </article>
+                    <p className="text-sm text-muted">Next: {partDone.next}</p>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        if (paged) setPdfPage(pdfPage + 1);
+                        else setChapter(chapterIndex < 1 ? 2 : chapterIndex + 1);
+                      }}
+                    >
+                      Continue
+                      <Icon
+                        icon={caretRight}
+                        width={14}
+                        height={14}
+                        aria-hidden
+                        className="icon-motion icon-shift"
+                      />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">That was the last part.</p>
+                )}
+              </div>
+            ) : null}
+          </article>
         </div>
       </div>
 
       <div className="reader-dock pointer-events-none shrink-0 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-2">
           <ReadingCoach />
-        <ReadingFeelBar />
+          <ReadingFeelBar />
           <RecommendationBanner />
           <PatternHint />
           <ReconnectDock
@@ -1211,24 +1318,60 @@ export function Reader() {
                   aria-label={profile.plainLanguage ? "Turn off plain words" : "Plain words"}
                   aria-pressed={Boolean(profile.plainLanguage)}
                 >
-                  <Icon icon={translate} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                  <Icon
+                    icon={translate}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{profile.plainLanguage ? "Plain words on" : "Plain words"}</TooltipContent>
+              <TooltipContent>
+                {profile.plainLanguage ? "Plain words on" : "Plain words"}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className={dockButton} onClick={() => setControlsOpen(true)} aria-label="Reading options">
-                  <Icon icon={slidersHorizontal} width={19} height={19} aria-hidden className="icon-motion icon-turn" />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={dockButton}
+                  onClick={() => setControlsOpen(true)}
+                  aria-label="Reading options"
+                >
+                  <Icon
+                    icon={slidersHorizontal}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-turn"
+                  />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Options</TooltipContent>
             </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm"
-                  className={cn(dockButton, "hidden sm:inline-flex")} aria-label="Reading guides" aria-pressed={Boolean(profile.syllables || profile.letterGuide || profile.wordGuide || profile.plainLanguage)}>
-                  <Icon icon={crosshair} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={cn(dockButton, "hidden sm:inline-flex")}
+                  aria-label="Reading guides"
+                  aria-pressed={Boolean(
+                    profile.syllables ||
+                    profile.letterGuide ||
+                    profile.wordGuide ||
+                    profile.plainLanguage,
+                  )}
+                >
+                  <Icon
+                    icon={crosshair}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -1337,7 +1480,13 @@ export function Reader() {
                   onClick={() => setFindOpen(true)}
                   aria-label="Find in book"
                 >
-                  <Icon icon={magnifyingGlass} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                  <Icon
+                    icon={magnifyingGlass}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1359,7 +1508,13 @@ export function Reader() {
                         bookHighlights.length ? `, ${bookHighlights.length} marked` : ""
                       }`}
                     >
-                      <Icon icon={phHighlighter} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                      <Icon
+                        icon={phHighlighter}
+                        width={19}
+                        height={19}
+                        aria-hidden
+                        className="icon-motion icon-lift"
+                      />
                       {/* The ink currently loaded, so the marker in hand is
                           readable without opening anything. */}
                       <MarkerDot
@@ -1378,7 +1533,11 @@ export function Reader() {
                 <p className="px-1 pb-2 text-[11px] font-medium tracking-wide text-muted uppercase">
                   Marker
                 </p>
-                <MarkerPalette value={markerColor} onChange={setMarkerColor} className="px-1 pb-1" />
+                <MarkerPalette
+                  value={markerColor}
+                  onChange={setMarkerColor}
+                  className="px-1 pb-1"
+                />
                 <div className="mt-2 border-t border-fg/10 pt-1">
                   <DropdownMenuItem onSelect={() => setInkMode(true)}>
                     <PenLine size={14} aria-hidden className="icon-motion icon-lift" />
@@ -1406,7 +1565,13 @@ export function Reader() {
                   aria-label="Where was I"
                   aria-pressed={reconnectOpen}
                 >
-                  <Icon icon={compass} width={19} height={19} aria-hidden className="icon-motion icon-turn" />
+                  <Icon
+                    icon={compass}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-turn"
+                  />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Where was I</TooltipContent>
@@ -1420,7 +1585,11 @@ export function Reader() {
                   onClick={() => {
                     const was = bookmarked;
                     toggleBookmark();
-                    toast.success(was ? "Bookmark removed" : `Saved at ${Math.round(useAppStore.getState().reading.progress * 100)}%`);
+                    toast.success(
+                      was
+                        ? "Bookmark removed"
+                        : `Saved at ${Math.round(useAppStore.getState().reading.progress * 100)}%`,
+                    );
                   }}
                   aria-label={bookmarked ? "Remove bookmark" : "Bookmark this place"}
                   aria-pressed={bookmarked}
@@ -1443,7 +1612,13 @@ export function Reader() {
                   size="icon-sm"
                   className={cn(dockButton, "hidden sm:inline-flex")}
                   onClick={toggleSpeech}
-                  aria-label={isSpeaking && !isPaused ? "Pause listening" : isPaused ? "Resume listening" : "Listen"}
+                  aria-label={
+                    isSpeaking && !isPaused
+                      ? "Pause listening"
+                      : isPaused
+                        ? "Resume listening"
+                        : "Listen"
+                  }
                   aria-pressed={isSpeaking}
                 >
                   <IconSwap
@@ -1454,31 +1629,59 @@ export function Reader() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {isSpeaking && !isPaused ? "Pause listening" : isPaused ? "Resume listening" : "Listen"}
+                {isSpeaking && !isPaused
+                  ? "Pause listening"
+                  : isPaused
+                    ? "Resume listening"
+                    : "Listen"}
               </TooltipContent>
             </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm"
-                  className={dockButton} aria-label="More actions" aria-pressed={autoScrolling}>
-                  <Icon icon={dotsThree} width={19} height={19} aria-hidden className="icon-motion icon-lift" />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={dockButton}
+                  aria-label="More actions"
+                  aria-pressed={autoScrolling}
+                >
+                  <Icon
+                    icon={dotsThree}
+                    width={19}
+                    height={19}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {/* The four controls the dock hides below `sm` reappear here, so
                     nothing is only reachable on a wide screen. */}
-                <DropdownMenuItem
-                  className="sm:hidden"
-                  onSelect={() => afterMenu(toggleSpeech)}
-                >
-                  <Icon icon={isSpeaking && !isPaused ? phPause : speakerHigh} width={14} height={14} aria-hidden className="icon-motion icon-lift" />
-                  {isSpeaking && !isPaused ? "Pause listening" : isPaused ? "Resume listening" : "Listen"}
+                <DropdownMenuItem className="sm:hidden" onSelect={() => afterMenu(toggleSpeech)}>
+                  <Icon
+                    icon={isSpeaking && !isPaused ? phPause : speakerHigh}
+                    width={14}
+                    height={14}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
+                  {isSpeaking && !isPaused
+                    ? "Pause listening"
+                    : isPaused
+                      ? "Resume listening"
+                      : "Listen"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="sm:hidden"
                   onSelect={() => afterMenu(() => setReconnectOpen((value) => !value))}
                 >
-                  <Icon icon={compass} width={14} height={14} aria-hidden className="icon-motion icon-turn" />
+                  <Icon
+                    icon={compass}
+                    width={14}
+                    height={14}
+                    aria-hidden
+                    className="icon-motion icon-turn"
+                  />
                   Where was I
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -1490,7 +1693,13 @@ export function Reader() {
                     })
                   }
                 >
-                  <Icon icon={translate} width={14} height={14} aria-hidden className="icon-motion icon-lift" />
+                  <Icon
+                    icon={translate}
+                    width={14}
+                    height={14}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                   {profile.plainLanguage ? "Plain words on" : "Plain words"}
                 </DropdownMenuItem>
                 {/* Reading guides is a nested menu on wide screens; nesting it
@@ -1505,7 +1714,13 @@ export function Reader() {
                     })
                   }
                 >
-                  <Icon icon={crosshair} width={14} height={14} aria-hidden className="icon-motion icon-lift" />
+                  <Icon
+                    icon={crosshair}
+                    width={14}
+                    height={14}
+                    aria-hidden
+                    className="icon-motion icon-lift"
+                  />
                   {profile.wordGuide ? "Word highlight on" : "Word highlight"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -1593,13 +1808,25 @@ export function Reader() {
             ) : null}
             {chunkOn && chunks.length > 1 ? (
               <div className="mx-1 flex items-center gap-1 text-xs tabular-nums text-muted">
-                <Button variant="ghost" size="icon-sm" disabled={chunkIndex <= 0} onClick={() => setChunkIndex((i) => Math.max(0, i - 1))} aria-label="Previous chunk">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={chunkIndex <= 0}
+                  onClick={() => setChunkIndex((i) => Math.max(0, i - 1))}
+                  aria-label="Previous chunk"
+                >
                   <ChevronLeft size={16} className="icon-motion icon-shift-back" />
                 </Button>
                 <span>
                   {chunkIndex + 1}/{chunks.length}
                 </span>
-                <Button variant="ghost" size="icon-sm" disabled={chunkIndex >= chunks.length - 1} onClick={() => setChunkIndex((i) => Math.min(chunks.length - 1, i + 1))} aria-label="Next chunk">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={chunkIndex >= chunks.length - 1}
+                  onClick={() => setChunkIndex((i) => Math.min(chunks.length - 1, i + 1))}
+                  aria-label="Next chunk"
+                >
                   <ChevronRight size={16} className="icon-motion icon-shift" />
                 </Button>
               </div>
@@ -1609,7 +1836,12 @@ export function Reader() {
         </div>
       </div>
 
-      <SpeedReader open={rsvpOpen} onOpenChange={setRsvpOpen} words={words} onProgress={onRsvpProgress} />
+      <SpeedReader
+        open={rsvpOpen}
+        onOpenChange={setRsvpOpen}
+        words={words}
+        onProgress={onRsvpProgress}
+      />
 
       <Dialog open={simplifyOpen} onOpenChange={setSimplifyOpen}>
         <DialogContent>
@@ -1619,8 +1851,12 @@ export function Reader() {
           </DialogDescription>
           <p className="text-xs tracking-wide text-muted uppercase">
             {simplified.complexity} · grade {simplified.originalGrade}
-            {simplified.simplifiedGrade !== simplified.originalGrade ? ` → ${simplified.simplifiedGrade}` : ""}
-            {simplified.replacements > 0 ? ` · ${simplified.replacements} swap${simplified.replacements === 1 ? "" : "s"}` : ""}
+            {simplified.simplifiedGrade !== simplified.originalGrade
+              ? ` → ${simplified.simplifiedGrade}`
+              : ""}
+            {simplified.replacements > 0
+              ? ` · ${simplified.replacements} swap${simplified.replacements === 1 ? "" : "s"}`
+              : ""}
           </p>
           <p className="mt-3 max-h-64 overflow-y-auto text-sm leading-relaxed">
             {simplified.simplified}
@@ -1641,7 +1877,11 @@ export function Reader() {
                   const next = [...textChapters];
                   const index = Math.max(0, chapterIndex - 1);
                   if (next[index]) next[index] = { ...next[index], body: simplified.simplified };
-                  startReading(joinTextChapters(next), { title: readingTitle, kind: "text", chapter: chapterIndex });
+                  startReading(joinTextChapters(next), {
+                    title: readingTitle,
+                    kind: "text",
+                    chapter: chapterIndex,
+                  });
                 } else {
                   startReading(simplified.simplified);
                 }
@@ -1701,7 +1941,9 @@ export function Reader() {
             <Button
               disabled={checkPicks.filter((n) => typeof n === "number").length < checkpoints.length}
               onClick={() => {
-                const results = checkpoints.map((question, index) => checkPicks[index] === question.answerIndex);
+                const results = checkpoints.map(
+                  (question, index) => checkPicks[index] === question.answerIndex,
+                );
                 const score = scoreComprehension(results);
                 const pct = score == null ? 0 : Math.round(score * 100);
                 toast.success(`${pct}% on this check`);
@@ -1795,7 +2037,6 @@ export function Reader() {
             {[...bookHighlights]
               .sort((a, b) => a.section - b.section || a.lineIdx - b.lineIdx || a.start - b.start)
               .map((mark) => {
-
                 return (
                   <div
                     key={`${mark.section}:${mark.lineIdx}:${mark.start}`}
@@ -1835,7 +2076,13 @@ export function Reader() {
                         feedback("bad", { message: "Highlight removed" });
                       }}
                     >
-                      <Icon icon={phX} width={13} height={13} aria-hidden className="icon-motion icon-turn" />
+                      <Icon
+                        icon={phX}
+                        width={13}
+                        height={13}
+                        aria-hidden
+                        className="icon-motion icon-turn"
+                      />
                     </button>
                     {/* A note belongs to the passage, not to the session — the
                         existing Quick note is one field for the whole sitting,
@@ -1847,7 +2094,12 @@ export function Reader() {
                       rows={mark.note ? 2 : 1}
                       onBlur={(event) => {
                         if (event.target.value.trim() === (mark.note ?? "")) return;
-                        annotateHighlight(mark.lineIdx, mark.section, mark.start, event.target.value);
+                        annotateHighlight(
+                          mark.lineIdx,
+                          mark.section,
+                          mark.start,
+                          event.target.value,
+                        );
                       }}
                       className="mt-2 min-h-9 w-full resize-y rounded-sm bg-surface px-2 py-1.5 text-xs leading-relaxed"
                     />

@@ -1,5 +1,11 @@
 import { Lock, Maximize2, Unlock, X } from "lucide-react";
-import { NAMED_PRESETS, READING_PROFILES, RHYTHM_CHOICES, type LockableSetting, type ReadingMode } from "@/lib/types";
+import {
+  NAMED_PRESETS,
+  READING_PROFILES,
+  RHYTHM_CHOICES,
+  type LockableSetting,
+  type ReadingMode,
+} from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Slider, Switch } from "@/components/ui/field";
@@ -12,7 +18,15 @@ import { cn } from "@/lib/utils";
 import { motionPermissionNeeded, requestMotionPermission } from "@/lib/device-motion";
 import { useState } from "react";
 
-const MODES: ReadingMode[] = ["default", "adhd", "dyslexia", "focus", "academic", "speed", "adaptive"];
+const MODES: ReadingMode[] = [
+  "default",
+  "adhd",
+  "dyslexia",
+  "focus",
+  "academic",
+  "speed",
+  "adaptive",
+];
 
 const JUMP = [
   { id: "rc-mode", label: "Mode" },
@@ -33,7 +47,11 @@ function LockToggle({ setting }: { setting: LockableSetting }) {
       aria-pressed={locked}
       onClick={() => toggleLock(setting)}
     >
-      {locked ? <Lock size={13} className="icon-motion icon-lift" /> : <Unlock size={13} className="icon-motion icon-lift" />}
+      {locked ? (
+        <Lock size={13} className="icon-motion icon-lift" />
+      ) : (
+        <Unlock size={13} className="icon-motion icon-lift" />
+      )}
     </button>
   );
 }
@@ -42,7 +60,11 @@ function jumpTo(id: string) {
   const node = document.getElementById(id);
   const scroller = document.querySelector<HTMLElement>(".controls-scroll");
   if (!node || !scroller) return;
-  const top = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
+  const top =
+    node.getBoundingClientRect().top -
+    scroller.getBoundingClientRect().top +
+    scroller.scrollTop -
+    12;
   scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
@@ -105,344 +127,378 @@ export function ReaderControls({ onClose }: { onClose: () => void }) {
       <Separator />
       <PanelScroller>
         <div className="space-y-8 pr-2 pb-8">
-        <section id="rc-mode" className="rc-section">
-          <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Mode</p>
-          {/* Two columns in the mobile bottom sheet: seven stacked rows pushed
+          <section id="rc-mode" className="rc-section">
+            <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Mode</p>
+            {/* Two columns in the mobile bottom sheet: seven stacked rows pushed
               everything below them off the sheet and made Mode feel like the
               whole panel. The desktop drawer is too narrow for two. */}
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
-            {MODES.map((id) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={mode === id}
-                onClick={() => setMode(id)}
-                className={cn(
-                  "flex min-h-11 min-w-0 items-center rounded-md px-3 py-2 text-left text-sm font-medium text-pretty transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
-                  mode === id ? "bg-fg text-primary-fg" : "bg-fg/4 text-fg hover:bg-fg/8",
-                )}
-              >
-                {READING_PROFILES[id].name}
-              </button>
-            ))}
-          </div>
-          {mode === "adaptive" && (
-            <p className="mt-3 text-xs leading-relaxed text-pretty text-muted">
-              NeuroLens learns how you read and recommends adjustments — pace, spacing, focus, and contrast. Locked
-              settings will not be changed.
-            </p>
-          )}
-          {lastAdaptiveChange && (
-            <Button variant="outline" className="mt-3 h-auto min-h-11 w-full whitespace-normal" onClick={undoAdaptiveChange}>
-              Undo last recommendation
-            </Button>
-          )}
-        </section>
-
-        <section>
-          <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Profiles</p>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
-            {NAMED_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => applySavedProfile(preset)}
-                className="flex min-h-11 min-w-0 items-center rounded-md bg-fg/4 px-3 py-2 text-left text-sm font-medium text-pretty hover:bg-fg/8"
-              >
-                {preset.name}
-              </button>
-            ))}
-            {savedProfiles.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => applySavedProfile(preset)}
-                className="flex min-h-11 min-w-0 items-center rounded-md bg-fg/4 px-3 py-2 text-left text-sm font-medium text-pretty hover:bg-fg/8"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex min-w-0 items-center gap-2">
-            <Input
-              value={profileName}
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Name this setup"
-              aria-label="Name this setup"
-              className="h-9 min-w-0 flex-1"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 whitespace-nowrap"
-              onClick={() => {
-                saveCurrentProfile(profileName);
-                setProfileName("");
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </section>
-
-        <section id="rc-type" className="rc-section space-y-5">
-          <div>
-            <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">Typeface</p>
-            <FontPicker
-              compact
-              value={profile.fontFamily}
-              onChange={(fontFamily) => setProfile({ ...profile, fontFamily })}
-            />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <span className="inline-flex min-w-0 items-center gap-2">
-                <Label className="text-pretty">Size</Label>
-                <LockToggle setting="fontSize" />
-              </span>
-              <span className="shrink-0 tabular-nums text-muted">{profile.fontSize}px</span>
-            </div>
-            <Slider
-              min={14}
-              max={28}
-              step={1}
-              value={[profile.fontSize]}
-              onValueChange={([value]) => setProfile({ ...profile, fontSize: value ?? 18 })}
-              aria-label="Type size"
-            />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <span className="inline-flex min-w-0 items-center gap-2">
-                <Label className="text-pretty">Line height</Label>
-                <LockToggle setting="lineHeight" />
-              </span>
-              <span className="shrink-0 tabular-nums text-muted">{profile.lineHeight.toFixed(1)}</span>
-            </div>
-            <Slider
-              min={1.4}
-              max={2.2}
-              step={0.1}
-              value={[profile.lineHeight]}
-              onValueChange={([value]) => setProfile({ ...profile, lineHeight: value ?? 1.6 })}
-              aria-label="Line height"
-            />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <Label className="text-pretty">Letter spacing</Label>
-              <span className="shrink-0 tabular-nums text-muted">{profile.letterSpacing.toFixed(2)}</span>
-            </div>
-            <Slider
-              min={0}
-              max={0.12}
-              step={0.01}
-              value={[profile.letterSpacing]}
-              onValueChange={([value]) => setProfile({ ...profile, letterSpacing: value ?? 0 })}
-              aria-label="Letter spacing"
-            />
-          </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <Label className="text-pretty">Word spacing</Label>
-              <span className="shrink-0 tabular-nums text-muted">{profile.wordSpacing.toFixed(2)}</span>
-            </div>
-            <Slider
-              min={0}
-              max={0.2}
-              step={0.02}
-              value={[profile.wordSpacing]}
-              onValueChange={([value]) => setProfile({ ...profile, wordSpacing: value ?? 0 })}
-              aria-label="Word spacing"
-            />
-          </div>
-        </section>
-
-        <section id="rc-color" className="rc-section space-y-5">
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium tracking-wide text-muted uppercase">Color scheme</p>
-              <LockToggle setting="theme" />
-            </div>
-            <SchemePicker compact value={profile.theme} onChange={(theme) => setProfile({ ...profile, theme })} />
-            <ContrastMeter theme={profile.theme} fontSize={profile.fontSize} />
-          </div>
-        </section>
-
-        <section id="rc-guides" className="rc-section space-y-5">
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-              <Label className="text-pretty">Fixation</Label>
-              <span className="shrink-0 tabular-nums text-muted">{nearestFixationPreset(profile.bionicStrength).label}</span>
-            </div>
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {FIXATION_PRESETS.map((preset) => {
-                const selected = nearestFixationPreset(profile.bionicStrength).id === preset.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setProfile({ ...profile, bionicStrength: preset.value })}
-                    className={cn(
-                      "h-11 min-w-[4.5rem] flex-1 rounded-md px-2 text-xs font-medium whitespace-nowrap sm:text-sm",
-                      selected ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
-                    )}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-            <Slider
-              min={0}
-              max={0.8}
-              step={0.05}
-              value={[profile.bionicStrength]}
-              onValueChange={([value]) => setProfile({ ...profile, bionicStrength: value ?? 0 })}
-              aria-label="Fixation strength"
-            />
-          </div>
-          <ToggleRow
-            id="plain-words"
-            label="Plain words"
-            checked={Boolean(profile.plainLanguage)}
-            onChange={(checked) => setProfile({ ...profile, plainLanguage: checked })}
-          />
-          <ToggleRow
-            id="motion-cues"
-            label="Motion cues"
-            hint="Stops parallax and scroll drift, and anchors the page with a fixed horizon line. For motion sickness."
-            checked={Boolean(profile.motionCues)}
-            onChange={(checked) => {
-              setProfile({ ...profile, motionCues: checked });
-              // iOS will not deliver a single sample until it has been asked,
-              // and it will only allow the asking from inside a gesture — so
-              // the request has to happen here, on the tap, and nowhere else.
-              // Refusal is not an error: the cues fall back to scroll.
-              if (checked && motionPermissionNeeded()) void requestMotionPermission();
-            }}
-          />
-          <ToggleRow
-            id="justify"
-            label="Justify text"
-            checked={profile.align === "justify"}
-            onChange={(checked) => setProfile({ ...profile, align: checked ? "justify" : "left" })}
-          />
-          <ToggleRow
-            id="syllables"
-            label="Syllables"
-            checked={Boolean(profile.syllables)}
-            onChange={(checked) => setProfile({ ...profile, syllables: checked })}
-          />
-          <ToggleRow
-            id="letter-guide"
-            label="Letter guide"
-            checked={Boolean(profile.letterGuide)}
-            onChange={(checked) => setProfile({ ...profile, letterGuide: checked })}
-          />
-          <ToggleRow
-            id="word-guide"
-            label="Word highlight"
-            checked={Boolean(profile.wordGuide)}
-            onChange={(checked) => setProfile({ ...profile, wordGuide: checked })}
-          />
-          <ToggleRow
-            id="lookup"
-            label="Tap definitions"
-            checked={profile.lookup !== false}
-            onChange={(checked) => setProfile({ ...profile, lookup: checked })}
-          />
-          <ToggleRow
-            id="dim-chrome"
-            label="Dim chrome"
-            checked={Boolean(profile.dimChrome)}
-            onChange={(checked) => setProfile({ ...profile, dimChrome: checked })}
-          />
-          <div>
-            <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">Rhythm</p>
-            <div className="flex flex-col gap-1.5">
-              {RHYTHM_CHOICES.map((curve) => (
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
+              {MODES.map((id) => (
                 <button
-                  key={curve.id}
+                  key={id}
                   type="button"
-                  aria-pressed={profile.rhythmCurve === curve.id}
-                  onClick={() =>
-                    setProfile({
-                      ...profile,
-                      rhythmCurve: curve.id,
-                      rhythmOptimization: curve.id !== "steady",
-                    })
-                  }
+                  aria-pressed={mode === id}
+                  onClick={() => setMode(id)}
                   className={cn(
-                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2 text-left",
-                    profile.rhythmCurve === curve.id ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
+                    "flex min-h-11 min-w-0 items-center rounded-md px-3 py-2 text-left text-sm font-medium text-pretty transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                    mode === id ? "bg-fg text-primary-fg" : "bg-fg/4 text-fg hover:bg-fg/8",
                   )}
                 >
-                  <span className="text-sm font-medium whitespace-nowrap">{curve.label}</span>
-                  <span
-                    className={cn(
-                      "text-xs leading-snug text-pretty",
-                      profile.rhythmCurve === curve.id ? "text-primary-fg/75" : "text-muted",
-                    )}
-                  >
-                    {curve.hint}
-                  </span>
+                  {READING_PROFILES[id].name}
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-pretty text-muted">
-              Auto-scroll and the speed reader rest on true sentence ends, not abbreviations.
-            </p>
-          </div>
-        </section>
+            {mode === "adaptive" && (
+              <p className="mt-3 text-xs leading-relaxed text-pretty text-muted">
+                NeuroLens learns how you read and recommends adjustments — pace, spacing, focus, and
+                contrast. Locked settings will not be changed.
+              </p>
+            )}
+            {lastAdaptiveChange && (
+              <Button
+                variant="outline"
+                className="mt-3 h-auto min-h-11 w-full whitespace-normal"
+                onClick={undoAdaptiveChange}
+              >
+                Undo last recommendation
+              </Button>
+            )}
+          </section>
 
-        <section id="rc-pace" className="rc-section">
-          <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Pace</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="min-w-0 rounded-md bg-fg/4 px-3 py-3">
-              <p className="text-[11px] tracking-wide text-muted uppercase">Target WPM</p>
-              <p className="mt-1 text-2xl font-medium tabular-nums">{targetWpm}</p>
+          <section>
+            <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Profiles</p>
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
+              {NAMED_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applySavedProfile(preset)}
+                  className="flex min-h-11 min-w-0 items-center rounded-md bg-fg/4 px-3 py-2 text-left text-sm font-medium text-pretty hover:bg-fg/8"
+                >
+                  {preset.name}
+                </button>
+              ))}
+              {savedProfiles.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applySavedProfile(preset)}
+                  className="flex min-h-11 min-w-0 items-center rounded-md bg-fg/4 px-3 py-2 text-left text-sm font-medium text-pretty hover:bg-fg/8"
+                >
+                  {preset.name}
+                </button>
+              ))}
             </div>
-            <div className="min-w-0 rounded-md bg-fg/4 px-3 py-3">
-              <p className="text-[11px] tracking-wide text-muted uppercase">Current WPM</p>
-              <p className="mt-1 text-2xl font-medium tabular-nums">{currentWpm ?? "—"}</p>
+            <div className="mt-3 flex min-w-0 items-center gap-2">
+              <Input
+                value={profileName}
+                onChange={(event) => setProfileName(event.target.value)}
+                placeholder="Name this setup"
+                aria-label="Name this setup"
+                className="h-9 min-w-0 flex-1"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 whitespace-nowrap"
+                onClick={() => {
+                  saveCurrentProfile(profileName);
+                  setProfileName("");
+                }}
+              >
+                Save
+              </Button>
             </div>
-          </div>
-          <div className="mt-4">
-            <div className="mb-1 flex items-center justify-between gap-3 text-sm">
-              <span className="inline-flex min-w-0 items-center gap-2">
-                <Label className="text-pretty">Target WPM</Label>
-                <LockToggle setting="targetWpm" />
-              </span>
-              <span className="shrink-0 tabular-nums text-muted">{targetWpm}</span>
+          </section>
+
+          <section id="rc-type" className="rc-section space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">
+                Typeface
+              </p>
+              <FontPicker
+                compact
+                value={profile.fontFamily}
+                onChange={(fontFamily) => setProfile({ ...profile, fontFamily })}
+              />
             </div>
-            <Slider
-              min={120}
-              max={480}
-              step={10}
-              value={[targetWpm]}
-              onValueChange={([value]) => setTargetWpm(value ?? 220)}
-              aria-label="Target words per minute"
-            />
-          </div>
-          <div className="mt-4">
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <Label className="text-pretty">Size</Label>
+                  <LockToggle setting="fontSize" />
+                </span>
+                <span className="shrink-0 tabular-nums text-muted">{profile.fontSize}px</span>
+              </div>
+              <Slider
+                min={14}
+                max={28}
+                step={1}
+                value={[profile.fontSize]}
+                onValueChange={([value]) => setProfile({ ...profile, fontSize: value ?? 18 })}
+                aria-label="Type size"
+              />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <Label className="text-pretty">Line height</Label>
+                  <LockToggle setting="lineHeight" />
+                </span>
+                <span className="shrink-0 tabular-nums text-muted">
+                  {profile.lineHeight.toFixed(1)}
+                </span>
+              </div>
+              <Slider
+                min={1.4}
+                max={2.2}
+                step={0.1}
+                value={[profile.lineHeight]}
+                onValueChange={([value]) => setProfile({ ...profile, lineHeight: value ?? 1.6 })}
+                aria-label="Line height"
+              />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                <Label className="text-pretty">Letter spacing</Label>
+                <span className="shrink-0 tabular-nums text-muted">
+                  {profile.letterSpacing.toFixed(2)}
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={0.12}
+                step={0.01}
+                value={[profile.letterSpacing]}
+                onValueChange={([value]) => setProfile({ ...profile, letterSpacing: value ?? 0 })}
+                aria-label="Letter spacing"
+              />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                <Label className="text-pretty">Word spacing</Label>
+                <span className="shrink-0 tabular-nums text-muted">
+                  {profile.wordSpacing.toFixed(2)}
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={0.2}
+                step={0.02}
+                value={[profile.wordSpacing]}
+                onValueChange={([value]) => setProfile({ ...profile, wordSpacing: value ?? 0 })}
+                aria-label="Word spacing"
+              />
+            </div>
+          </section>
+
+          <section id="rc-color" className="rc-section space-y-5">
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-xs font-medium tracking-wide text-muted uppercase">
+                  Color scheme
+                </p>
+                <LockToggle setting="theme" />
+              </div>
+              <SchemePicker
+                compact
+                value={profile.theme}
+                onChange={(theme) => setProfile({ ...profile, theme })}
+              />
+              <ContrastMeter theme={profile.theme} fontSize={profile.fontSize} />
+            </div>
+          </section>
+
+          <section id="rc-guides" className="rc-section space-y-5">
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                <Label className="text-pretty">Fixation</Label>
+                <span className="shrink-0 tabular-nums text-muted">
+                  {nearestFixationPreset(profile.bionicStrength).label}
+                </span>
+              </div>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {FIXATION_PRESETS.map((preset) => {
+                  const selected = nearestFixationPreset(profile.bionicStrength).id === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setProfile({ ...profile, bionicStrength: preset.value })}
+                      className={cn(
+                        "h-11 min-w-[4.5rem] flex-1 rounded-md px-2 text-xs font-medium whitespace-nowrap sm:text-sm",
+                        selected ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <Slider
+                min={0}
+                max={0.8}
+                step={0.05}
+                value={[profile.bionicStrength]}
+                onValueChange={([value]) => setProfile({ ...profile, bionicStrength: value ?? 0 })}
+                aria-label="Fixation strength"
+              />
+            </div>
             <ToggleRow
-              id="autoscroll"
-              label="Scroll at target pace"
-              checked={autoScrolling}
+              id="plain-words"
+              label="Plain words"
+              checked={Boolean(profile.plainLanguage)}
+              onChange={(checked) => setProfile({ ...profile, plainLanguage: checked })}
+            />
+            <ToggleRow
+              id="motion-cues"
+              label="Motion cues"
+              hint="Stops parallax and scroll drift, and anchors the page with a fixed horizon line. For motion sickness."
+              checked={Boolean(profile.motionCues)}
               onChange={(checked) => {
-                setAutoScrolling(checked);
-                if (checked) onClose();
+                setProfile({ ...profile, motionCues: checked });
+                // iOS will not deliver a single sample until it has been asked,
+                // and it will only allow the asking from inside a gesture — so
+                // the request has to happen here, on the tap, and nowhere else.
+                // Refusal is not an error: the cues fall back to scroll.
+                if (checked && motionPermissionNeeded()) void requestMotionPermission();
               }}
             />
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-pretty text-muted">
-            {Math.round(reading.progress * 100)}% through this page
-            {reading.pauses.length > 0 ? ` · ${reading.pauses.length} pause${reading.pauses.length === 1 ? "" : "s"}` : ""}
-            {reading.rereads.length > 0 ? ` · ${reading.rereads.length} reread${reading.rereads.length === 1 ? "" : "s"}` : ""}
-          </p>
-        </section>
+            <ToggleRow
+              id="justify"
+              label="Justify text"
+              checked={profile.align === "justify"}
+              onChange={(checked) =>
+                setProfile({ ...profile, align: checked ? "justify" : "left" })
+              }
+            />
+            <ToggleRow
+              id="syllables"
+              label="Syllables"
+              checked={Boolean(profile.syllables)}
+              onChange={(checked) => setProfile({ ...profile, syllables: checked })}
+            />
+            <ToggleRow
+              id="letter-guide"
+              label="Letter guide"
+              checked={Boolean(profile.letterGuide)}
+              onChange={(checked) => setProfile({ ...profile, letterGuide: checked })}
+            />
+            <ToggleRow
+              id="word-guide"
+              label="Word highlight"
+              checked={Boolean(profile.wordGuide)}
+              onChange={(checked) => setProfile({ ...profile, wordGuide: checked })}
+            />
+            <ToggleRow
+              id="reading-mask"
+              label="One line at a time"
+              checked={Boolean(profile.readingMask)}
+              onChange={(checked) => setProfile({ ...profile, readingMask: checked })}
+            />
+            <ToggleRow
+              id="lookup"
+              label="Tap definitions"
+              checked={profile.lookup !== false}
+              onChange={(checked) => setProfile({ ...profile, lookup: checked })}
+            />
+            <ToggleRow
+              id="dim-chrome"
+              label="Dim chrome"
+              checked={Boolean(profile.dimChrome)}
+              onChange={(checked) => setProfile({ ...profile, dimChrome: checked })}
+            />
+            <div>
+              <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">Rhythm</p>
+              <div className="flex flex-col gap-1.5">
+                {RHYTHM_CHOICES.map((curve) => (
+                  <button
+                    key={curve.id}
+                    type="button"
+                    aria-pressed={profile.rhythmCurve === curve.id}
+                    onClick={() =>
+                      setProfile({
+                        ...profile,
+                        rhythmCurve: curve.id,
+                        rhythmOptimization: curve.id !== "steady",
+                      })
+                    }
+                    className={cn(
+                      "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2 text-left",
+                      profile.rhythmCurve === curve.id
+                        ? "bg-fg text-primary-fg"
+                        : "bg-fg/4 hover:bg-fg/8",
+                    )}
+                  >
+                    <span className="text-sm font-medium whitespace-nowrap">{curve.label}</span>
+                    <span
+                      className={cn(
+                        "text-xs leading-snug text-pretty",
+                        profile.rhythmCurve === curve.id ? "text-primary-fg/75" : "text-muted",
+                      )}
+                    >
+                      {curve.hint}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-pretty text-muted">
+                Auto-scroll and the speed reader rest on true sentence ends, not abbreviations.
+              </p>
+            </div>
+          </section>
+
+          <section id="rc-pace" className="rc-section">
+            <p className="mb-3 text-xs font-medium tracking-wide text-muted uppercase">Pace</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0 rounded-md bg-fg/4 px-3 py-3">
+                <p className="text-[11px] tracking-wide text-muted uppercase">Target WPM</p>
+                <p className="mt-1 text-2xl font-medium tabular-nums">{targetWpm}</p>
+              </div>
+              <div className="min-w-0 rounded-md bg-fg/4 px-3 py-3">
+                <p className="text-[11px] tracking-wide text-muted uppercase">Current WPM</p>
+                <p className="mt-1 text-2xl font-medium tabular-nums">{currentWpm ?? "—"}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <Label className="text-pretty">Target WPM</Label>
+                  <LockToggle setting="targetWpm" />
+                </span>
+                <span className="shrink-0 tabular-nums text-muted">{targetWpm}</span>
+              </div>
+              <Slider
+                min={120}
+                max={480}
+                step={10}
+                value={[targetWpm]}
+                onValueChange={([value]) => setTargetWpm(value ?? 220)}
+                aria-label="Target words per minute"
+              />
+            </div>
+            <div className="mt-4">
+              <ToggleRow
+                id="autoscroll"
+                label="Scroll at target pace"
+                checked={autoScrolling}
+                onChange={(checked) => {
+                  setAutoScrolling(checked);
+                  if (checked) onClose();
+                }}
+              />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-pretty text-muted">
+              {Math.round(reading.progress * 100)}% through this page
+              {reading.pauses.length > 0
+                ? ` · ${reading.pauses.length} pause${reading.pauses.length === 1 ? "" : "s"}`
+                : ""}
+              {reading.rereads.length > 0
+                ? ` · ${reading.rereads.length} reread${reading.rereads.length === 1 ? "" : "s"}`
+                : ""}
+            </p>
+          </section>
         </div>
       </PanelScroller>
     </div>
