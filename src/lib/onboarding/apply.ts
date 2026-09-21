@@ -15,18 +15,24 @@ import type { MaskStrength, ReadingMode, ReadingProfile, ThemeId } from "../type
  * for that and opens up the spacing. It does not record, or infer, or store
  * anything about why. See `questions.ts` for the rest of that reasoning.
  *
- * **Start gently.** Every setting this turns on is one a reader can find and
- * turn off, and several of them are strange the first time you meet them —
- * bionic fixation in particular. So the survey picks a mode and nudges, rather
- * than stacking every aid at full strength on somebody who has not read a page
- * yet. Under-doing it costs a trip to the options panel; over-doing it costs
- * the reader, who decides the app is not for them.
+ * **Answer the question that was asked.** The first version of this nudged —
+ * a mask at medium, fixation at half strength — on the theory that a strong
+ * first impression might put somebody off. That was the wrong worry. Somebody
+ * who has just said "I lose my place" and then sees a page that looks almost
+ * identical concludes the survey did nothing, and they are right: the settings
+ * were real but too faint to notice. Under-doing it does not cost a trip to
+ * the options panel, it costs the reader's belief that the app does anything.
+ *
+ * So each answer now applies the setting at the strength it exists for. The
+ * last step of the survey shows the result on real text before any of it is
+ * saved, which is the honest place to handle "this is too much" — by showing
+ * it, rather than by pre-emptively watering everything down.
  */
 
-const SIZE: Record<string, number> = { s: 17, m: 19, l: 22, xl: 26 };
+const SIZE: Record<string, number> = { s: 17, m: 20, l: 24, xl: 29 };
 
 /** Leading grows with size — big text set tight is harder, not easier. */
-const LEADING: Record<string, number> = { s: 1.6, m: 1.7, l: 1.85, xl: 2 };
+const LEADING: Record<string, number> = { s: 1.6, m: 1.75, l: 1.95, xl: 2.15 };
 
 const THEME: Record<string, ThemeId> = {
   paper: "paper",
@@ -74,14 +80,15 @@ export function profileFromAnswers(answers: Answers): SurveyOutcome {
   const page = one(answers, "page");
   if (page && THEME[page]) profile.theme = THEME[page];
 
-  // Losing your place is what the mask and the line guide are for, and it is
-  // the single most common answer, so it is the one thing the survey turns on
-  // outright. Medium rather than strong: a page that goes properly quiet is a
-  // lot to meet in your first minute.
+  // Losing your place is what the mask is for, and it is the answer the mask
+  // was built for, so it arrives at full strength. A mask you have to squint to
+  // notice is not a mask — and "How quiet" in reading options turns it down in
+  // one tap for anybody who wants that.
   if (has(answers, "trouble", "place")) {
     profile.readingMask = true;
-    profile.maskStrength = "medium" satisfies MaskStrength;
+    profile.maskStrength = "strong" satisfies MaskStrength;
     profile.wordGuide = true;
+    profile.focusBand = 1;
   }
 
   // Unstable letters: a typeface designed for it, and room around the words.
@@ -89,24 +96,28 @@ export function profileFromAnswers(answers: Answers): SurveyOutcome {
   // look at, so both go up together.
   if (has(answers, "trouble", "blur")) {
     profile.fontFamily = "opendyslexic";
-    profile.letterSpacing = 0.04;
-    profile.wordSpacing = 0.1;
-    profile.lineHeight = Math.max(profile.lineHeight ?? 1.7, 1.9);
+    profile.letterSpacing = 0.08;
+    profile.wordSpacing = 0.18;
+    profile.lineHeight = Math.max(profile.lineHeight ?? 1.75, 2.05);
+    profile.letterGuide = true;
   }
 
-  // A wandering mind: fixation weights give the eye somewhere to land, and the
-  // chrome gets out of the way. Deliberately not full strength — bionic text is
-  // startling at 0.8 and reads as a broken font rather than a feature.
+  // A wandering mind: fixation weights give the eye somewhere to land, the
+  // chrome gets out of the way, and the page stops offering anywhere else to
+  // look. 0.7 is firmly visible — the point of fixation is that you see it.
   if (has(answers, "trouble", "wander")) {
-    profile.bionicStrength = 0.45;
+    profile.bionicStrength = 0.7;
     profile.dimChrome = true;
+    profile.readingMask = true;
+    profile.maskStrength ??= "medium" satisfies MaskStrength;
   }
 
   // Tired eyes: bigger, looser and warmer, unless a size or page was chosen
   // explicitly — an answer given directly outranks one inferred.
   if (has(answers, "trouble", "tired")) {
-    profile.fontSize = Math.max(profile.fontSize ?? 19, 21);
-    profile.lineHeight = Math.max(profile.lineHeight ?? 1.7, 1.9);
+    profile.fontSize = Math.max(profile.fontSize ?? 20, 23);
+    profile.lineHeight = Math.max(profile.lineHeight ?? 1.75, 2);
+    profile.wordSpacing = Math.max(profile.wordSpacing ?? 0, 0.06);
     if (!page) profile.theme = "cream";
   }
 

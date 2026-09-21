@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronLeft } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { READING_PROFILES } from "@/lib/types";
 import { answeredAnything, profileFromAnswers } from "@/lib/onboarding/apply";
 import { QUESTIONS, type Answers } from "@/lib/onboarding/questions";
+import { SAMPLE_PASSAGE, describeChanges } from "@/lib/onboarding/summary";
+import { normalizeProfile } from "@/lib/profile-normalize";
+import { processBionicText } from "@/lib/bionic";
 import { Mark } from "@/components/mark";
 import { cn } from "@/lib/utils";
 
@@ -31,10 +34,27 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const current = useAppStore((s) => s.profile);
 
-  const question = QUESTIONS[step]!;
+  /** One step past the last question is the preview. */
+  const previewing = step === QUESTIONS.length;
+  const question = QUESTIONS[Math.min(step, QUESTIONS.length - 1)]!;
   const chosen = answers[question.id] ?? [];
-  const last = step === QUESTIONS.length - 1;
+
+  /**
+   * What would be applied — computed, shown, and not saved until accepted.
+   *
+   * Run through `normalizeProfile` so this is the profile that would actually
+   * be stored rather than the raw patch. A value the normaliser clamps or
+   * refuses must not be previewed as though it survived, or the sample would
+   * be showing settings the reader will never get.
+   */
+  const proposed = useMemo(() => {
+    const { profile, mode } = profileFromAnswers(answers);
+    return normalizeProfile({ ...READING_PROFILES[mode], ...profile });
+  }, [answers]);
+
+  const changes = useMemo(() => describeChanges(proposed, current), [proposed, current]);
 
   /**
    * Move focus to the new question.
@@ -86,11 +106,9 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
     setAnswers(next);
     // A single-answer question advances on its own: tapping an answer and then
     // hunting for Next is a step nobody needs. The multi-answer one waits,
-    // because it cannot know you are finished.
-    if (!question.multiple) {
-      if (last) finish(next);
-      else setStep((at) => at + 1);
-    }
+    // because it cannot know you are finished. The last one advances to the
+    // preview rather than finishing — nothing is saved without being shown.
+    if (!question.multiple) setStep((at) => at + 1);
   };
 
   return (
@@ -114,12 +132,12 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             text is the one a screen reader reads out. */}
         <div className="mb-8">
           <p className="mb-2 text-xs font-medium tracking-wide text-muted uppercase">
-            Question {step + 1} of {QUESTIONS.length}
+            {previewing ? "Your reading settings" : `Question ${step + 1} of ${QUESTIONS.length}`}
           </p>
           <div className="h-1 overflow-hidden rounded-full bg-fg/10">
             <div
               className="h-full rounded-full bg-accent transition-[width] duration-300 ease-[var(--ease-out)]"
-              style={{ width: `${((step + 1) / QUESTIONS.length) * 100}%` }}
+              style={{ width: `${((step + 1) / (QUESTIONS.length + 1)) * 100}%` }}
             />
           </div>
         </div>
@@ -129,10 +147,73 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
           tabIndex={-1}
           className="text-3xl leading-tight text-balance outline-none sm:text-4xl"
         >
-          {question.title}
+          {previewing ? "Here is how that reads." : question.title}
         </h1>
-        {question.lead ? (
+        {previewing ? (
+          <p className="mt-3 text-[15px] leading-relaxed text-pretty text-muted">
+            {changes.length
+              ? "Nothing is saved until you say so. You can change any of it later."
+              : "Your answers matched the settings you already have, so nothing needs to change."}
+          </p>
+        ) : question.lead ? (
           <p className="mt-3 text-[15px] leading-relaxed text-pretty text-muted">{question.lead}</p>
+        ) : null}
+
+        {previewing ? (
+          <div className="mt-8">
+            {/* The settings applied to real prose, because a list of changes is
+                not something a reader can judge and a paragraph is. Rendered
+                with inline style rather than the reader's own machinery: this
+                has to show the proposed profile, not the one in use. */}
+            <div
+              /* The chosen palette, on the sample only. `[data-scheme]` is not
+                 scoped to the root, so a card can carry its own — which matters
+                 because the list says "Page set to dark" and showing that on a
+                 light card would make the claim a lie. `bg-bg` and `text-fg`
+                 then resolve inside this element to the proposed theme. */
+              data-scheme={proposed.theme}
+              data-mask={proposed.readingMask ? (proposed.maskStrength ?? "strong") : undefined}
+              className={cn(
+                "rounded-xl bg-bg p-5 text-fg shadow-[0_0_0_1px_rgba(22,22,21,0.08)]",
+                proposed.readingMask && "has-reading-mask",
+              )}
+              style={{
+                fontSize: `${proposed.fontSize}px`,
+                lineHeight: proposed.lineHeight,
+                letterSpacing: `${proposed.letterSpacing}em`,
+                wordSpacing: `${proposed.wordSpacing}em`,
+                fontFamily: `var(--font-${proposed.fontFamily}, inherit)`,
+              }}
+            >
+              {SAMPLE_PASSAGE.split(". ").map((sentence, index, all) => {
+                const text = index === all.length - 1 ? sentence : `${sentence}. `;
+                return (
+                  <span
+                    key={sentence}
+                    // The second sentence is the live one, so the mask has
+                    // something above and below it to quiet.
+                    className={cn("reading-line", index === 1 && "active")}
+                    dangerouslySetInnerHTML={{
+                      __html: proposed.bionicStrength
+                        ? processBionicText(text, proposed.bionicStrength)
+                        : text,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            {changes.length ? (
+              <ul className="mt-6 flex flex-col gap-2">
+                {changes.map((line) => (
+                  <li key={line} className="flex items-start gap-2.5 text-[15px] text-pretty">
+                    <Check size={15} className="mt-1 shrink-0 text-accent" aria-hidden />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
 
         {/* Deliberately not a radiogroup.
@@ -143,7 +224,12 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             keys do nothing. These are buttons and behave like buttons: tab to
             them, press to answer. The multi-answer question uses `aria-pressed`,
             which is a toggle button and exactly what it is. */}
-        <div role="group" aria-label={question.title} className="mt-8 flex flex-col gap-2">
+        <div
+          role="group"
+          aria-label={question.title}
+          hidden={previewing}
+          className="mt-8 flex flex-col gap-2"
+        >
           {question.choices.map((choice) => {
             const on = chosen.includes(choice.id);
             return (
@@ -196,13 +282,23 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             </button>
           ) : null}
 
-          {/* Only the multi-answer question needs this; the others advance on
-              a tap. It stays enabled with nothing chosen, because "none of
-              these" is a real answer and deserves a way to say it. */}
-          {question.multiple ? (
+          {/* The preview's own button is the one that commits. Everything up to
+              here has changed nothing. */}
+          {previewing ? (
             <button
               type="button"
-              onClick={() => (last ? finish(answers) : setStep((at) => at + 1))}
+              onClick={() => finish(answers)}
+              className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+            >
+              {changes.length ? "Use these settings" : "Start reading"}
+            </button>
+          ) : question.multiple ? (
+            /* Only the multi-answer question needs this; the others advance on
+               a tap. It stays enabled with nothing chosen, because "none of
+               these" is a real answer and deserves a way to say it. */
+            <button
+              type="button"
+              onClick={() => setStep((at) => at + 1)}
               className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
             >
               {chosen.length ? "Continue" : "None of these"}

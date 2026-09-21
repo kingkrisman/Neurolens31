@@ -291,13 +291,18 @@
     color: inherit;
   }
 
+  /* A rule under the live text, and only under it.
+     A hairline rather than a filled band, because a background behind the live
+     line would sit beneath the highlight colours and shift every one of them.
+     And under only, not above and below: a `.reading-line` is a *sentence*, so
+     one that wraps is several line boxes, and Chromium paints an inline
+     box-shadow on each fragment — `box-decoration-break: slice` does not change
+     that. A sentence crossing four lines was drawing four stacked boxes. One
+     rule per fragment reads instead like a ruler under each line being read,
+     which is what somebody who loses their place is reaching for anyway. */
   .has-reading-mask .reading-line.active {
     color: var(--color-fg);
-    /* Hairlines rather than a filled band: a background behind the live line
-       would sit under the highlight colours and change every one of them. */
-    box-shadow:
-      inset 0 1px 0 var(--color-accent),
-      inset 0 -1px 0 var(--color-accent);
+    box-shadow: inset 0 -1px 0 var(--color-accent);
   }
 
   /* Highlights need no rule here, which is worth writing down because it looks
@@ -313,7 +318,6 @@
   .has-reading-mask.is-autoscrolling .reading-line.active {
     box-shadow:
       inset 3px 0 0 var(--color-accent),
-      inset 0 1px 0 var(--color-accent),
       inset 0 -1px 0 var(--color-accent);
   }
 

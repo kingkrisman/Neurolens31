@@ -31,10 +31,29 @@ import { OnboardingSurvey } from "@/components/onboarding-survey";
 export function OnboardingGate({ children }: { children: ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
   const onboardedAt = useAppStore((s) => s.profile.onboardedAt);
-  const hasBooks = useAppStore((s) => s.sessions.length > 0);
 
   const [synced, setSynced] = useState(() => syncState().lastSyncedAt !== null);
   useEffect(() => subscribeSync((state) => setSynced(state.lastSyncedAt !== null)), []);
+
+  /**
+   * Give up waiting for the sync after a moment.
+   *
+   * Waiting for the account's settings is right, but waiting *indefinitely*
+   * turns any sync problem into a survey that silently never appears — which
+   * is exactly what happened: with the deployed Supabase URL misspelled, the
+   * pull could never complete and the survey was suppressed forever, with no
+   * error and nothing to notice. A condition that can only ever be met by a
+   * healthy server is a feature that disappears when the server is not.
+   *
+   * Two and a half seconds is longer than a pull takes and shorter than it
+   * takes to find a book and upload it, so the ordinary case still waits for
+   * the real answer.
+   */
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setWaited(true), 2_500);
+    return () => clearTimeout(timer);
+  }, []);
 
   /**
    * Latched, so finishing the survey closes it and nothing re-opens it.
@@ -45,7 +64,23 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
    */
   const [dismissed, setDismissed] = useState(false);
 
-  const ask = hydrated && synced && !onboardedAt && !hasBooks && !dismissed;
+  /**
+   * An existing library is no longer a reason not to ask.
+   *
+   * It used to be: somebody who read here before accounts existed has their
+   * library adopted into their first account along with settings they chose,
+   * and a survey would offer to replace them. But that guard also silenced the
+   * survey for anyone who opened a book before it appeared — and for every
+   * account that already had one, which is most of the ones anybody would test
+   * with. It protected a rare reader by breaking the feature for the common one.
+   *
+   * The protection moved somewhere better: the survey's last step shows exactly
+   * what it is about to change and nothing is applied until it is accepted. A
+   * reader with settings they like can see that and decline, which is more
+   * respectful than never asking and far less fragile than guessing from the
+   * shape of their library.
+   */
+  const ask = hydrated && (synced || waited) && !onboardedAt && !dismissed;
 
   return (
     <>

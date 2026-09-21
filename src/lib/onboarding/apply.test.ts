@@ -63,12 +63,15 @@ test("size sets both the size and the leading", () => {
   assert.ok(small.lineHeight! < large.lineHeight!);
 });
 
-test("losing your place turns on the mask and the line guide", () => {
+test("losing your place turns the mask on at full strength", () => {
   const out = profileFromAnswers({ trouble: ["place"] });
   assert.equal(out.profile.readingMask, true);
   assert.equal(out.profile.wordGuide, true);
-  // Medium, not strong: a page that goes fully quiet is a lot to meet first.
-  assert.equal(out.profile.maskStrength, "medium");
+  // Strong, not medium. This asserted "medium" first, on the theory that a
+  // quiet page is a lot to meet in your first minute — and the result was a
+  // survey somebody could answer and see almost no change from. A mask you
+  // have to squint to notice has not answered the question that was asked.
+  assert.equal(out.profile.maskStrength, "strong");
   assert.equal(out.mode, "focus");
 });
 
@@ -81,10 +84,12 @@ test("unstable letters choose the typeface and open the spacing", () => {
   assert.equal(out.mode, "dyslexia");
 });
 
-test("a wandering mind gets fixation weights, but not at full strength", () => {
+test("a wandering mind gets fixation weights you can actually see", () => {
   const out = profileFromAnswers({ trouble: ["wander"] });
-  assert.ok(out.profile.bionicStrength! > 0);
-  assert.ok(out.profile.bionicStrength! <= 0.5, "full-strength bionic reads as a broken font");
+  // This capped it at 0.5 to avoid startling anyone. The effect of fixation
+  // weighting is that you notice it; at half strength the page looked
+  // unchanged and the answer went unanswered.
+  assert.ok(out.profile.bionicStrength! >= 0.6, "fixation below 0.6 is not visible enough to help");
   assert.equal(out.profile.dimChrome, true);
   assert.equal(out.mode, "adhd");
 });
