@@ -108,7 +108,7 @@ import { WordCard } from "@/components/word-card";
 import { chunkByMinutes, wordAtChar, wordFromPoint } from "@/lib/word-markup";
 import { followReadingLine, lineBoxesOf, type FollowState } from "@/lib/reading-line";
 import { copyReading, downloadReading } from "@/lib/reading-export";
-import { easeOut, gsap, registerGsap, useGSAP } from "@/lib/gsap";
+import { easeOut, finePointer, gsap, registerGsap, useGSAP } from "@/lib/gsap";
 import { useReducedMotion } from "@/lib/prefers-reduced-motion";
 import { buildCheckpoints, scoreComprehension } from "@/lib/comprehension";
 import {
@@ -565,6 +565,115 @@ export function Reader() {
       if (frame) cancelAnimationFrame(frame);
     };
   }, [viewText, isSpeaking, profile.wordGuide, profile.readingMask, lines.length, markActiveLine]);
+
+  /**
+   * With the mask on, the band follows the mouse.
+   *
+   * Without this the mask is only usable while scrolling. Reading a screenful
+   * of text means the band sits where the scroll left it, so moving down one
+   * line meant clicking that line — and clicking a line opens a definition,
+   * so every line advanced cost a popover to dismiss. Two features fighting,
+   * and the reader losing both.
+   *
+   * Hover has no such cost. It also cooperates with the scroll tracker rather
+   * than competing: this writes `followStateRef`, and `followReadingLine`
+   * *rides* whatever line that names as the page moves, so the band stays on
+   * the line the pointer chose instead of snapping back to the reading anchor.
+   *
+   * Gated on `(hover: hover)` as well as a fine pointer, and both are load
+   * bearing. `pointer: fine` alone is true on a phone in desktop-emulation and,
+   * more importantly, Chromium synthesises a compatibility mouse `pointermove`
+   * immediately before the click of a real tap — so on a touchscreen this fired
+   * first, moved the band to the tapped line, and the tap then read as a tap on
+   * the *already active* line and opened a definition. The exact collision the
+   * two-tap rule below exists to prevent, reintroduced by the fix for it.
+   * `hover: hover` is the honest question: does this device hover at all.
+   */
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node || !profile.readingMask || isSpeaking) return;
+    if (!finePointer() || !window.matchMedia("(hover: hover)").matches) return;
+
+    let frame = 0;
+    let pending: { x: number; y: number } | null = null;
+
+    const settle = () => {
+      frame = 0;
+      const at = pending;
+      pending = null;
+      if (!at) return;
+      const hit = document.elementFromPoint(at.x, at.y)?.closest<HTMLElement>(".reading-line");
+      if (!hit || !node.contains(hit)) return;
+      const id = Number(hit.id.slice(5));
+      if (!Number.isFinite(id) || id === activeLineRef.current) return;
+
+      markActiveLine(id);
+      // Which wrapped box of the line the pointer is over, so a long sentence
+      // spanning three visual lines keeps the band on the one being read.
+      const boxes = lineBoxesOf(hit);
+      let boxIndex = 0;
+      for (let i = 0; i < boxes.length; i += 1) {
+        const box = boxes[i]!;
+        if (at.y >= box.top && at.y <= box.bottom) {
+          boxIndex = i;
+          break;
+        }
+      }
+      followStateRef.current = { id, boxIndex };
+    };
+
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      pending = { x: event.clientX, y: event.clientY };
+      if (!frame) frame = requestAnimationFrame(settle);
+    };
+
+    node.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      node.removeEventListener("pointermove", onMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [profile.readingMask, isSpeaking, viewText, markActiveLine]);
+
+  /**
+   * Arrow keys move the band, for everyone not using a mouse.
+   *
+   * Up and down, because left and right already turn the page. Moving the band
+   * scrolls the line into view when it is off-screen, which is what makes this
+   * a way to read rather than a way to lose the band off the bottom.
+   */
+  useEffect(() => {
+    if (!profile.readingMask || isSpeaking) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      )
+        return;
+
+      const current = lines.findIndex((line) => line.lineIdx === activeLineRef.current);
+      const next = current === -1 ? 0 : current + (event.key === "ArrowDown" ? 1 : -1);
+      const line = lines[next];
+      if (!line) return;
+
+      event.preventDefault();
+      markActiveLine(line.lineIdx);
+      followStateRef.current = { id: line.lineIdx, boxIndex: 0 };
+      scrollRef.current
+        ?.querySelector(`#line-${line.lineIdx}`)
+        ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [profile.readingMask, isSpeaking, lines, markActiveLine, reduceMotion]);
 
   // Cmd/Ctrl-F is what everyone reaches for, so it opens the in-book find
   // rather than the browser's — which would only search the section on screen
@@ -1108,7 +1217,26 @@ export function Reader() {
                           if (found !== -1) speakAt(found);
                           return;
                         }
-                        if (profile.lookup !== false) {
+                        /**
+                         * With the mask on, the first tap on a line moves the
+                         * band; a definition needs a second tap on the line you
+                         * are already reading.
+                         *
+                         * A touchscreen has no hover, so a tap is the only way
+                         * to move the band there — and it collided head-on with
+                         * the lookup: every line advanced popped a definition
+                         * that had to be dismissed first. Two useful features
+                         * cancelling each other out.
+                         *
+                         * Splitting it by which line was tapped resolves it
+                         * without a mode to remember. Tapping ahead means "read
+                         * from here"; tapping the line under the band means
+                         * "what is that word" — which is when you actually want
+                         * a definition, and never when you are just moving on.
+                         */
+                        const onActiveLine =
+                          !profile.readingMask || activeLineRef.current === line.lineIdx;
+                        if (profile.lookup !== false && onActiveLine) {
                           const word = wordFromPoint(
                             event.clientX,
                             event.clientY,
