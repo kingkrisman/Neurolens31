@@ -1,0 +1,122 @@
+import { expect, test, type Page } from "@playwright/test";
+
+/**
+ * A new account is asked the survey.
+ *
+ * This exists because the survey shipped wired to nothing. `OnboardingGate`
+ * was imported into the home route and never placed in the JSX — the component
+ * was correct, its tests passed, the questions rendered perfectly in isolation,
+ * and no new account ever saw it. Typecheck is happy with an unused import and
+ * lint says "defined but never used", which was one warning among two dozen
+ * pre-existing ones and read as noise.
+ *
+ * Nothing short of loading the real route as a signed-in reader would have
+ * caught it, so that is what this does.
+ */
+
+/** A session supabase-js accepts from storage, so no network is involved. */
+function fakeSession(id: string) {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  return {
+    access_token: `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: id, role: "authenticated", aud: "authenticated", exp })}.unsigned`,
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: exp,
+    refresh_token: "not-used",
+    user: {
+      id,
+      aud: "authenticated",
+      role: "authenticated",
+      email: `${id}@example.test`,
+      app_metadata: { provider: "google" },
+      user_metadata: { name: "Test Reader" },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  };
+}
+
+/** Sign in as somebody who has never used this device. */
+async function signInFresh(page: Page, id: string) {
+  await page.addInitScript(
+    ([key, session]) => {
+      try {
+        localStorage.setItem(key as string, JSON.stringify(session));
+      } catch {
+        /* blocked storage — the test will fail on the assertion, not here */
+      }
+    },
+    ["neurolens-auth", fakeSession(id)],
+  );
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  // The gate waits for hydration and for a sync to settle or time out.
+  await page.waitForTimeout(4000);
+}
+
+test("a new account is asked the survey on first sign-in", async ({ page }) => {
+  await signInFresh(page, "11111111-1111-4111-8111-111111111111");
+  await expect(page.getByRole("heading", { name: "What do you mostly read?" })).toBeVisible();
+});
+
+test("the app behind the survey is inert, not merely covered", async ({ page }) => {
+  await signInFresh(page, "22222222-2222-4222-8222-222222222222");
+
+  // Covering is paint. Without `inert` the whole shell stays tabbable and in
+  // the accessibility tree underneath, and the page has two h1s.
+  await expect(page.locator("[inert]")).toHaveCount(1);
+
+  for (let i = 0; i < 10; i += 1) {
+    await page.keyboard.press("Tab");
+    const inSurvey = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body) return true;
+      return Boolean(el.closest("[inert]")) === false;
+    });
+    expect(inSurvey, "focus left the survey for the page behind it").toBe(true);
+  }
+});
+
+test("answering it applies the settings and it does not come back", async ({ page }) => {
+  await signInFresh(page, "33333333-3333-4333-8333-333333333333");
+
+  await page.getByRole("button", { name: /Study material/ }).click();
+  await page.getByRole("button", { name: /I lose my place/ }).click();
+  await page.getByRole("button", { name: /Continue/ }).click();
+  await page.getByRole("button", { name: /^Larger$/ }).click();
+  await page.getByRole("button", { name: /Cool grey/ }).click();
+  await page.getByRole("button", { name: /Steadily/ }).click();
+
+  // Nothing is saved until the preview is accepted.
+  await expect(page.getByRole("heading", { name: "Here is how that reads." })).toBeVisible();
+  await page.getByRole("button", { name: /Use these settings/ }).click();
+
+  await expect(page.getByRole("heading", { name: "What do you mostly read?" })).toBeHidden();
+
+  const profile = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((k) => k.startsWith("neurolens-profile::"));
+    return key ? (JSON.parse(localStorage.getItem(key)!) as Record<string, unknown>) : null;
+  });
+  expect(profile, "the profile should be saved under the account's own key").not.toBeNull();
+  expect(profile!.readingMask, "‘I lose my place’ should turn the mask on").toBe(true);
+  expect(profile!.theme, "‘Cool grey’ should set the palette").toBe("mist");
+  expect(profile!.onboardedAt, "answering should record that we asked").toBeTruthy();
+
+  // The whole point of the flag: asked once, not once per visit.
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(4000);
+  await expect(page.getByRole("heading", { name: "What do you mostly read?" })).toBeHidden();
+});
+
+test("skipping also counts as asked", async ({ page }) => {
+  await signInFresh(page, "44444444-4444-4444-8444-444444444444");
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByRole("heading", { name: "What do you mostly read?" })).toBeHidden();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(4000);
+  await expect(
+    page.getByRole("heading", { name: "What do you mostly read?" }),
+    "re-asking somebody who declined is worse than never asking",
+  ).toBeHidden();
+});

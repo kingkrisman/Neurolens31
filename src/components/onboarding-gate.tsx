@@ -20,13 +20,18 @@ import { OnboardingSurvey } from "@/components/onboarding-survey";
  * always online (OAuth just completed), so waiting for the round trip costs
  * nothing in the case it exists for.
  *
- * **The library is empty.** A genuinely new account has no books. Somebody who
- * read on this device before accounts existed has a library adopted into their
- * first account along with settings they chose deliberately, and a survey would
- * offer to replace them. Better to skip the question than to undo their work.
+ * There used to be a third condition — an empty library — and it is gone; see
+ * the note on `ask` below for why.
  *
  * Renders children underneath either way, so the app is mounted and warm behind
- * the survey rather than starting from cold when it closes.
+ * the survey rather than starting from cold when it closes, and marks them
+ * `inert` while it is up so "underneath" means underneath for the keyboard and
+ * a screen reader too.
+ *
+ * None of this is worth much on its own: this component was correct and
+ * mounted nowhere for two releases, because the home route imported it and
+ * never placed it in the JSX. `tests/onboarding.spec.ts` loads the real route
+ * as a signed-in reader, which is the only thing that would have noticed.
  */
 export function OnboardingGate({ children }: { children: ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
@@ -84,7 +89,16 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {children}
+      {/* `inert` while the survey is up.
+          The survey covers the app, but covering is only paint: without this
+          the whole shell stays in the tab order and in the accessibility tree
+          underneath it, so a keyboard or screen-reader user tabs straight out
+          of the questions into a page they cannot see, and the document has two
+          `h1`s — the survey's and the landing page's. Found exactly that way,
+          by a test that asked for the heading and got two. */}
+      <div inert={ask ? true : undefined} className="contents">
+        {children}
+      </div>
       {ask ? <OnboardingSurvey onDone={() => setDismissed(true)} /> : null}
     </>
   );

@@ -46,7 +46,12 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <AuthGate>
-      <AppShell />
+      {/* Inside the auth gate, so it only ever runs for somebody signed in,
+          and outside the shell, so the survey covers the app rather than
+          rendering into a tab. */}
+      <OnboardingGate>
+        <AppShell />
+      </OnboardingGate>
     </AuthGate>
   );
 }

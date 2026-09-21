@@ -56,5 +56,19 @@ export default defineConfig({
         timeout: 180_000,
         stdout: "ignore",
         stderr: "pipe",
+        env: {
+          /**
+           * Placeholders when nothing real is configured.
+           *
+           * The onboarding tests sign in by seeding a session into storage, so
+           * they never call Supabase — but the app refuses to render past
+           * `AuthGate` when the keys are *absent*, showing "not configured"
+           * instead. Non-empty values are all that is needed, which means these
+           * suites run on a machine and in a CI job with no secrets at all.
+           * A real value in the environment still wins.
+           */
+          VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co",
+          VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || "placeholder-anon-key",
+        },
       },
 });
