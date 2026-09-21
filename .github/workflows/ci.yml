@@ -14,9 +14,16 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # 22.11 is below what vite 8 and rolldown ask for (^20.19 || >=22.12), and
+  # `22` alone floats to whatever is newest that week. Pinned, so a green run
+  # today means the same thing next month.
+  NODE_VERSION: "22.12.0"
+
 jobs:
-  # Everything that needs no network and no browser. Fast, so a typo is caught
-  # in under a minute instead of after a Chromium download.
+  # Everything that needs no network, no browser and no secrets. This is the
+  # job that should be green on every push, and the only one that says
+  # anything about the code.
   check:
     name: Types, lint and unit tests
     runs-on: ubuntu-latest
@@ -26,13 +33,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
 
-      # `npm ci` rather than `npm install`: the lockfile is the point of having
-      # one, and a CI run that resolves fresh versions is not testing the code
-      # that will ship.
-      - run: npm ci
+      # Deliberately not `cache: npm`.
+      # The first version of this cached the npm store, and `npm ci` then failed
+      # on every single push while succeeding locally from the same lockfile. A
+      # cache keyed on an unchanged lockfile is restored identically forever, so
+      # if what it holds is bad the failure is permanent and looks like a code
+      # problem. Thirty seconds a run is worth not having a failure mode that
+      # cannot be told apart from a real one.
+      - name: Install
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
@@ -49,11 +60,17 @@ jobs:
         # page happened to load.
         run: node scripts/audit-themes.mjs
 
-      - name: Auth invariant
-        run: npm run check:auth
+      # `npm run check:auth` is deliberately NOT here. It compares what a
+      # *running dev server* resolved against what the next build would use, so
+      # with no server to ask it exits 2 — "could not observe", which is its
+      # documented contract and not a failure of the code. It would have failed
+      # this job on every push. It belongs in the smoke run against a live
+      # server, which is where scripts/browser-smoke.mjs already calls it.
 
-  # Separate job: this one downloads a browser and starts the app, so it is
-  # slower and should not hold up the answer to "does it compile".
+  # Needs the app to boot, which needs Supabase keys. Skips itself when they
+  # are not configured rather than failing: a missing repository secret is a
+  # setup step nobody has done yet, not a broken build, and a red tick that
+  # means "you have not set a secret" teaches people to ignore red ticks.
   a11y:
     name: Accessibility
     runs-on: ubuntu-latest
@@ -64,23 +81,26 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
 
-      - run: npm ci
+      - name: Install
+        run: npm ci --no-audit --no-fund
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Accessibility audit
-        run: npm run test:a11y
         env:
-          # The dev server the suite starts needs these to boot past the
-          # "not configured" screen. Repository secrets, and both are values
-          # that ship to the browser anyway — the anon key is public by design,
+          # Both ship to the browser anyway — the anon key is public by design,
           # and row-level security is what actually protects the data.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::notice title=Accessibility skipped::Set the VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets to run this."
+            exit 0
+          fi
+          npm run test:a11y
 
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -101,40 +121,42 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: ${{ env.NODE_VERSION }}
 
-      - run: npm ci
+      - name: Install
+        run: npm ci --no-audit --no-fund
 
+      # `build:dev` rather than `build`: it skips the deploy-time migration and
+      # the environment check, so it proves the app compiles without needing
+      # any secret at all.
       - name: Build
-        run: npm run build:dev
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:dev
 
-  # The check that would have caught the outage this file was written after:
-  # a misspelled Supabase host in the hosting provider's environment, which
-  # broke sign-in in production for days while every local check passed.
-  #
-  # Strict here, because unlike a deploy this run failing costs nothing but a
-  # red tick, and a red tick is exactly what was missing.
+  # The check that would have caught the outage this file was written after: a
+  # misspelled Supabase host in the hosting provider's environment, which broke
+  # sign-in in production for days while every local check passed.
   env-check:
     name: Environment reachable
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # Only where the secrets exist. A fork's pull request has none, and failing
-    # somebody's first contribution on a secret they cannot set is rude.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Check Supabase is reachable and accepts the key
-        run: node scripts/check-env.mjs
         env:
           NEUROLENS_STRICT_ENV: "1"
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::notice title=Environment check skipped::Set the VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets to run this."
+            exit 0
+          fi
+          node scripts/check-env.mjs
