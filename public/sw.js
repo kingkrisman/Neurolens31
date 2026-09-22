@@ -9,10 +9,10 @@
  *   - navigations go to the network first and only fall back to a cached shell
  *     when the network fails. A code update therefore always wins; the cache is
  *     a safety net, never the source of truth.
- *   - book text and cover images are cached after a successful fetch, because
+ *   - book text and same-origin images are cached after a successful fetch, because
  *     those are the parts worth having on a train.
  *
- * Everything else — the API, anything cross-origin not listed, POSTs — is left
+ * Everything else — the API, anything cross-origin, POSTs — is left
  * strictly alone.
  */
 
@@ -80,11 +80,22 @@ function isHashedAsset(url) {
   return url.origin === self.location.origin && /\/_build\/|\/assets\//.test(url.pathname);
 }
 
-/** Reading material worth having offline. */
+/**
+ * Reading material worth having offline. Same-origin only.
+ *
+ * Gutenberg's cover images used to be intercepted here too, and that broke
+ * every one of them. A fetch made by a service worker answers to the worker's
+ * own Content-Security-Policy, and that policy's `connect-src` does not list
+ * gutenberg.org — the page may *show* those images (`img-src`), but the worker
+ * may not *fetch* them. So each cover failed inside `respondWith`, the image
+ * came back broken, and Safari reported every one as an uncaught error. It
+ * never cached anything either: a cross-origin image is an opaque response,
+ * `ok` is false, and the cache branch was skipped. Left alone, the browser
+ * loads covers directly under `img-src`, which is what the policy allows.
+ */
 function isContent(url) {
-  if (url.origin === self.location.origin && url.pathname.startsWith("/api/gutendex/")) return true;
-  if (url.hostname.endsWith("gutenberg.org")) return true;
-  return url.origin === self.location.origin && /\/images\//.test(url.pathname);
+  if (url.origin !== self.location.origin) return false;
+  return url.pathname.startsWith("/api/gutendex/") || /\/images\//.test(url.pathname);
 }
 
 self.addEventListener("fetch", (event) => {
