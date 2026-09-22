@@ -34,7 +34,23 @@ const FONT_IDS: FontId[] = [
   "sourcesans",
 ];
 
-export function normalizeProfile(profile: ReadingProfile): ReadingProfile {
+/**
+ * Account facts that used to ride on the profile, and must not any more.
+ *
+ * Profiles saved before the split still carry `onboardedAt` and `avatar`. They
+ * are lifted into `AccountMeta` on hydrate and on pull; after that, leaving them
+ * here would keep sending a stale copy to the server inside every profile save.
+ */
+const ACCOUNT_KEYS = ["onboardedAt", "avatar"] as const;
+
+function withoutAccountFacts(profile: ReadingProfile): ReadingProfile {
+  const copy = { ...profile } as Record<string, unknown>;
+  for (const key of ACCOUNT_KEYS) delete copy[key];
+  return copy as unknown as ReadingProfile;
+}
+
+export function normalizeProfile(input: ReadingProfile): ReadingProfile {
+  const profile = withoutAccountFacts(input);
   const rhythmCurve = resolveRhythmCurve(profile.rhythmCurve, profile.rhythmOptimization);
   return {
     ...profile,
@@ -49,17 +65,6 @@ export function normalizeProfile(profile: ReadingProfile): ReadingProfile {
     maskStrength: MASK_STRENGTHS.includes(profile.maskStrength as MaskStrength)
       ? (profile.maskStrength as MaskStrength)
       : "strong",
-    // Preserved rather than normalised: it is a timestamp, and rewriting it
-    // would re-ask the survey. Anything non-numeric is treated as never asked.
-    onboardedAt:
-      typeof profile.onboardedAt === "number" && profile.onboardedAt > 0
-        ? profile.onboardedAt
-        : undefined,
-    // Structural check only. The avatar's own module owns what a valid style
-    // and background are, and importing it here would put this leaf in a cycle
-    // — it reads the store, and the store reads this. `normalizeAvatar` runs on
-    // the way out instead, so anything malformed still renders as the default.
-    avatar: profile.avatar && typeof profile.avatar === "object" ? profile.avatar : undefined,
     /**
      * Pinned off, deliberately — the one exception in this function.
      *

@@ -7,15 +7,15 @@ import { useAppStore } from "@/lib/store";
  * It is appearance, not identity: the face is generated from a seed, so nothing
  * here is a photo and nothing here identifies anybody.
  *
- * Stored on the reading profile, which is not where it belongs conceptually and
- * is exactly where it belongs practically. It used to have its own
- * `neurolens-avatar` key in raw localStorage, and that was wrong twice over:
- * the key is device-wide, so two accounts on one machine shared a face — the
- * same leak the library had before storage was scoped — and nothing in the sync
- * layer knew about it, so a choice made on a laptop never reached a phone and
- * died with the browser data. The profile is the one per-account object that is
- * already namespaced per reader and already synced, so this inherits both
- * without a migration or a new column.
+ * Stored on the account's `meta`, per reader and synced.
+ *
+ * Two homes before this one, both wrong. First a device-wide `neurolens-avatar`
+ * key, which two accounts on one machine shared and which the sync layer never
+ * saw. Then the reading profile — and the profile is replaced wholesale by every
+ * mode change, saved setup and sync pull, so a chosen face could be thrown away
+ * by switching to Dyslexia mode. `meta` is merged rather than replaced, and the
+ * choice carries a timestamp so a pull bringing an older face cannot overwrite
+ * a newer one that has not been sent yet.
  */
 
 export const AVATAR_STYLES = [
@@ -108,18 +108,16 @@ export function useAvatarPrefs(): AvatarPrefs {
   // Selected by reference. A selector that normalised inline would return a
   // fresh object on every render and zustand compares with Object.is, so the
   // component would re-render forever.
-  const stored = useAppStore((state) => state.profile.avatar);
+  const stored = useAppStore((state) => state.meta.avatar);
   return useMemo(() => normalizeAvatar(stored ?? legacyAvatar()), [stored]);
 }
 
 export function setAvatarPrefs(next: Partial<AvatarPrefs>): AvatarPrefs {
-  const profile = useAppStore.getState().profile;
-  const merged = normalizeAvatar({
-    ...(profile.avatar ?? legacyAvatar() ?? DEFAULT_AVATAR),
-    ...next,
-  });
-  // Through the store, so it lands under this reader's own key and is queued
-  // for their account exactly like every other setting.
-  useAppStore.getState().setProfile({ ...profile, avatar: merged });
+  const current = useAppStore.getState().meta.avatar ?? legacyAvatar() ?? DEFAULT_AVATAR;
+  const merged = normalizeAvatar({ ...current, ...next });
+  // Stamped, so a sync pull carrying an older face loses to this one instead
+  // of undoing it. Through `setMeta`, so it is scoped to this reader and
+  // queued for their account.
+  useAppStore.getState().setMeta({ avatar: { ...merged, at: Date.now() } });
   return merged;
 }

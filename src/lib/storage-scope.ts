@@ -35,6 +35,9 @@ const SCOPED = [
   "neurolens-ink-tool",
   "neurolens-ink-color",
   "neurolens-book-ids",
+  // Account facts — per reader, like everything above. Two accounts on one
+  // device must not share "has answered the survey" or a face.
+  "neurolens-meta",
 ] as const;
 
 function storage(): Storage | null {

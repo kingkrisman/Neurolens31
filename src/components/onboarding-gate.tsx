@@ -1,101 +1,67 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
-import { subscribeSync, syncState } from "@/lib/sync/engine";
+import { subscribeSync, syncState, type SyncState } from "@/lib/sync/engine";
 import { OnboardingSurvey } from "@/components/onboarding-survey";
 
 /**
  * Decides whether this account has ever been asked.
  *
- * Getting the *timing* right matters more than the survey itself. Three things
- * have to be true before it can show, and each one is a way of being wrong:
+ * The flag lives on `meta`, not on the reading profile. It used to live on the
+ * profile, and the survey came back on every refresh: a mode change rebuilds
+ * the profile from a preset, a saved setup replaces it, and a sync pull
+ * replaces the local copy with the server's — each one silently erased "has
+ * been asked". See `lib/account-meta.ts`, where it is now merged instead.
  *
- * **The store has hydrated.** Before that the profile is the built-in default,
- * which has no `onboardedAt`, so everyone looks new.
+ * Asks only once three things are true:
  *
- * **A sync has completed.** This is the one that matters. `onboardedAt` lives
- * on the profile and arrives from the account, so a returning reader signing in
- * on a second device looks brand new for as long as the pull takes. Asking them
- * five questions they already answered — and then overwriting the settings they
- * tuned — is the worst thing this component could do. A first-time sign-in is
- * always online (OAuth just completed), so waiting for the round trip costs
- * nothing in the case it exists for.
+ * **The store has hydrated.** Before that, meta is empty and everyone looks new.
  *
- * There used to be a third condition — an empty library — and it is gone; see
- * the note on `ask` below for why.
+ * **The account has had its say.** On a second device the flag arrives with the
+ * first pull, so asking before then re-asks somebody who already answered. The
+ * wait ends as soon as that pull lands — or, if sync cannot happen at all
+ * (offline, or failing), as soon as that is known, so a broken server does not
+ * hide the survey forever. A fixed timer is the last resort, and it is long
+ * enough that an ordinary pull always wins the race: the first version of this
+ * gave up after 2.5 seconds, and a slow pull on a returning account lost to it
+ * and showed the survey to somebody who had already filled it in.
  *
- * Renders children underneath either way, so the app is mounted and warm behind
- * the survey rather than starting from cold when it closes, and marks them
- * `inert` while it is up so "underneath" means underneath for the keyboard and
- * a screen reader too.
+ * **Nothing has been recorded.**
  *
- * None of this is worth much on its own: this component was correct and
- * mounted nowhere for two releases, because the home route imported it and
- * never placed it in the JSX. `tests/onboarding.spec.ts` loads the real route
- * as a signed-in reader, which is the only thing that would have noticed.
+ * The app underneath is mounted either way and made `inert` while the survey is
+ * up, so keyboard and screen-reader users cannot tab out into a page they
+ * cannot see.
  */
+
+/** Longer than any healthy pull, shorter than anyone waits before giving up. */
+const LAST_RESORT_MS = 8_000;
+
+function accountHasAnswered(state: SyncState): boolean {
+  return state.lastSyncedAt !== null || state.phase === "offline" || state.phase === "error";
+}
+
 export function OnboardingGate({ children }: { children: ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
-  const onboardedAt = useAppStore((s) => s.profile.onboardedAt);
+  const onboardedAt = useAppStore((s) => s.meta.onboardedAt);
 
-  const [synced, setSynced] = useState(() => syncState().lastSyncedAt !== null);
-  useEffect(() => subscribeSync((state) => setSynced(state.lastSyncedAt !== null)), []);
+  const [settled, setSettled] = useState(() => accountHasAnswered(syncState()));
+  useEffect(() => subscribeSync((state) => setSettled(accountHasAnswered(state))), []);
 
-  /**
-   * Give up waiting for the sync after a moment.
-   *
-   * Waiting for the account's settings is right, but waiting *indefinitely*
-   * turns any sync problem into a survey that silently never appears — which
-   * is exactly what happened: with the deployed Supabase URL misspelled, the
-   * pull could never complete and the survey was suppressed forever, with no
-   * error and nothing to notice. A condition that can only ever be met by a
-   * healthy server is a feature that disappears when the server is not.
-   *
-   * Two and a half seconds is longer than a pull takes and shorter than it
-   * takes to find a book and upload it, so the ordinary case still waits for
-   * the real answer.
-   */
-  const [waited, setWaited] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setWaited(true), 2_500);
+    const timer = setTimeout(() => setGaveUp(true), LAST_RESORT_MS);
     return () => clearTimeout(timer);
   }, []);
 
   /**
-   * Latched, so finishing the survey closes it and nothing re-opens it.
-   *
-   * `setProfile` writes `onboardedAt` and that alone would be enough — but it
-   * goes through the store, the sync queue and back, and a survey that flickers
-   * because a write is in flight is worse than one that simply closes.
+   * Latched for this session, so answering closes it at once. The real record
+   * is `meta.onboardedAt`, which the survey sets before calling this.
    */
   const [dismissed, setDismissed] = useState(false);
 
-  /**
-   * An existing library is no longer a reason not to ask.
-   *
-   * It used to be: somebody who read here before accounts existed has their
-   * library adopted into their first account along with settings they chose,
-   * and a survey would offer to replace them. But that guard also silenced the
-   * survey for anyone who opened a book before it appeared — and for every
-   * account that already had one, which is most of the ones anybody would test
-   * with. It protected a rare reader by breaking the feature for the common one.
-   *
-   * The protection moved somewhere better: the survey's last step shows exactly
-   * what it is about to change and nothing is applied until it is accepted. A
-   * reader with settings they like can see that and decline, which is more
-   * respectful than never asking and far less fragile than guessing from the
-   * shape of their library.
-   */
-  const ask = hydrated && (synced || waited) && !onboardedAt && !dismissed;
+  const ask = hydrated && (settled || gaveUp) && !onboardedAt && !dismissed;
 
   return (
     <>
-      {/* `inert` while the survey is up.
-          The survey covers the app, but covering is only paint: without this
-          the whole shell stays in the tab order and in the accessibility tree
-          underneath it, so a keyboard or screen-reader user tabs straight out
-          of the questions into a page they cannot see, and the document has two
-          `h1`s — the survey's and the landing page's. Found exactly that way,
-          by a test that asked for the heading and got two. */}
       <div inert={ask ? true : undefined} className="contents">
         {children}
       </div>

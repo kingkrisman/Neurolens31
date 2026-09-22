@@ -68,31 +68,6 @@ export interface ReadingProfile {
    * another unable to glance back a line.
    */
   maskStrength?: MaskStrength;
-  /**
-   * When this account finished, or skipped, the first-run survey.
-   *
-   * Not a reading setting, and it knows it. It lives on the profile because the
-   * profile is the only per-account thing that already syncs — so the survey is
-   * asked once per person rather than once per device, which is the whole point
-   * of asking it. A column on `reading_settings` would be the tidier home and
-   * needs a migration; if one is ever applied, this moves there and nothing
-   * else about the survey changes.
-   *
-   * Set on skip as well as on finish. "Asked and declined" and "answered" are
-   * the same thing to this flag, because re-asking somebody who said no is
-   * worse than never asking.
-   */
-  onboardedAt?: number;
-  /**
-   * The generated face this reader picked — style, shuffle and background.
-   *
-   * Here for the same reason as `onboardedAt`: not a reading setting, but the
-   * profile is the only per-account object that is both namespaced per reader
-   * and synced, and an avatar needs to be both. Shaped by `AvatarPrefs` in
-   * `lib/avatar-prefs.ts`; typed loosely here so `types.ts` stays a leaf and
-   * the normaliser does not pull the avatar module into a cycle.
-   */
-  avatar?: { style: string; shuffle: number; background: string };
   dimChrome?: boolean;
   lookup?: boolean;
   attentionFollow?: AttentionMode;

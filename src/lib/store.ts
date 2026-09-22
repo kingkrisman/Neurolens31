@@ -21,6 +21,13 @@ import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { fitSessions } from "./session-storage.ts";
 import { track } from "./analytics.ts";
+import {
+  mergeMeta,
+  metaFromLegacyProfile,
+  normalizeMeta,
+  sameMeta,
+  type AccountMeta,
+} from "./account-meta.ts";
 import { normalizeProfile } from "./profile-normalize.ts";
 
 /** Settings whose changes are counted — by name only, never by value. */
@@ -96,6 +103,8 @@ const INK_KEY = "neurolens-ink";
 const INK_TOOL_KEY = "neurolens-ink-tool";
 const INK_COLOR_KEY = "neurolens-ink-color";
 const CVD_KEY = "neurolens-cvd";
+/** Account facts, kept apart from the profile. See lib/account-meta.ts. */
+const META_KEY = "neurolens-meta";
 const LOOKUP_MIGRATION = "neurolens-lookup-v2";
 
 export interface ReadingSnapshot {
@@ -168,6 +177,12 @@ interface AppState {
   dismissedRules: AdaptiveRule[];
   /** What the engine has learned about which levers help this reader. */
   adaptiveMemory: AdaptiveMemory;
+  /**
+   * Facts about the account rather than about reading: whether the survey has
+   * been answered, and the avatar. Deliberately not on `profile`, which every
+   * mode change, saved setup and sync pull replaces wholesale.
+   */
+  meta: AccountMeta;
   lastAdaptiveChange: AppliedAdaptiveChange | null;
   lockedSettings: LockableSetting[];
   savedProfiles: SavedProfile[];
@@ -243,6 +258,7 @@ interface AppState {
       lockedSettings?: string[];
       savedProfiles?: SavedProfile[];
       adaptiveMemory?: Record<string, unknown>;
+      meta?: Record<string, unknown>;
     };
   }) => void;
   setTab: (tab: TabId) => void;
@@ -251,6 +267,8 @@ interface AppState {
   setChapter: (chapter: number) => void;
   setMode: (mode: ReadingMode) => void;
   setProfile: (profile: ReadingProfile) => void;
+  /** Record an account fact. Merged, persisted, and synced on its own. */
+  setMeta: (patch: Partial<AccountMeta>) => void;
   setControlsOpen: (open: boolean) => void;
   setAutoScrolling: (value: boolean) => void;
   setTargetWpm: (value: number) => void;
@@ -264,6 +282,11 @@ interface AppState {
   saveCurrentProfile: (name: string) => void;
   deleteSavedProfile: (id: string) => void;
   addHighlight: (mark: Omit<Highlight, "at">) => void;
+  /** Merge marks imported from elsewhere. See the implementation for why it is one action. */
+  applyImportedMarks: (plan: {
+    highlights: Record<string, Highlight[]>;
+    bookmarks: Bookmark[];
+  }) => void;
   removeHighlight: (lineIdx: number, section: number, start: number) => void;
   annotateHighlight: (lineIdx: number, section: number, start: number, note: string) => void;
   setMarkerColor: (color: HighlightColorId) => void;
@@ -308,6 +331,16 @@ function persistAndApply(profile: ReadingProfile, mode: ReadingMode) {
   persistProfile(next, mode);
   applyColorScheme(next.theme);
   return next;
+}
+
+/** JSON from storage, or null. Never throws — a corrupt value reads as absent. */
+function safeParse(raw: string | null): unknown {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function writeLocal(key: string, value: string) {
@@ -505,6 +538,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   recommendation: null,
   dismissedRules: [],
   adaptiveMemory: {},
+  meta: {},
   pendingJump: null,
   lastAdaptiveChange: null,
   lockedSettings: [],
@@ -571,6 +605,28 @@ export const useAppStore = create<AppState>((set, get) => ({
         persistAdaptiveMemory(memory);
         patch.adaptiveMemory = memory;
       }
+
+      /**
+       * Account facts are merged, never replaced.
+       *
+       * This is the line that stops the survey coming back. The profile above
+       * is taken wholesale from the account, which is right for reading
+       * settings and was wrong for "has been asked": a server copy that had not
+       * caught up erased it on every refresh. Rows written before the split
+       * still carry these on `profile`, so those are lifted in too.
+       */
+      const incoming = mergeMeta(
+        normalizeMeta(settings.meta),
+        metaFromLegacyProfile(settings.profile),
+      );
+      const meta = mergeMeta(get().meta, incoming);
+      if (!sameMeta(meta, get().meta)) {
+        writeLocal(META_KEY, JSON.stringify(meta));
+        patch.meta = meta;
+      }
+      // This device knows something the account does not, so send it up. Not
+      // an echo of what just arrived — only the difference.
+      if (!sameMeta(meta, incoming)) sync.settingsChanged();
     }
 
     set(patch);
@@ -589,6 +645,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       text: "",
       sourceKind: "text",
       sourceId: null,
+      // The previous reader's facts must not carry over into the next account.
+      meta: {},
       // Away from the reader as well. Clearing the text while the reader is
       // still open leaves it mounted over nothing — a page reading "0 words"
       // and waiting — so the new account arrives at their library instead.
@@ -609,6 +667,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         localStorage.getItem(scopedKey(ADAPTIVE_MEMORY_KEY)) || "{}",
       ) as AdaptiveMemory;
       const savedProfile = localStorage.getItem(scopedKey(PROFILE_KEY));
+      // Read before the profile is normalised, because a profile saved before
+      // the split still carries these and normalising strips them.
+      const meta = mergeMeta(
+        normalizeMeta(safeParse(localStorage.getItem(scopedKey(META_KEY)))),
+        metaFromLegacyProfile(safeParse(savedProfile)),
+      );
+      if (!sameMeta(meta, normalizeMeta(safeParse(localStorage.getItem(scopedKey(META_KEY)))))) {
+        writeLocal(META_KEY, JSON.stringify(meta));
+      }
       const savedMode =
         (localStorage.getItem(scopedKey(MODE_KEY)) as ReadingMode | null) ?? "default";
       const mode = READING_PROFILES[savedMode] ? savedMode : "default";
@@ -650,6 +717,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({
         sessions: Array.isArray(sessions) ? sessions : [],
         adaptiveMemory: adaptiveMemory && typeof adaptiveMemory === "object" ? adaptiveMemory : {},
+        meta,
         profile,
         mode,
         targetWpm: Number.isFinite(savedWpm) && savedWpm >= 120 ? savedWpm : 220,
@@ -841,6 +909,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error(error);
     }
+  },
+
+  setMeta: (patch) => {
+    const current = get().meta;
+    const next = normalizeMeta({ ...current, ...patch });
+    // Unchanged is common — the gate and the survey both call this — and a
+    // no-op should not queue a sync.
+    if (sameMeta(next, current)) return;
+    writeLocal(META_KEY, JSON.stringify(next));
+    set({ meta: next });
+    sync.settingsChanged();
   },
 
   setProfile: (profile) => {
@@ -1224,6 +1303,43 @@ export const useAppStore = create<AppState>((set, get) => ({
     writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
     sync.highlightsChanged(key);
     set({ highlights });
+  },
+
+  /**
+   * Merge marks that came from somewhere else — currently a Kindle.
+   *
+   * One action rather than a loop over `addHighlight` for two reasons. An
+   * import is hundreds of marks across several books, and `addHighlight` works
+   * on whatever is *open*, so calling it in a loop would file every imported
+   * highlight against the wrong book. And each call persists and queues a sync
+   * of its own; five hundred of those is five hundred writes for one gesture.
+   *
+   * Existing marks are kept. Nothing here overwrites work somebody did in this
+   * app, so importing the same file twice is dull rather than destructive.
+   */
+  applyImportedMarks: ({ highlights: incoming, bookmarks: extraBookmarks }) => {
+    const highlights = { ...get().highlights };
+    const touched: string[] = [];
+
+    for (const [key, marks] of Object.entries(incoming)) {
+      if (marks.length === 0) continue;
+      highlights[key] = [...(highlights[key] ?? []), ...marks];
+      touched.push(key);
+    }
+
+    const seen = new Set(get().bookmarks.map((mark) => mark.id));
+    const bookmarks = [
+      ...get().bookmarks,
+      ...extraBookmarks.filter((mark) => !seen.has(mark.id)),
+    ];
+
+    if (touched.length === 0 && bookmarks.length === get().bookmarks.length) return;
+
+    writeLocal(HIGHLIGHTS_KEY, JSON.stringify(highlights));
+    writeLocal(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    for (const key of touched) sync.highlightsChanged(key);
+    sync.bookmarksChanged();
+    set({ highlights, bookmarks });
   },
 
   removeHighlight: (lineIdx, section, start) => {

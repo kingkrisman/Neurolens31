@@ -118,3 +118,16 @@ test("every shipped mode preset normalises to itself", () => {
     );
   }
 });
+
+test("account facts are stripped from the profile", () => {
+  // They live on AccountMeta now. Left here, every profile save would keep
+  // sending a stale copy to the server — and the profile is what mode changes
+  // and sync pulls replace, which is how the survey kept coming back.
+  const out = normalizeProfile({
+    ...base(),
+    onboardedAt: 123,
+    avatar: { style: "micah", shuffle: 0, background: "" },
+  } as never) as unknown as Record<string, unknown>;
+  assert.equal("onboardedAt" in out, false);
+  assert.equal("avatar" in out, false);
+});

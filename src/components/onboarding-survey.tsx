@@ -30,6 +30,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
   const setProfile = useAppStore((s) => s.setProfile);
   const setMode = useAppStore((s) => s.setMode);
   const setTargetWpm = useAppStore((s) => s.setTargetWpm);
+  const setMeta = useAppStore((s) => s.setMeta);
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
@@ -69,7 +70,10 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
 
   const finish = useCallback(
     (collected: Answers) => {
-      const stamp = Date.now();
+      // Recorded first, and on `meta` rather than the profile. The profile
+      // is about to be rebuilt by `setMode`, and that rebuild is what used to
+      // erase this — the survey then came back on the next refresh.
+      setMeta({ onboardedAt: Date.now() });
 
       if (answeredAnything(collected)) {
         const { profile, mode, targetWpm } = profileFromAnswers(collected);
@@ -78,19 +82,14 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
         // not just the two settings the survey names.
         setMode(mode);
         setTargetWpm(targetWpm);
-        setProfile({
-          ...READING_PROFILES[mode],
-          ...profile,
-          onboardedAt: stamp,
-        });
-      } else {
-        // Nothing to apply. Record only that we asked, so it is not asked again.
-        setProfile({ ...useAppStore.getState().profile, onboardedAt: stamp });
+        setProfile({ ...READING_PROFILES[mode], ...profile });
       }
+      // Skipped or answered with nothing: the settings are left alone, and the
+      // flag above is all that is recorded.
 
       onDone();
     },
-    [onDone, setMode, setProfile, setTargetWpm],
+    [onDone, setMeta, setMode, setProfile, setTargetWpm],
   );
 
   const choose = (id: string) => {
@@ -120,7 +119,10 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
         </span>
         <button
           type="button"
-          onClick={() => finish(answers)}
+          // Skip means skip. This used to pass the answers given so far, so
+          // skipping after two questions quietly applied settings nobody had
+          // been shown — the one thing the preview step promises never happens.
+          onClick={() => finish({})}
           className="h-9 rounded-full px-3.5 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 hover:text-fg"
         >
           Skip

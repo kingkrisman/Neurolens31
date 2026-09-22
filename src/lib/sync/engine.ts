@@ -234,6 +234,7 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
           lockedSettings: store.lockedSettings,
           savedProfiles: store.savedProfiles,
           adaptiveMemory: store.adaptiveMemory as Record<string, unknown>,
+          meta: store.meta as unknown as Record<string, unknown>,
         },
         userId,
       );

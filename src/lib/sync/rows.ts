@@ -252,6 +252,8 @@ export interface SettingsRow {
   locks: string[];
   saved_profiles: SavedProfile[];
   adaptive_memory: Record<string, unknown>;
+  /** Account facts — onboarding, avatar. Kept out of `profile`; see lib/account-meta.ts. */
+  meta?: Record<string, unknown>;
   updated_at?: string;
 }
 
@@ -262,6 +264,7 @@ export interface LocalSettings {
   lockedSettings: string[];
   savedProfiles: SavedProfile[];
   adaptiveMemory: Record<string, unknown>;
+  meta: Record<string, unknown>;
 }
 
 export function settingsToRow(settings: LocalSettings, userId: string): SettingsRow {
@@ -273,6 +276,7 @@ export function settingsToRow(settings: LocalSettings, userId: string): Settings
     locks: settings.lockedSettings,
     saved_profiles: settings.savedProfiles,
     adaptive_memory: settings.adaptiveMemory,
+    meta: settings.meta,
   };
 }
 
@@ -296,5 +300,6 @@ export function rowToSettings(row: SettingsRow): Partial<LocalSettings> {
   if (row.adaptive_memory && typeof row.adaptive_memory === "object") {
     out.adaptiveMemory = row.adaptive_memory;
   }
+  if (row.meta && typeof row.meta === "object") out.meta = row.meta;
   return out;
 }

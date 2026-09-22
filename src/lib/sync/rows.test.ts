@@ -181,6 +181,7 @@ const settings = {
   lockedSettings: ["fontSize"],
   savedProfiles: [{ id: "p1", name: "Evening", profile: {} as never, targetWpm: 200 }],
   adaptiveMemory: { lineHeight: 2 },
+  meta: { onboardedAt: 1_790_000_000_000 },
 };
 
 test("settings survive the round trip", () => {
@@ -192,6 +193,16 @@ test("settings survive the round trip", () => {
   assert.deepEqual(back.lockedSettings, settings.lockedSettings);
   assert.deepEqual(back.savedProfiles, settings.savedProfiles);
   assert.deepEqual(back.adaptiveMemory, settings.adaptiveMemory);
+  // The survey flag rides in its own column. If this is lost in translation
+  // the survey comes back on every refresh, which is exactly what happened
+  // when it lived on the profile.
+  assert.deepEqual(back.meta, settings.meta);
+});
+
+test("account facts travel in their own column, not inside the profile", () => {
+  const row = settingsToRow(settings, USER);
+  assert.deepEqual(row.meta, settings.meta);
+  assert.equal((row.profile as Record<string, unknown>).onboardedAt, undefined);
 });
 
 test("a partly-filled row returns only what it holds", () => {
