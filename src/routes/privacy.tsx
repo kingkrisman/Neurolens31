@@ -23,12 +23,13 @@ export const Route = createFileRoute("/privacy")({
   component: Privacy,
 });
 
-const UPDATED = "18 September 2026";
+const UPDATED = "21 September 2026";
 
 const TOC = [
   { id: "summary", label: "At a glance" },
   { id: "device", label: "Your books" },
   { id: "usage", label: "Usage analytics" },
+  { id: "bringing", label: "Books from elsewhere" },
   { id: "crashes", label: "When something breaks" },
   { id: "accounts", label: "Accounts" },
   { id: "services", label: "Outside services" },
@@ -155,6 +156,27 @@ function Privacy() {
             question "how is the app used", so there is no reason to keep it.
           </li>
         </ul>
+      </DocSection>
+
+      <DocSection id="bringing" title="Bringing books in from elsewhere">
+        <p>
+          Two ways of connecting what you already have, and they behave very differently, so both
+          are described rather than bundled together as "integrations".
+        </p>
+        <p>
+          <Term>A catalogue you connect.</Term> If you point NeuroLens at an OPDS catalogue — your
+          own Calibre or Kavita server, or a public one like Standard Ebooks — the request is made
+          by NeuroLens rather than by your browser, because your browser is not permitted to call
+          arbitrary servers from this page. That means the catalogue sees a request from us, not
+          from you: not your address, not your browser, nothing about you at all. We do not keep the
+          address you entered, and we do not keep what came back.
+        </p>
+        <p>
+          <Term>A Kindle file you open.</Term> <em>My Clippings.txt</em> is read entirely inside
+          your browser. Nothing about it is sent anywhere — not to us, and certainly not to Amazon,
+          who have no part in this. The highlights become highlights in your library, and follow the
+          same rules as any other: on this device until you choose to upload them.
+        </p>
       </DocSection>
 
       <DocSection id="crashes" title="When something breaks">

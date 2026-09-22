@@ -119,6 +119,34 @@ between 3.88:1 and 4.34:1, and a reduced-motion rule that left text at
 `opacity: 0` until an observer fired, so a reader who asked for less motion got
 invisible paragraphs.
 
+### Bringing books in
+
+Three ways, and one deliberate absence.
+
+- **Upload** — EPUB, PDF, DOCX, HTML, Markdown, plain text. Read in the browser;
+  nothing is sent anywhere until the reader chooses to sync.
+- **Open catalogues** — Project Gutenberg via Gutendex, plus a live Bible and
+  PoetryDB.
+- **OPDS** ([`lib/opds/`](src/lib/opds/)) — the open standard for book
+  catalogues. Calibre-Web, Kavita, Komga, Standard Ebooks and many public
+  libraries publish one, so "connect your library" means a reader's own server.
+- **A Kindle's `My Clippings.txt`** ([`lib/import/`](src/lib/import/)) — every
+  Kindle writes one to its own storage. Highlights are anchored into the
+  matching book where it is in the library, and kept as notes where it is not.
+
+**Kindle, Libby and Hoopla cannot be integrated**, and the reason is not effort.
+None publishes an API for third-party reading apps, and their catalogues are
+behind DRM that only their own clients may open. Anything that appeared to work
+would be scraping, would break on their next deploy, and would breach their
+terms. OPDS and the clippings file are the honest paths to the same value: the
+reader's own books, and the reader's own marks.
+
+`/api/opds` is the one endpoint here that fetches a URL somebody typed, which
+makes it the one that could become a request forger. See
+[`lib/opds/safe-url.ts`](src/lib/opds/safe-url.ts) — https only, no credentials,
+no private address by literal *or* by DNS, no redirects followed, response
+capped. The tests beside it are written as attacks rather than as edge cases.
+
 ### Images
 
 Everything in [`public/images/`](public/images/) is AI-generated — no

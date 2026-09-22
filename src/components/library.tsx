@@ -12,10 +12,20 @@ import { PoetryLibrary } from "@/components/poetry-library";
 import { FileDrop } from "@/components/file-drop";
 import { LensLoader } from "@/components/ui/loader";
 import { RemoteErrorView } from "@/components/remote-state";
-import { FEATURED_GUTENDEX_QUERIES, fallbackGutendexSearch, fetchGutendexPage, fetchGutendexReaderText, pickGutendexCover, searchGutendex, type GutendexBook } from "@/lib/gutendex";
+import {
+  FEATURED_GUTENDEX_QUERIES,
+  fallbackGutendexSearch,
+  fetchGutendexPage,
+  fetchGutendexReaderText,
+  pickGutendexCover,
+  searchGutendex,
+  type GutendexBook,
+} from "@/lib/gutendex";
 import { announce } from "@/lib/announce";
 import { isAbortError, isRemoteError } from "@/lib/remote";
 import { processDocument } from "@/lib/document-processor";
+import { OpdsBrowser } from "@/components/opds-browser";
+import { KindleImport } from "@/components/kindle-import";
 import { downloadHighlights } from "@/lib/reading-export";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -62,12 +72,21 @@ function Billboard({
       ) : null}
       {/* Darkest at the left where the text sits, opening up to the right so the
           blurred artwork still reads as colour rather than a flat black panel. */}
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20"
+      />
 
       <div className="relative flex items-center gap-4 p-4 sm:gap-7 sm:p-7">
         <div className="w-24 shrink-0 overflow-hidden rounded-lg shadow-float sm:w-36 lg:w-44">
           {cover ? (
-            <Media src={cover} alt="" width={400} height={600} className="aspect-[2/3] w-full object-cover" />
+            <Media
+              src={cover}
+              alt=""
+              width={400}
+              height={600}
+              className="aspect-[2/3] w-full object-cover"
+            />
           ) : (
             <div className="flex aspect-[2/3] items-center justify-center bg-white/10">
               <BookOpen size={30} className="text-white/50" aria-hidden />
@@ -86,7 +105,11 @@ function Billboard({
             {author || "Author unrecorded"}
             <span className="tabular-nums"> · {book.download_count.toLocaleString()} reads</span>
           </p>
-          <Button onClick={onOpen} disabled={busy} className="mt-3.5 bg-white pr-3 pl-4 text-black hover:opacity-90 sm:mt-5">
+          <Button
+            onClick={onOpen}
+            disabled={busy}
+            className="mt-3.5 bg-white pr-3 pl-4 text-black hover:opacity-90 sm:mt-5"
+          >
             {busy ? "Opening" : "Start reading"}
             <ChevronRight size={15} className="icon-motion icon-shift" />
           </Button>
@@ -197,7 +220,10 @@ function MarkedPassages() {
                   }}
                   className="icon-group flex w-full items-start gap-2.5 rounded-md bg-surface px-3 py-2.5 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:not-disabled:scale-[0.99] disabled:opacity-60"
                 >
-                  <Highlighter size={14} className="mt-0.5 shrink-0 text-accent icon-motion icon-lift" />
+                  <Highlighter
+                    size={14}
+                    className="mt-0.5 shrink-0 text-accent icon-motion icon-lift"
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 block text-sm leading-relaxed">{mark.text}</span>
                     {mark.note ? (
@@ -350,13 +376,16 @@ function Catalog() {
   }
 
   const emptyMiss =
-    status === "error" && isRemoteError(error) && (error.kind === "empty" || error.kind === "not-found");
+    status === "error" &&
+    isRemoteError(error) &&
+    (error.kind === "empty" || error.kind === "not-found");
 
   // The billboard takes the most-downloaded title, so the page opens on the
   // book most people actually read rather than whatever the API listed first.
-  const featured = books.length > 0
-    ? books.reduce((best, book) => (book.download_count > best.download_count ? book : best))
-    : null;
+  const featured =
+    books.length > 0
+      ? books.reduce((best, book) => (book.download_count > best.download_count ? book : best))
+      : null;
   const { shelves, rest } = groupIntoShelves(books.filter((book) => book.id !== featured?.id));
 
   return (
@@ -371,7 +400,10 @@ function Catalog() {
       >
         <label className="relative flex-1">
           <span className="sr-only">Search Project Gutenberg</span>
-          <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-subtle icon-motion icon-lift" />
+          <Search
+            size={16}
+            className="absolute top-1/2 left-3.5 -translate-y-1/2 text-subtle icon-motion icon-lift"
+          />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -411,7 +443,9 @@ function Catalog() {
           <h2 className="text-xs font-medium tracking-wide text-muted uppercase">
             Catalog · {submitted ? `“${submitted}”` : "Popular"}
           </h2>
-          <span className="text-xs tabular-nums text-subtle">{status === "ready" ? total.toLocaleString() : ""}</span>
+          <span className="text-xs tabular-nums text-subtle">
+            {status === "ready" ? total.toLocaleString() : ""}
+          </span>
         </div>
 
         {status === "loading" ? (
@@ -460,7 +494,13 @@ function Catalog() {
           </div>
         ) : (
           <>
-            {featured ? <Billboard book={featured} busy={openingId === featured.id} onOpen={() => void openBook(featured)} /> : null}
+            {featured ? (
+              <Billboard
+                book={featured}
+                busy={openingId === featured.id}
+                onOpen={() => void openBook(featured)}
+              />
+            ) : null}
 
             <div className="mt-8 space-y-7 sm:space-y-9">
               {shelves.map((shelf) => (
@@ -469,7 +509,9 @@ function Catalog() {
                     <Poster
                       key={book.id}
                       title={book.title}
-                      meta={book.authors.map((person) => person.name).join(", ") || "Author unrecorded"}
+                      meta={
+                        book.authors.map((person) => person.name).join(", ") || "Author unrecorded"
+                      }
                       cover={pickGutendexCover(book.formats)}
                       badge={`${Math.round(book.download_count / 1000)}k`}
                       busy={openingId === book.id}
@@ -485,7 +527,9 @@ function Catalog() {
                     <Poster
                       key={book.id}
                       title={book.title}
-                      meta={book.authors.map((person) => person.name).join(", ") || "Author unrecorded"}
+                      meta={
+                        book.authors.map((person) => person.name).join(", ") || "Author unrecorded"
+                      }
                       cover={pickGutendexCover(book.formats)}
                       badge={`${Math.round(book.download_count / 1000)}k`}
                       busy={openingId === book.id}
@@ -520,7 +564,9 @@ export function Library() {
   const sessions = useAppStore((s) => s.sessions);
   const bookmarks = useAppStore((s) => s.bookmarks);
   const removeBookmark = useAppStore((s) => s.removeBookmark);
-  const [section, setSection] = useState<"catalog" | "bible" | "poems" | "yours">("catalog");
+  const [section, setSection] = useState<"catalog" | "connect" | "bible" | "poems" | "yours">(
+    "catalog",
+  );
   const [uploading, setUploading] = useState(false);
 
   return (
@@ -528,11 +574,19 @@ export function Library() {
     // show a useful number of posters, and the page padding is what
     // `--shelf-inset` cancels, so the two have to stay in step.
     <PageEnter className="mx-auto h-full max-w-7xl px-4 py-8 sm:px-8 sm:py-12" replayKey={section}>
-      <h1 data-enter className="text-3xl sm:text-4xl lg:text-5xl">Library</h1>
-      <p data-enter className="mt-2 max-w-prose text-sm text-pretty text-muted sm:mt-3 sm:text-base">
-        Project Gutenberg via Gutendex, a live Bible, PoetryDB, and what you’ve kept.
+      <h1 data-enter className="text-3xl sm:text-4xl lg:text-5xl">
+        Library
+      </h1>
+      <p
+        data-enter
+        className="mt-2 max-w-prose text-sm text-pretty text-muted sm:mt-3 sm:text-base"
+      >
+        Project Gutenberg, a live Bible, PoetryDB, your own catalogue, and what you’ve kept.
       </p>
-      <div data-enter className="mt-6 -mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mt-8 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <div
+        data-enter
+        className="mt-6 -mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mt-8 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+      >
         <Segmented
           value={section}
           onChange={setSection}
@@ -540,6 +594,7 @@ export function Library() {
           className="w-max"
           options={[
             { id: "catalog", label: "Catalog" },
+            { id: "connect", label: "Connect" },
             { id: "bible", label: "Bible" },
             { id: "poems", label: "Poems" },
             { id: "yours", label: "Yours" },
@@ -548,170 +603,190 @@ export function Library() {
       </div>
 
       <ScrollScene replayKey={section}>
+        {section === "bible" && (
+          <div data-enter className="mt-8 pb-16">
+            <BibleLibrary />
+          </div>
+        )}
 
-      {section === "bible" && (
-        <div data-enter className="mt-8 pb-16">
-          <BibleLibrary />
-        </div>
-      )}
+        {section === "poems" && (
+          <div data-enter className="mt-8 pb-16">
+            <PoetryLibrary />
+          </div>
+        )}
 
-      {section === "poems" && (
-        <div data-enter className="mt-8 pb-16">
-          <PoetryLibrary />
-        </div>
-      )}
-
-      {section === "yours" && (
-        // Four sections stacked here with matching headings and even spacing,
-        // which read as one undifferentiated list. A hairline above each and a
-        // count beside the heading gives the eye somewhere to stop, and tells
-        // you whether a section has anything in it before you read it.
-        <div className="nl-yours mt-8 pb-16">
-          {/* Content first, action last. Recently read and Highlights are
+        {section === "yours" && (
+          // Four sections stacked here with matching headings and even spacing,
+          // which read as one undifferentiated list. A hairline above each and a
+          // count beside the heading gives the eye somewhere to stop, and tells
+          // you whether a section has anything in it before you read it.
+          <div className="nl-yours mt-8 pb-16">
+            {/* Content first, action last. Recently read and Highlights are
               what someone came here for; Upload is how more arrives. Leading
               with the empty-until-used action buried the things that fill up. */}
-          <section>
-            <h2 className="mb-4 flex items-baseline gap-2 text-xs font-medium tracking-wide text-muted uppercase">
-              Recently read
-              {sessions.length > 0 ? (
-                <span className="text-subtle tabular-nums normal-case">{sessions.length}</span>
-              ) : null}
-            </h2>
-            {sessions.length === 0 ? (
-              <p className="text-sm text-muted">Open a passage and it will land here.</p>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {sessions.map((session) => (
-                  <button
-                    key={session.openedAt}
-                    type="button"
-                    onClick={() => {
-                      // Through openBook, not startReading: a book synced from
-                      // another device has no text yet, and opening it directly
-                      // rendered an empty reader.
-                      void openBook(session, {
-                        title: session.title,
-                        kind: session.kind,
-                        sourceId: session.sourceId,
-                      }).then((opened) => {
-                        if (!opened) toast.error("Could not fetch that book. Check your connection.");
-                      });
-                    }}
-                    className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
-                  >
-                    <span className="block rounded-lg bg-bg px-4 py-4">
-                      <p className="text-xs text-muted">{kindLabel(session.kind)}</p>
-                      <h3 className="mt-2 font-medium">{session.title}</h3>
-                      {/* Sliced, not clamped. `line-clamp-2` hides the overflow
+            <section>
+              <h2 className="mb-4 flex items-baseline gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+                Recently read
+                {sessions.length > 0 ? (
+                  <span className="text-subtle tabular-nums normal-case">{sessions.length}</span>
+                ) : null}
+              </h2>
+              {sessions.length === 0 ? (
+                <p className="text-sm text-muted">Open a passage and it will land here.</p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {sessions.map((session) => (
+                    <button
+                      key={session.openedAt}
+                      type="button"
+                      onClick={() => {
+                        // Through openBook, not startReading: a book synced from
+                        // another device has no text yet, and opening it directly
+                        // rendered an empty reader.
+                        void openBook(session, {
+                          title: session.title,
+                          kind: session.kind,
+                          sourceId: session.sourceId,
+                        }).then((opened) => {
+                          if (!opened)
+                            toast.error("Could not fetch that book. Check your connection.");
+                        });
+                      }}
+                      className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                    >
+                      <span className="block rounded-lg bg-bg px-4 py-4">
+                        <p className="text-xs text-muted">{kindLabel(session.kind)}</p>
+                        <h3 className="mt-2 font-medium">{session.title}</h3>
+                        {/* Sliced, not clamped. `line-clamp-2` hides the overflow
                           but the browser still lays out every character, so
                           printing a whole book here put ~130k chars of text node
                           in the DOM per session — twelve sessions of Gutenberg
                           novels was megabytes of invisible text. */}
-                      <p className="mt-2 line-clamp-2 text-sm text-muted">
-                        {session.content.slice(0, 240)}
-                      </p>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-          <MarkedPassages />
-          <section>
-            <h2 className="mb-4 flex items-baseline gap-2 text-xs font-medium tracking-wide text-muted uppercase">
-              Bookmarks
-              {bookmarks.length > 0 ? (
-                <span className="text-subtle tabular-nums normal-case">{bookmarks.length}</span>
-              ) : null}
-            </h2>
-            <p className="mb-4 -mt-2 text-sm text-muted">Where you stopped reading.</p>
-            {bookmarks.length === 0 ? (
-              <p className="text-sm text-muted">Nothing bookmarked yet. Save a place while you read.</p>
-            ) : (
-              <div className="grid gap-2.5 md:grid-cols-2">
-                {bookmarks.map((item) => (
-                  // Relative wrapper, not a flex row: Remove overlays the card
-                  // corner instead of taking a column, which on a phone left
-                  // the title about ten characters of usable width.
-                  <div key={item.id} className="relative">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        // A bookmark pulled from the account has no text of its
-                        // own — the book's text lives in the books table rather
-                        // than being copied into every mark. So the matching
-                        // book supplies it.
-                        void openBook(sourceFor(item), {
-                          title: item.title,
-                          kind: item.kind,
-                          sourceId: item.sourceId,
-                          pdfPage: item.pdfPage,
-                          chapter: item.chapter,
-                          progress: item.progress,
-                        })
-                      }
-                      className="group block w-full rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
-                    >
-                      <span className="block rounded-lg bg-bg px-4 py-4 pr-20">
-                        <span className="block truncate font-medium">{item.title}</span>
-                        {item.excerpt ? (
-                          <span className="mt-1 block truncate text-sm text-muted">{item.excerpt}</span>
-                        ) : null}
-                        <span className="mt-2 flex items-center gap-2">
-                          <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-fg/10">
-                            <span
-                              className="block h-full rounded-full bg-fg/45"
-                              style={{ width: `${Math.round(item.progress * 100)}%` }}
-                            />
-                          </span>
-                          <span className="shrink-0 text-xs tabular-nums text-muted">
-                            {Math.round(item.progress * 100)}%
-                          </span>
-                        </span>
+                        <p className="mt-2 line-clamp-2 text-sm text-muted">
+                          {session.content.slice(0, 240)}
+                        </p>
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.title}`}
-                      className="absolute top-1/2 right-4 min-h-11 -translate-y-1/2 rounded-md px-2 text-sm text-muted hover:text-fg"
-                      onClick={() => removeBookmark(item.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </section>
+            <MarkedPassages />
+            <section>
+              <h2 className="mb-4 flex items-baseline gap-2 text-xs font-medium tracking-wide text-muted uppercase">
+                Bookmarks
+                {bookmarks.length > 0 ? (
+                  <span className="text-subtle tabular-nums normal-case">{bookmarks.length}</span>
+                ) : null}
+              </h2>
+              <p className="mb-4 -mt-2 text-sm text-muted">Where you stopped reading.</p>
+              {bookmarks.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Nothing bookmarked yet. Save a place while you read.
+                </p>
+              ) : (
+                <div className="grid gap-2.5 md:grid-cols-2">
+                  {bookmarks.map((item) => (
+                    // Relative wrapper, not a flex row: Remove overlays the card
+                    // corner instead of taking a column, which on a phone left
+                    // the title about ten characters of usable width.
+                    <div key={item.id} className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          // A bookmark pulled from the account has no text of its
+                          // own — the book's text lives in the books table rather
+                          // than being copied into every mark. So the matching
+                          // book supplies it.
+                          void openBook(sourceFor(item), {
+                            title: item.title,
+                            kind: item.kind,
+                            sourceId: item.sourceId,
+                            pdfPage: item.pdfPage,
+                            chapter: item.chapter,
+                            progress: item.progress,
+                          })
+                        }
+                        className="group block w-full rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                      >
+                        <span className="block rounded-lg bg-bg px-4 py-4 pr-20">
+                          <span className="block truncate font-medium">{item.title}</span>
+                          {item.excerpt ? (
+                            <span className="mt-1 block truncate text-sm text-muted">
+                              {item.excerpt}
+                            </span>
+                          ) : null}
+                          <span className="mt-2 flex items-center gap-2">
+                            <span
+                              aria-hidden
+                              className="h-1 flex-1 overflow-hidden rounded-full bg-fg/10"
+                            >
+                              <span
+                                className="block h-full rounded-full bg-fg/45"
+                                style={{ width: `${Math.round(item.progress * 100)}%` }}
+                              />
+                            </span>
+                            <span className="shrink-0 text-xs tabular-nums text-muted">
+                              {Math.round(item.progress * 100)}%
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.title}`}
+                        className="absolute top-1/2 right-4 min-h-11 -translate-y-1/2 rounded-md px-2 text-sm text-muted hover:text-fg"
+                        onClick={() => removeBookmark(item.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+            <section>
+              <h2 className="mb-4 text-xs font-medium tracking-wide text-muted uppercase">
+                Upload
+              </h2>
+              <div className="rounded-xl bg-surface p-2 shadow-border">
+                <FileDrop
+                  busy={uploading}
+                  onFile={(file) => {
+                    void (async () => {
+                      setUploading(true);
+                      try {
+                        const doc = await processDocument(file);
+                        startReading(doc.content, {
+                          title: doc.title,
+                          kind: doc.metadata.format === "PDF" ? "pdf" : "text",
+                        });
+                        toast.success("Opened in the reader");
+                      } catch (err) {
+                        toast.error(
+                          err instanceof Error ? err.message : "Could not read that file",
+                        );
+                      } finally {
+                        setUploading(false);
+                      }
+                    })();
+                  }}
+                />
               </div>
-            )}
-          </section>
-          <section>
-            <h2 className="mb-4 text-xs font-medium tracking-wide text-muted uppercase">Upload</h2>
-            <div className="rounded-xl bg-surface p-2 shadow-border">
-              <FileDrop
-                busy={uploading}
-                onFile={(file) => {
-                  void (async () => {
-                    setUploading(true);
-                    try {
-                      const doc = await processDocument(file);
-                      startReading(doc.content, {
-                        title: doc.title,
-                        kind: doc.metadata.format === "PDF" ? "pdf" : "text",
-                      });
-                      toast.success("Opened in the reader");
-                    } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Could not read that file");
-                    } finally {
-                      setUploading(false);
-                    }
-                  })();
-                }}
-              />
-            </div>
-          </section>
-        </div>
-      )}
+            </section>
+          </div>
+        )}
 
-      {section === "catalog" && <Catalog />}
+        {section === "catalog" && <Catalog />}
+
+        {/* Everything that brings books and marks in from somewhere the reader
+          already has them: their own OPDS catalogue, and their Kindle. */}
+        {section === "connect" && (
+          <div className="mt-8 flex flex-col gap-10">
+            <OpdsBrowser />
+            <KindleImport />
+          </div>
+        )}
       </ScrollScene>
     </PageEnter>
   );
