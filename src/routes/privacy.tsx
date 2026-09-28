@@ -8,7 +8,7 @@ export const Route = createFileRoute("/privacy")({
     ...seo({
       title: "Privacy",
       description:
-        "What NeuroLens stores, where, and what it measures: no camera, one switch decides whether your books go to your account, accounts hold only your email, and usage analytics are opt-in, anonymous and schema-locked.",
+        "What NeuroLens stores, where, and what it measures: no camera, books stay on your device unless you choose to upload them, accounts hold only your email, and usage analytics are opt-in, anonymous and schema-locked.",
       path: "/privacy",
     }),
     scripts: [
@@ -51,7 +51,7 @@ function Privacy() {
     <PublicLayout
       eyebrow="Privacy"
       title="Your reading stays with you."
-      lead="Signed in, your books are saved to your account so they reach your other devices — readable by you, and by nobody else. One switch on your account page keeps them on this device instead."
+      lead="Your books stay on this device unless you choose to save them to your account. If you do, they reach your other devices — readable by you, and by nobody else."
       meta={
         <>
           <span>Updated {UPDATED}</span>
@@ -67,7 +67,7 @@ function Privacy() {
             {
               icon: HardDrive,
               title: "Uploading is your choice",
-              body: "On by default, so your library follows you. One switch keeps books on this device, and reading works offline either way.",
+              body: "Off until you say yes. Books stay on this device, and reading works offline either way.",
             },
             {
               icon: UserX,
@@ -98,16 +98,15 @@ function Privacy() {
             that went to the account, including after "Keep them here". The
             code now honours that choice, and this says what it does. */}
         <p>
-          Files you open are read inside your browser, never on our servers. While you are signed
-          in, each book you open is also saved to your account, so it is waiting on your other
-          devices. <Term>You can switch that off</Term> on{" "}
-          <Link to="/account">your account page</Link>, under “Save my books to my account” — from
-          then on, new books stay on this device only.
+          Files you open are read inside your browser, never on our servers, and they stay on this
+          device. <Term>Nothing is uploaded until you say so.</Term> The first time there is a book
+          to ask about, NeuroLens asks — and tells you exactly how many books and highlights it
+          would send. “Upload” saves them to your account so they are waiting on your other devices;
+          “Keep them here” keeps them, and the books you open later, on this device.
         </p>
         <p>
-          Books that were already on this device the first time you signed in are handled
-          separately: NeuroLens asks, tells you exactly how many, and does nothing unless you agree.
-          Choosing “Keep them here” also switches uploading off for the books you open afterwards.
+          You can change your mind either way on <Link to="/account">your account page</Link>,
+          under “Save my books to my account”.
         </p>
         <p>
           A book in your account is stored along with everything you have done to it — highlights,

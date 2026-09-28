@@ -51,9 +51,10 @@ function Account() {
    * "Keep them here" short of clearing site data — and no way to stop
    * uploading at all once you had said yes.
    */
-  const [uploads, setUploads] = useState(true);
+  const [uploads, setUploads] = useState(false);
   useEffect(() => {
-    if (user) setUploads(uploadChoice(user.id) !== "declined");
+    // Off until the reader has said yes — never asked reads as off.
+    if (user) setUploads(uploadChoice(user.id) === "uploaded");
   }, [user]);
 
   function setUploading(on: boolean) {

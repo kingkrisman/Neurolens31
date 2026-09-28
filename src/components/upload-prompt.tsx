@@ -4,6 +4,7 @@ import { BookUp, Check } from "lucide-react";
 import { useAuthStatus } from "@/lib/auth-ui/session";
 import { declineUpload, localOnly, shouldAskToUpload, uploadLocal, type LocalOnly } from "@/lib/sync/migrate";
 import { flush } from "@/lib/sync/engine";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,6 +29,11 @@ export function UploadPrompt() {
   const [done, setDone] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
+  // Asked after sign-in, and again whenever a book is added while the answer
+  // is still open. Uploading is off until the reader says yes, so for someone
+  // who signs in with nothing, this is how they are asked at all: the first
+  // book they open is the first thing there is to ask about.
+  const bookCount = useAppStore((s) => s.sessions.length);
   useEffect(() => {
     if (loading || !user) return;
     // A beat after sign-in: arriving to a question before the page has settled
@@ -36,7 +42,7 @@ export function UploadPrompt() {
       if (shouldAskToUpload(user.id)) setFound(localOnly());
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, [user, loading]);
+  }, [user, loading, bookCount]);
 
   if (!user || !found) return null;
 

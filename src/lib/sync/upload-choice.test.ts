@@ -98,8 +98,12 @@ test("a declined book stays off even after uploading is switched on", () => {
   assert.equal(mayCreateRemotely("new", USER), true);
 });
 
-test("an account that was never asked uploads what it opens", () => {
-  // Signing in with an empty device asks nothing — there was nothing to ask
-  // about — and syncing is what signing in is for.
+test("an account that was never asked keeps its books on the device", () => {
+  // Off until the reader says yes. Signing in is not consent to upload.
+  assert.equal(mayCreateRemotely("new", USER), false);
+});
+
+test("once the reader says yes, new books go to the account", () => {
+  localStorage.setItem(`neurolens-upload-choice:${USER}`, "uploaded");
   assert.equal(mayCreateRemotely("new", USER), true);
 });

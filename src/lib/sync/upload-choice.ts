@@ -76,16 +76,16 @@ export function isDeclined(bookKey: string): boolean {
 /**
  * Whether a book may be created in the account from this device.
  *
- * "Keep them here" used to cover only the books that were on the device when
- * the question was asked. The next book somebody opened went straight up, which
- * is not what the button says. The answer is now the account's standing
- * choice: after "Keep them here", no new book leaves this device until the
- * reader turns uploading on from their account page.
+ * Only after the reader has said yes. Uploading used to be on by default for
+ * an account that had never been asked, and it is now off until they choose:
+ * a book leaves the device because its reader asked for that, not because
+ * they signed in. The question comes as soon as there is a book to ask about
+ * (see UploadPrompt), and the account page has the same switch.
  *
  * Books already in the account are not affected — they got there by an earlier
  * yes, or from another device — so this only ever decides about *creating* one.
  */
 export function mayCreateRemotely(bookKey: string, userId: string): boolean {
   if (isDeclined(bookKey)) return false;
-  return uploadChoice(userId) !== "declined";
+  return uploadChoice(userId) === "uploaded";
 }
