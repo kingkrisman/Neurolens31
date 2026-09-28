@@ -144,3 +144,8 @@ test("an unknown or missing eyes value reads as lively", () => {
   const junk = { ...base(), companionEyes: "staring" } as unknown as ReadingProfile;
   assert.equal(normalizeProfile(junk).companionEyes, "lively");
 });
+
+test("highlights come back unless the reader turned that off", () => {
+  assert.equal(normalizeProfile(base()).resurface, true);
+  assert.equal(normalizeProfile({ ...base(), resurface: false }).resurface, false);
+});

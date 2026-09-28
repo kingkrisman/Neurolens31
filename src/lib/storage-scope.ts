@@ -42,6 +42,8 @@ const SCOPED = [
   "neurolens-layouts",
   // The reading garden. Per account and never synced — see lib/garden.ts.
   "neurolens-garden",
+  // When each highlight last came back. Ids and dates only — see resurface.ts.
+  "neurolens-returns",
 ] as const;
 
 function storage(): Storage | null {

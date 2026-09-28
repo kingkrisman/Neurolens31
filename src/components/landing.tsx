@@ -12,6 +12,7 @@ import { SCHEME_COUNT } from "@/lib/scheme";
 import { READING_PROFILES } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { openBook } from "@/lib/sync/open-book";
+import { HighlightReturns } from "@/components/highlight-returns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { Badge, Card, Media } from "@/components/ui/surfaces";
@@ -365,6 +366,9 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
       </ParallaxHero>
 
       <div className="mx-auto flex w-full max-w-6xl flex-col px-4 sm:px-6">
+        {/* A returning reader's own marked passages, before any of the pitch —
+            renders nothing until one is due. */}
+        {locked ? null : <HighlightReturns />}
         <ScrollScene>
           <Reveal>
             <Card className="relative mt-10 overflow-hidden p-0 sm:mt-16">

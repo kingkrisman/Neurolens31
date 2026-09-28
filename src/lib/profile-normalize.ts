@@ -87,5 +87,6 @@ export function normalizeProfile(input: ReadingProfile): ReadingProfile {
     companionEyes: profile.companionEyes === "calm" ? "calm" : "lively",
     // Off unless turned on. Old "auto" values were a default, not a choice.
     pageLayout: pageLayoutSetting(profile.pageLayout),
+    resurface: profile.resurface !== false,
   };
 }

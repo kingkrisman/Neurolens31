@@ -398,6 +398,24 @@ export function SettingsPanel() {
                     aria-describedby="page-layout-settings-hint"
                   />
                 </div>
+                <div className="flex min-h-11 items-start justify-between gap-3 px-1 py-2">
+                  <span className="flex min-w-0 flex-col">
+                    <Label htmlFor="resurface-settings">Bring my highlights back</Label>
+                    <span
+                      id="resurface-settings-hint"
+                      className="mt-0.5 text-xs leading-snug text-pretty text-muted"
+                    >
+                      A few passages you marked return on the Explore page, days and then weeks
+                      apart, for a second look. No streaks.
+                    </span>
+                  </span>
+                  <Switch
+                    id="resurface-settings"
+                    checked={profile.resurface !== false}
+                    onCheckedChange={(checked) => setProfile({ ...profile, resurface: checked })}
+                    aria-describedby="resurface-settings-hint"
+                  />
+                </div>
                 {/* Three states rather than on/off. Testers liked Neuro and still felt
                     watched by it; hiding it entirely was the only answer on offer. */}
                 <div className="px-1 py-2" role="group" aria-labelledby="companion-settings">

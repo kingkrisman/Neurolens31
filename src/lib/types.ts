@@ -99,6 +99,11 @@ export interface ReadingProfile {
    * `lib/page-layout.ts`. One book can also be flipped from the reader.
    */
   pageLayout?: "pages" | "scroll";
+  /**
+   * Whether passages the reader marked come back on the Explore page a few
+   * days later — see `lib/resurface.ts`. On unless turned off.
+   */
+  resurface?: boolean;
 }
 
 export type CompanionEyes = "lively" | "calm";

@@ -179,7 +179,8 @@ function Privacy() {
         <p>
           Your reading garden — the plants that grow as you finish chapters — stays on this device
           only. It names the books you have read, so it is never sent anywhere, even when your books
-          are.
+          are. The same goes for the record of which highlights have come back to you on the
+          Explore page, and when: dates only, kept on this device.
         </p>
         <p>
           <Term>Sensors, only when you switch them on.</Term> Two features use more than the page,
