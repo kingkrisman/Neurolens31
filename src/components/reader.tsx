@@ -55,6 +55,7 @@ import { ReaderControls } from "@/components/reader-controls";
 import { RecommendationBanner } from "@/components/recommendation-banner";
 import { SpeedReader } from "@/components/speed-reader";
 import { cn, wordCount } from "@/lib/utils";
+import { isPinchZoomed } from "@/lib/viewport-zoom";
 import { announce } from "@/lib/announce";
 import { useReadingTracker } from "@/lib/adaptive/use-reading-tracker";
 import { useLineDwell } from "@/lib/adaptive/use-line-dwell";
@@ -407,9 +408,14 @@ export function Reader() {
     speechIndex.current = index;
     markActiveLine(item.lineIdx);
     followStateRef.current = { id: item.lineIdx, boxIndex: 0 };
-    document
-      .getElementById(`line-${item.lineIdx}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Zoomed in, the reader is holding the page where they want it; following
+    // the voice would slide the text out from under them. The line is still
+    // marked, so the place is not lost.
+    if (!isPinchZoomed()) {
+      document
+        .getElementById(`line-${item.lineIdx}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
     speakText(profile.plainLanguage ? applyPlainLanguage(item.text) : item.text, {
       rate: rateFromWpm(targetWpm),
       onBoundary: (charIndex) => {
@@ -991,6 +997,13 @@ export function Reader() {
     const step = (now: number) => {
       const dtSec = Math.min(0.05, (now - last) / 1000);
       last = now;
+      // Held, not stopped, while pinch-zoomed: pinching already counts as a
+      // touch and pauses it, but restarting it zoomed in would drag a
+      // magnified page past the reader. It carries on once they zoom back out.
+      if (isPinchZoomed()) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
       const maxScroll = node.scrollHeight - node.clientHeight;
       const remainingPx = maxScroll - node.scrollTop;
       if (maxScroll <= 1 || remainingPx <= 2) {

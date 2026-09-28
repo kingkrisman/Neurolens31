@@ -2503,3 +2503,32 @@ html[data-scheme="forest"] .grain {
     animation: none;
   }
 }
+
+/* ── Zoom on phones ─────────────────────────────────────────────────────────
+   A tester reading on an iPhone in Deep Focus reported zooming that fought her
+   scrolling and broke her pace. Two browser gestures were zooming the page
+   without being asked to, and both are switched off here. Neither rule touches
+   pinch-to-zoom, which low-vision readers depend on.
+
+   Both rules sit outside every @layer on purpose: unlayered CSS outranks
+   layered CSS, and a `text-sm` utility on a field would otherwise win. */
+
+/* Double-tap to zoom. A word's definition opens on a second tap, so tapping
+   through the text was also Safari's double-tap gesture and the page kept
+   jumping in. `manipulation` keeps panning and pinch-zoom and drops only the
+   double tap. The ink layer asks for `none` while drawing, and touch-action
+   combines with its ancestors, so drawing is unaffected. */
+html {
+  touch-action: manipulation;
+}
+
+/* Zoom on focus. iOS zooms the whole page when a text field smaller than 16px
+   is focused, and leaves it zoomed after the keyboard closes — so searching a
+   book or asking Neuro something left the reader at the wrong scale. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
