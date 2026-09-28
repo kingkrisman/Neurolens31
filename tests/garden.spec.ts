@@ -57,6 +57,9 @@ async function signIn(page: Page, id: string, garden?: object) {
     ([key, session, uid, seeded]) => {
       localStorage.setItem(key as string, JSON.stringify(session));
       localStorage.setItem(`neurolens-meta::${uid}`, JSON.stringify({ onboardedAt: Date.now() }));
+      // Already answered the upload question, which otherwise opens over the
+      // reader as soon as a book is — not what these tests are about.
+      localStorage.setItem(`neurolens-upload-choice:${uid}`, "declined");
       if (seeded) localStorage.setItem(`neurolens-garden::${uid}`, JSON.stringify(seeded));
     },
     ["neurolens-auth", fakeSession(id), id, garden ?? null],

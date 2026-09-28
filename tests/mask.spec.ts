@@ -44,6 +44,9 @@ test("with the mask on, one line is at full strength and the rest are quieter", 
     ([key, session, uid]) => {
       localStorage.setItem(key as string, JSON.stringify(session));
       localStorage.setItem(`neurolens-meta::${uid}`, JSON.stringify({ onboardedAt: Date.now() }));
+      // Already answered the upload question, which otherwise opens over the
+      // reader as soon as a book is — not what these tests are about.
+      localStorage.setItem(`neurolens-upload-choice:${uid}`, "declined");
     },
     ["neurolens-auth", fakeSession(id), id],
   );
