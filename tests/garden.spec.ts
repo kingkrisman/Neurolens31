@@ -90,15 +90,15 @@ test("finishing a chapter grows the garden, and a recall card opens a flower", a
     "store.getState().setTargetWpm(1200); store.getState().startReading(value, { title: 'The Long Road', kind: 'text' });",
     BOOK,
   );
-  await expect(page.locator(".reader-scroll")).toHaveAttribute("data-layout", "pages");
-
-  const pages = page.getByRole("navigation", { name: "Pages" });
-  for (let i = 0; i < 20; i += 1) {
-    const match = (await pages.innerText()).match(/(\d+) of (\d+)/);
-    if (match && match[1] === match[2]) break;
-    await page.keyboard.press("ArrowRight");
-    await page.waitForTimeout(350);
+  // Scrolling, the default: read down to the end of chapter one in steps, as
+  // a reader would, so the tracker sees real movement.
+  const reader = page.locator(".reader-scroll");
+  await expect(reader).toHaveAttribute("data-layout", "scroll");
+  for (let i = 0; i < 12; i += 1) {
+    await reader.evaluate((el) => el.scrollBy({ top: el.clientHeight * 0.8 }));
+    await page.waitForTimeout(300);
   }
+  await reader.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
 
   await expect(page.getByText(/A new sprout for The Long Road/)).toBeVisible({ timeout: 25_000 });
   await page.getByRole("button", { name: /Quick recall/ }).click();

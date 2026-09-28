@@ -5,25 +5,30 @@ import {
   isSinglePageTurn,
   pageReadingAllowanceMs,
   pageMetrics,
+  pageLayoutSetting,
   pageOf,
   resolvePageLayout,
   scrollProgress,
   swipeTarget,
 } from "./page-layout.ts";
 
-test("auto opens books in pages and everything else scrolling", () => {
-  // The tester's own rule: pages for fiction, long scroll for documents.
-  assert.equal(resolvePageLayout("auto", { kind: "text", chaptered: true }), "pages");
-  assert.equal(resolvePageLayout("auto", { kind: "text", chaptered: false }), "scroll");
-  assert.equal(resolvePageLayout("auto", { kind: "pdf", chaptered: true }), "scroll");
-  assert.equal(resolvePageLayout("auto", { kind: "bible", chaptered: false }), "scroll");
-  assert.equal(resolvePageLayout("auto", { kind: "poem", chaptered: false }), "scroll");
+test("everything scrolls unless pages are turned on", () => {
+  // Pages shipped as the default for books and were reported as stressful.
+  // Nothing turns pages unless a reader asked for it.
+  assert.equal(resolvePageLayout(undefined), "scroll");
+  assert.equal(resolvePageLayout("scroll"), "scroll");
+  assert.equal(resolvePageLayout("pages"), "pages");
 });
 
-test("an explicit choice wins over auto, and a per-book flip wins over both", () => {
-  assert.equal(resolvePageLayout("pages", { kind: "pdf", chaptered: false }), "pages");
-  assert.equal(resolvePageLayout("scroll", { kind: "text", chaptered: true }), "scroll");
-  assert.equal(resolvePageLayout("scroll", { kind: "text", chaptered: true }, "pages"), "pages");
+test("a profile saved while 'auto' was the default reads as scrolling", () => {
+  // "auto" was never a choice anyone made — it was the old default.
+  assert.equal(pageLayoutSetting("auto"), "scroll");
+  assert.equal(pageLayoutSetting(42), "scroll");
+});
+
+test("one book's flip wins over the setting, either way", () => {
+  assert.equal(resolvePageLayout("scroll", "pages"), "pages");
+  assert.equal(resolvePageLayout("pages", "scroll"), "scroll");
 });
 
 test("one column plus one gap is exactly one screen, so pages never peek", () => {

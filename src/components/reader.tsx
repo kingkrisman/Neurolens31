@@ -285,17 +285,13 @@ export function Reader() {
   const paged = sourceKind === "pdf" && pageCount > 0;
   const chaptered = chapterCount > 1;
   /**
-   * Pages or scrolling, for this book. Books with chapters turn pages and
-   * everything else scrolls, unless the reader has chosen otherwise — for all
-   * books in Settings, or for this one from the reader. See lib/page-layout.ts.
+   * Pages or scrolling, for this book. Everything scrolls unless the reader
+   * has turned pages on — for all books in Settings, or for this one from the
+   * reader's menu. See lib/page-layout.ts.
    */
   const bookKey = legacyBookKey(text);
   const bookLayout = useBookLayout(bookKey);
-  const layout = resolvePageLayout(
-    profile.pageLayout ?? "auto",
-    { kind: sourceKind, chaptered: textChapters.length > 1 },
-    bookLayout,
-  );
+  const layout = resolvePageLayout(profile.pageLayout, bookLayout);
   const pagesOn = layout === "pages";
   const pageText = paged
     ? (pdfPages[Math.max(0, pdfPage - 1)] ?? "")
@@ -2166,10 +2162,7 @@ export function Reader() {
                       const next = pagesOn ? "scroll" : "pages";
                       // Flipping back to what the setting would choose anyway
                       // clears this book's exception rather than recording one.
-                      const natural = resolvePageLayout(profile.pageLayout ?? "auto", {
-                        kind: sourceKind,
-                        chaptered: textChapters.length > 1,
-                      });
+                      const natural = resolvePageLayout(profile.pageLayout);
                       setBookLayout(bookKey, next === natural ? null : next);
                       toast(next === "pages" ? "Turning pages in this book" : "Scrolling this book");
                     })

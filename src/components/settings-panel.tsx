@@ -19,7 +19,7 @@ import { AccessibleBionic } from "@/components/accessible-bionic";
 import { FIXATION_PRESETS, nearestFixationPreset, processBionicText } from "@/lib/bionic";
 import { DEMO_SENTENCE } from "@/lib/samples";
 import { cn } from "@/lib/utils";
-import { PAGE_LAYOUT_CHOICES } from "@/lib/page-layout";
+import { pageLayoutSetting } from "@/lib/page-layout";
 import { motionPermissionNeeded, requestMotionPermission } from "@/lib/device-motion";
 import { exportEverything, exportHighlights } from "@/lib/data-export";
 import { PageEnter, ScrollScene } from "@/components/gsap-motion";
@@ -375,42 +375,28 @@ export function SettingsPanel() {
                     aria-describedby="motion-cues-settings-hint"
                   />
                 </div>
-                {/* Pages or scrolling. A tester asked for Kindle-style pages for
-                    fiction and the long scroll for documents, so Auto does both. */}
-                <div className="px-1 py-2" role="group" aria-labelledby="page-layout-settings">
-                  <p id="page-layout-settings" className="text-sm font-medium">
-                    Turning pages
-                  </p>
-                  <p className="mt-0.5 text-xs leading-snug text-pretty text-muted">
-                    Any single book can be switched from the ⋯ menu while you read.
-                  </p>
-                  <div className="mt-2.5 grid gap-1.5 sm:grid-cols-3">
-                    {PAGE_LAYOUT_CHOICES.map((choice) => {
-                      const selected = (profile.pageLayout ?? "auto") === choice.id;
-                      return (
-                        <button
-                          key={choice.id}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => setProfile({ ...profile, pageLayout: choice.id })}
-                          className={cn(
-                            "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2 text-left",
-                            selected ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
-                          )}
-                        >
-                          <span className="text-sm font-medium">{choice.label}</span>
-                          <span
-                            className={cn(
-                              "text-xs leading-snug text-pretty",
-                              selected ? "text-primary-fg/70" : "text-muted",
-                            )}
-                          >
-                            {choice.hint}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Off unless turned on. It shipped as the default for books and
+                    was reported as stressful; nobody's reading should change
+                    under them without asking. */}
+                <div className="flex min-h-11 items-start justify-between gap-3 px-1 py-2">
+                  <span className="flex min-w-0 flex-col">
+                    <Label htmlFor="page-layout-settings">Turn pages instead of scrolling</Label>
+                    <span
+                      id="page-layout-settings-hint"
+                      className="mt-0.5 text-xs leading-snug text-pretty text-muted"
+                    >
+                      Like an e-reader: one screen at a time, turned with a swipe or the arrow
+                      keys. Off by default. One book can also be switched from the ⋯ menu.
+                    </span>
+                  </span>
+                  <Switch
+                    id="page-layout-settings"
+                    checked={pageLayoutSetting(profile.pageLayout) === "pages"}
+                    onCheckedChange={(checked) =>
+                      setProfile({ ...profile, pageLayout: checked ? "pages" : "scroll" })
+                    }
+                    aria-describedby="page-layout-settings-hint"
+                  />
                 </div>
                 {/* Three states rather than on/off. Testers liked Neuro and still felt
                     watched by it; hiding it entirely was the only answer on offer. */}

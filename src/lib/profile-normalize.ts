@@ -1,4 +1,4 @@
-import { isPageLayoutChoice } from "./page-layout.ts";
+import { pageLayoutSetting } from "./page-layout.ts";
 import { isThemeId } from "./scheme.ts";
 import { resolveRhythmCurve } from "./rhythm.ts";
 import { MASK_STRENGTHS, type FontId, type MaskStrength, type ReadingProfile } from "./types.ts";
@@ -85,6 +85,7 @@ export function normalizeProfile(input: ReadingProfile): ReadingProfile {
     // predates the companion still gets one.
     companion: profile.companion !== false,
     companionEyes: profile.companionEyes === "calm" ? "calm" : "lively",
-    pageLayout: isPageLayoutChoice(profile.pageLayout) ? profile.pageLayout : "auto",
+    // Off unless turned on. Old "auto" values were a default, not a choice.
+    pageLayout: pageLayoutSetting(profile.pageLayout),
   };
 }

@@ -57,7 +57,8 @@ const BOOK = [
   paragraphs(3, 18),
 ].join("\n");
 
-async function openBook(page: Page, id: string) {
+/** Open the book; with `pages`, turn page turning on first, as a reader would. */
+async function openBook(page: Page, id: string, pages = true) {
   await page.addInitScript(
     ([key, session, uid]) => {
       localStorage.setItem(key as string, JSON.stringify(session));
@@ -67,23 +68,39 @@ async function openBook(page: Page, id: string) {
   );
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(4000);
-  await page.evaluate(async (text) => {
-    // The store module the page itself loaded. A dev server that has hot-
-    // reloaded serves it under a versioned URL, and the bare path would give
-    // a second, unconnected store.
-    const url =
-      performance
-        .getEntriesByType("resource")
-        .map((entry) => entry.name)
-        .find((name) => name.includes("/src/lib/store.ts")) ?? "/src/lib/store.ts";
-    const { useAppStore } = await import(/* @vite-ignore */ url);
-    useAppStore.getState().startReading(text, { title: "The Long Road", kind: "text" });
-  }, BOOK);
-  await expect(page.locator(".reader-scroll")).toHaveAttribute("data-layout", "pages", {
-    timeout: 10_000,
-  });
+  await page.evaluate(
+    async ([text, turnPages]) => {
+      // The store module the page itself loaded. A dev server that has hot-
+      // reloaded serves it under a versioned URL, and the bare path would give
+      // a second, unconnected store.
+      const url =
+        performance
+          .getEntriesByType("resource")
+          .map((entry) => entry.name)
+          .find((name) => name.includes("/src/lib/store.ts")) ?? "/src/lib/store.ts";
+      const { useAppStore } = await import(/* @vite-ignore */ url);
+      if (turnPages) {
+        const state = useAppStore.getState();
+        state.setProfile({ ...state.profile, pageLayout: "pages" });
+      }
+      useAppStore.getState().startReading(text, { title: "The Long Road", kind: "text" });
+    },
+    [BOOK, pages] as const,
+  );
+  await expect(page.locator(".reader-scroll")).toHaveAttribute(
+    "data-layout",
+    pages ? "pages" : "scroll",
+    { timeout: 10_000 },
+  );
   await page.waitForTimeout(800);
 }
+
+test("a book scrolls unless the reader has turned pages on", async ({ page }) => {
+  // Pages were the default for books for one release and were reported as
+  // stressful. They are off until a reader asks for them.
+  await openBook(page, "5e5e5e5e-1111-4111-8111-111111111111", false);
+  await expect(page.getByRole("navigation", { name: "Pages" })).toHaveCount(0);
+});
 
 const scroller = (page: Page) =>
   page.evaluate(() => {

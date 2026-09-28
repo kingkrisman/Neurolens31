@@ -1,13 +1,11 @@
-import type { ContentKind } from "./types.ts";
-
 /**
  * Turning pages instead of scrolling.
  *
- * A tester asked for it in so many words: "a format more like the Kindle, with
- * turning pages, for fiction — but long formatting like this when reading
- * documents." So the default follows the material. A book with chapters opens
- * in pages; a PDF, a pasted passage, a psalm or a poem keeps scrolling. Either
- * can be flipped for one book, or overridden everywhere from Settings.
+ * A tester asked for Kindle-style page turning as an option. It shipped as the
+ * default for books with chapters, and that was wrong: it was reported as
+ * stressful and ineffective, and nobody had asked for their reading to change
+ * under them. So it is off unless a reader turns it on — in Settings for every
+ * book, or from the reader's menu for one. Scrolling is how everything opens.
  *
  * Pages are CSS columns, one screen wide, and turning is a horizontal scroll by
  * exactly one screen. That is how web e-readers do it, and it is the only way
@@ -17,35 +15,20 @@ import type { ContentKind } from "./types.ts";
  * Everything here is pure — geometry and rules — so it is tested on its own.
  */
 
-export type PageLayoutChoice = "auto" | "pages" | "scroll";
 export type PageLayout = "pages" | "scroll";
 
-export const PAGE_LAYOUT_CHOICES: { id: PageLayoutChoice; label: string; hint: string }[] = [
-  { id: "auto", label: "Auto", hint: "Pages for books, scrolling for documents." },
-  { id: "pages", label: "Pages", hint: "Turn pages, like an e-reader." },
-  { id: "scroll", label: "Scroll", hint: "One long page you scroll." },
-];
-
-export function isPageLayoutChoice(value: unknown): value is PageLayoutChoice {
-  return value === "auto" || value === "pages" || value === "scroll";
+/**
+ * The stored setting, read safely. Only an explicit "pages" turns pages on.
+ * Profiles saved while "auto" was the default say "auto", and that was never
+ * a choice anyone made — it reads as scrolling, like everything else unknown.
+ */
+export function pageLayoutSetting(value: unknown): PageLayout {
+  return value === "pages" ? "pages" : "scroll";
 }
 
-/**
- * The layout a book opens in.
- *
- * "A book" is text split into chapters — which is what every Gutenberg,
- * Standard Ebooks and EPUB title becomes, and what a pasted paragraph or a
- * work document almost never is. A PDF has its own printed pages and stays as
- * it is; Bible passages and poems are short and meant to be scrolled.
- */
-export function resolvePageLayout(
-  choice: PageLayoutChoice,
-  book: { kind: ContentKind; chaptered: boolean },
-  override?: PageLayout | null,
-): PageLayout {
-  if (override) return override;
-  if (choice !== "auto") return choice;
-  return book.kind === "text" && book.chaptered ? "pages" : "scroll";
+/** The layout a book opens in: its own flip if it has one, else the setting. */
+export function resolvePageLayout(setting: unknown, override?: PageLayout | null): PageLayout {
+  return override ?? pageLayoutSetting(setting);
 }
 
 export interface PageMetrics {
