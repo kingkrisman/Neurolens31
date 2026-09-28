@@ -38,6 +38,8 @@ const SCOPED = [
   // Account facts — per reader, like everything above. Two accounts on one
   // device must not share "has answered the survey" or a face.
   "neurolens-meta",
+  // Per-book "pages" or "scroll" flips. Per account, like the books.
+  "neurolens-layouts",
 ] as const;
 
 function storage(): Storage | null {

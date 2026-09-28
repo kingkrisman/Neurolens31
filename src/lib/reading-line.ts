@@ -5,6 +5,9 @@ export interface LineBox {
   top: number;
   height: number;
   bottom: number;
+  /** Horizontal extent. Only matters in pages, where lines sit side by side. */
+  left?: number;
+  right?: number;
 }
 
 export interface FollowState {
@@ -32,7 +35,13 @@ export function readingFloorY(viewTop: number, viewHeight: number): number {
 export function lineBoxesOf(el: Element): LineBox[] {
   return Array.from(el.getClientRects())
     .filter((rect) => rect.width > 2 && rect.height > 2)
-    .map((rect) => ({ top: rect.top, height: rect.height, bottom: rect.bottom }));
+    .map((rect) => ({
+      top: rect.top,
+      height: rect.height,
+      bottom: rect.bottom,
+      left: rect.left,
+      right: rect.right,
+    }));
 }
 
 function visibleBoxes(boxes: LineBox[], floor: number, viewBottom: number): LineBox[] {
@@ -152,7 +161,21 @@ export function chooseFollowHit<T extends { id: number; boxIndex: number; box: L
   return hits.find((hit) => boxOnScreen(hit.box, floor, viewBottom)) ?? hits.find(inPane) ?? hits[0] ?? null;
 }
 
-export function collectReadingHits(scrollNode: HTMLElement): ReadingHit[] {
+/**
+ * Whether a line-box is across from the view rather than in it.
+ *
+ * Every rule below reasons about top and bottom, because the reader used to
+ * scroll only one way. In pages the next page's lines sit at the same heights,
+ * one screen to the right — so without this the band could settle on a line
+ * nobody can see. In scrolling every line is horizontally in view, and this
+ * never excludes anything.
+ */
+export function beside(box: LineBox, viewLeft: number, viewRight: number): boolean {
+  if (box.left == null || box.right == null) return false;
+  return box.right <= viewLeft + 2 || box.left >= viewRight - 2;
+}
+
+export function collectReadingHits(scrollNode: HTMLElement, view?: DOMRect | null): ReadingHit[] {
   const lines = scrollNode.querySelectorAll<HTMLElement>(".reading-line");
   const hits: ReadingHit[] = [];
   for (const el of lines) {
@@ -160,6 +183,7 @@ export function collectReadingHits(scrollNode: HTMLElement): ReadingHit[] {
     if (!Number.isFinite(raw)) continue;
     const boxes = lineBoxesOf(el);
     boxes.forEach((box, boxIndex) => {
+      if (view && beside(box, view.left, view.right)) return;
       hits.push({ el, id: raw, box, boxIndex });
     });
   }
@@ -173,7 +197,13 @@ export function followReadingLine(
   preferId?: number | null,
 ): ReadingHit | null {
   const viewRect = view ?? scrollNode.getBoundingClientRect();
-  return chooseFollowHit(collectReadingHits(scrollNode), viewRect.top, viewRect.bottom, prev ?? null, preferId);
+  return chooseFollowHit(
+    collectReadingHits(scrollNode, viewRect),
+    viewRect.top,
+    viewRect.bottom,
+    prev ?? null,
+    preferId,
+  );
 }
 
 export function pickReadingLine(

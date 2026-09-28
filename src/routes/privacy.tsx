@@ -165,6 +165,11 @@ function Privacy() {
           shape of reading. Here they describe the page, not your eyes.
         </p>
         <p>
+          When you read in pages rather than scrolling, turning a page stands in for moving down it:
+          a page counts as being read for about as long as it should take at your pace, and only
+          after that does a still page count as a pause.
+        </p>
+        <p>
           <Term>Where it is kept.</Term> The moment-to-moment detail stays on this device, where it
           adjusts the page and draws Insights. For a book saved to your account, a short summary
           goes with it: your pace, how many pauses and rereads, time spent, the pattern, and your

@@ -43,6 +43,7 @@ export function InkLayer({
   layoutKey,
   onCommit,
   onErase,
+  span,
 }: {
   strokes: InkStroke[];
   section: number;
@@ -63,6 +64,12 @@ export function InkLayer({
   layoutKey: string;
   onCommit: (stroke: { lineIdx: number; points: number[] }) => void;
   onErase: (ids: string[]) => void;
+  /**
+   * In pages, the width of every page side by side. The article is one page
+   * wide and its later pages overflow it, so a surface the article's size
+   * could only be drawn on while reading page one.
+   */
+  span?: number;
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<number[] | null>(null);
@@ -283,7 +290,10 @@ export function InkLayer({
 
   const liveTool = active;
   const liveColor = inkColorById(color).hex;
-  const surfaceWidth = surfaceRef.current?.clientWidth ?? 1;
+  // One page wide in either layout. Measured on the article rather than the
+  // surface, which in pages spans the whole chapter and would draw a live
+  // stroke a chapter's worth too thick.
+  const surfaceWidth = surfaceRef.current?.parentElement?.clientWidth ?? 1;
 
   const renderStroke = (item: { stroke: InkStroke; d: string; rect: AnchorRect }) => {
     const strokeTool = toolById(item.stroke.tool);
@@ -326,7 +336,11 @@ export function InkLayer({
           inkMode && !erasing && "cursor-crosshair",
           erasing && inkMode && "cursor-cell",
         )}
-        style={{ zIndex: 3, touchAction: inkMode ? "none" : "auto" }}
+        style={{
+          zIndex: 3,
+          touchAction: inkMode ? "none" : "auto",
+          width: span ? `${span}px` : undefined,
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

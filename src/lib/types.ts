@@ -94,6 +94,11 @@ export interface ReadingProfile {
    * whatever it says.
    */
   companionEyes?: CompanionEyes;
+  /**
+   * Pages or scrolling. "auto" turns pages in books and scrolls documents —
+   * see `lib/page-layout.ts`. A reader can still flip one book either way.
+   */
+  pageLayout?: "auto" | "pages" | "scroll";
 }
 
 export type CompanionEyes = "lively" | "calm";

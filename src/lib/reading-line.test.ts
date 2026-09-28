@@ -1,6 +1,7 @@
-import { describe, it } from "node:test";
+import { describe, it, test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  beside,
   boxInPane,
   chooseFollowHit,
   firstVisibleBox,
@@ -132,4 +133,13 @@ describe("reading line", () => {
     assert.equal(boxInPane({ top: -10, height: 28, bottom: 18 }, 0, 600), true);
     assert.equal(boxInPane({ top: -40, height: 28, bottom: -12 }, 0, 600), false);
   });
+});
+
+test("in pages, a line on the next page is beside the view, not in it", () => {
+  // Same height as a visible line, one screen to the right.
+  const view = { left: 0, right: 390 };
+  assert.equal(beside({ top: 100, height: 20, bottom: 120, left: 410, right: 760 }, view.left, view.right), true);
+  assert.equal(beside({ top: 100, height: 20, bottom: 120, left: 20, right: 370 }, view.left, view.right), false);
+  // Scrolling boxes without horizontal extent are never excluded.
+  assert.equal(beside({ top: 100, height: 20, bottom: 120 }, view.left, view.right), false);
 });

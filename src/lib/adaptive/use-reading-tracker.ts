@@ -2,6 +2,12 @@ import { useEffect, useRef, type RefObject } from "react";
 import { ADAPTIVE_THRESHOLDS, isMeaningfulProgressChange, isReread, type PauseEvent, type RereadEvent } from "./engine";
 import { isSkipJump, type SkipEvent } from "@/lib/reconnect";
 import { isForwardStep } from "@/lib/reading-patterns";
+import {
+  countPages,
+  isSinglePageTurn,
+  pageReadingAllowanceMs,
+  scrollProgress,
+} from "@/lib/page-layout";
 import type { NeuralEvent, NeuralKind } from "@/lib/neural";
 import { useAppStore } from "@/lib/store";
 
@@ -17,6 +23,10 @@ const SETTLE_MS = 1_500;
 export function useReadingTracker(
   scrollRef: RefObject<HTMLDivElement | null>,
   wordTotal: number,
+  /** Which chapter or page is showing. Moving to another is the app placing
+   *  the reader — at its top, or at its end when they turned back — and gets
+   *  the same grace as opening a book. */
+  sectionKey = "",
 ) {
   const reportReading = useAppStore((s) => s.reportReading);
   const tab = useAppStore((s) => s.tab);
@@ -55,6 +65,16 @@ export function useReadingTracker(
    * restore lands, and the first of those would otherwise spend the exemption.
    */
   const openedAt = useRef(Date.now());
+  /** Set on a new section: its landing position replaces the high-water mark
+   *  rather than counting as a reread or a skip against the last one. */
+  const rebase = useRef(false);
+  const lastSection = useRef(sectionKey);
+  useEffect(() => {
+    if (lastSection.current === sectionKey) return;
+    lastSection.current = sectionKey;
+    openedAt.current = Date.now();
+    rebase.current = true;
+  }, [sectionKey]);
 
   useEffect(() => {
     const stored = useAppStore.getState().reading;
@@ -159,8 +179,8 @@ export function useReadingTracker(
     }
 
     const onScroll = () => {
-      const remaining = node.scrollHeight - node.clientHeight;
-      const progress = remaining > 1 ? Math.min(1, Math.max(0, node.scrollTop / remaining)) : 1;
+      // Across in pages, down when scrolling — see lib/page-layout.ts.
+      const progress = scrollProgress(node);
       const previous = lastProgress.current;
       if (!isMeaningfulProgressChange(previous, progress)) {
         return;
@@ -171,7 +191,7 @@ export function useReadingTracker(
         // position. Adopt it as the baseline; the reader's own movement is
         // everything measured after this point.
         lastProgress.current = progress;
-        if (progress > highWater.current) highWater.current = progress;
+        if (rebase.current || progress > highWater.current) highWater.current = progress;
         lastProgressAt.current = Date.now();
         lastMeaningfulAt.current = Date.now();
         endPause();
@@ -179,6 +199,8 @@ export function useReadingTracker(
         return;
       }
 
+      // Past the grace window: movement from here on is the reader's own.
+      rebase.current = false;
       const durationMs = Date.now() - lastProgressAt.current;
       lastProgressAt.current = Date.now();
       const recordedPause = endPause();
@@ -186,12 +208,23 @@ export function useReadingTracker(
       lastMeaningfulAt.current = Date.now();
 
       const autoScrolling = useAppStore.getState().autoScrolling;
-      if (!autoScrolling && isSkipJump(previous, progress, durationMs)) {
+      // A page turn is reading on, however big a share of a short chapter the
+      // page is. Only a jump past the next page can be a skip.
+      const pageTurn =
+        node.dataset.layout === "pages" &&
+        isSinglePageTurn(previous, progress, countPages(node.scrollWidth, node.clientWidth));
+      if (!autoScrolling && !pageTurn && isSkipJump(previous, progress, durationMs)) {
         skips.current = [
           ...skips.current,
           { at: Date.now(), from: previous, to: progress, durationMs },
         ].slice(-24);
-      } else if (!autoScrolling && isForwardStep(previous, progress, durationMs)) {
+      } else if (
+        !autoScrolling &&
+        // In pages a forward turn is the step; it just comes once a page
+        // rather than every few seconds, so the scrolling rule's timing and
+        // size limits would never count it.
+        ((pageTurn && progress > previous) || isForwardStep(previous, progress, durationMs))
+      ) {
         forwardSteps.current += 1;
       }
 
@@ -284,7 +317,18 @@ export function useReadingTracker(
         return;
       }
       const idle = Date.now() - lastMeaningfulAt.current;
-      if (!paused.current && idle >= ADAPTIVE_THRESHOLDS.pauseIdleMs) {
+      // A still page is being read, for about as long as it should take.
+      // See pageReadingAllowanceMs for why — without this every page in pages
+      // mode was recorded as a long pause.
+      const readingAPage =
+        node.dataset.layout === "pages" &&
+        Date.now() - lastProgressAt.current <
+          pageReadingAllowanceMs(
+            wordTotal,
+            countPages(node.scrollWidth, node.clientWidth),
+            useAppStore.getState().targetWpm,
+          );
+      if (!paused.current && idle >= ADAPTIVE_THRESHOLDS.pauseIdleMs && !readingAPage) {
         beginPause(lastMeaningfulAt.current);
         flush(true);
         return;

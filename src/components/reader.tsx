@@ -31,6 +31,7 @@ import {
   StickyNote,
   Volume2,
   VolumeX,
+  ScrollText,
 } from "lucide-react";
 import { processBionicText } from "@/lib/bionic";
 import { applyPlainLanguage, simplifyText } from "@/lib/text-simplifier";
@@ -56,6 +57,11 @@ import { RecommendationBanner } from "@/components/recommendation-banner";
 import { SpeedReader } from "@/components/speed-reader";
 import { cn, wordCount } from "@/lib/utils";
 import { isPinchZoomed } from "@/lib/viewport-zoom";
+import { resolvePageLayout } from "@/lib/page-layout";
+import { usePageTurner, type Landing } from "@/lib/use-page-turner";
+import { setBookLayout, useBookLayout } from "@/lib/book-layout";
+import { legacyBookKey } from "@/lib/sync/rows";
+import { PageControls } from "@/components/page-controls";
 import { announce } from "@/lib/announce";
 import { useReadingTracker } from "@/lib/adaptive/use-reading-tracker";
 import { useLineDwell } from "@/lib/adaptive/use-line-dwell";
@@ -206,6 +212,7 @@ export function Reader() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
   const startReading = useAppStore((s) => s.startReading);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -272,6 +279,19 @@ export function Reader() {
   const pageCount = pdfPageCount || pdfPages.length;
   const paged = sourceKind === "pdf" && pageCount > 0;
   const chaptered = chapterCount > 1;
+  /**
+   * Pages or scrolling, for this book. Books with chapters turn pages and
+   * everything else scrolls, unless the reader has chosen otherwise — for all
+   * books in Settings, or for this one from the reader. See lib/page-layout.ts.
+   */
+  const bookKey = legacyBookKey(text);
+  const bookLayout = useBookLayout(bookKey);
+  const layout = resolvePageLayout(
+    profile.pageLayout ?? "auto",
+    { kind: sourceKind, chaptered: textChapters.length > 1 },
+    bookLayout,
+  );
+  const pagesOn = layout === "pages";
   const pageText = paged
     ? (pdfPages[Math.max(0, pdfPage - 1)] ?? "")
     : chaptered
@@ -288,15 +308,69 @@ export function Reader() {
     isTitlePage(blocks) ||
     (chaptered && chapterRole(chapters[Math.max(0, chapterIndex - 1)]?.title ?? "") === "front");
   const words = useMemo(() => viewText.trim().split(/\s+/).filter(Boolean), [viewText]);
-  useReadingTracker(scrollRef, words.length);
 
   const pageKey = `${pdfPage}:${chapterIndex}:${viewText.length}:${viewText.slice(0, 24)}`;
+  useReadingTracker(scrollRef, words.length, pageKey);
   useLineDwell(scrollRef, pageKey);
   if (pageKeyRef.current !== pageKey) {
     pageKeyRef.current = pageKey;
     activeLineRef.current = null;
     followStateRef.current = null;
   }
+
+  /** Set when paging back past a section's first page, so the previous
+   *  section opens on its last page — as turning back in a book does. */
+  const landAtEndRef = useRef(false);
+  const toNextSection = useCallback(() => {
+    const current = Math.max(1, chapterIndex);
+    if (paged && pdfPage < pageCount) setPdfPage(pdfPage + 1);
+    else if (chaptered && current < chapterCount) setChapter(current + 1);
+    else announce("End of the book");
+  }, [paged, pdfPage, pageCount, setPdfPage, chaptered, chapterIndex, chapterCount, setChapter]);
+  const toPrevSection = useCallback(() => {
+    const current = Math.max(1, chapterIndex);
+    if (paged && pdfPage > 1) {
+      landAtEndRef.current = true;
+      setPdfPage(pdfPage - 1);
+    } else if (chaptered && current > 1) {
+      landAtEndRef.current = true;
+      setChapter(current - 1);
+    }
+  }, [paged, pdfPage, setPdfPage, chaptered, chapterIndex, setChapter]);
+  const turner = usePageTurner({
+    on: pagesOn,
+    scrollRef,
+    articleRef,
+    layoutKey: `${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${viewText.length}|${controlsOpen}`,
+    sectionKey: pageKey,
+    reduceMotion,
+    onPastEnd: toNextSection,
+    onPastStart: toPrevSection,
+  });
+  const turnerRef = useRef(turner);
+  turnerRef.current = turner;
+
+  // A page turn is a change a screen reader cannot see; say where it landed.
+  useEffect(() => {
+    if (pagesOn && turner.pages > 1) announce(`Page ${turner.page + 1} of ${turner.pages}`);
+  }, [pagesOn, turner.page, turner.pages]);
+
+  /**
+   * Show a line — the page it is on, or scroll it to the middle.
+   *
+   * Every "take me to this line" goes through here: resuming, find, read
+   * aloud, stepping the band with the arrow keys. In pages a scrollIntoView
+   * would slide the columns to put the line mid-screen, leaving the reader
+   * between two pages.
+   */
+  const revealLine = useCallback(
+    (el: Element | null | undefined, smooth = true) => {
+      if (!el) return;
+      if (pagesOn) turnerRef.current.reveal(el, smooth);
+      else el.scrollIntoView({ behavior: smooth && !reduceMotion ? "smooth" : "auto", block: "center" });
+    },
+    [pagesOn, reduceMotion],
+  );
 
   const guides = useMemo(
     () => ({
@@ -366,13 +440,12 @@ export function Reader() {
       markActiveLine(line.lineIdx);
       followStateRef.current = { id: line.lineIdx, boxIndex: 0 };
       setResumeLine(line.lineIdx);
-      const el = node.querySelector(`#line-${line.lineIdx}`);
-      el?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      revealLine(node.querySelector(`#line-${line.lineIdx}`));
       window.clearTimeout(resumeTimer.current);
       resumeTimer.current = window.setTimeout(() => setResumeLine(null), 5000);
       announce("Back at the last solid stretch");
     },
-    [lines, markActiveLine, reduceMotion],
+    [lines, markActiveLine, revealLine],
   );
 
   useEffect(() => {
@@ -411,11 +484,7 @@ export function Reader() {
     // Zoomed in, the reader is holding the page where they want it; following
     // the voice would slide the text out from under them. The line is still
     // marked, so the place is not lost.
-    if (!isPinchZoomed()) {
-      document
-        .getElementById(`line-${item.lineIdx}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (!isPinchZoomed()) revealLine(document.getElementById(`line-${item.lineIdx}`));
     speakText(profile.plainLanguage ? applyPlainLanguage(item.text) : item.text, {
       rate: rateFromWpm(targetWpm),
       onBoundary: (charIndex) => {
@@ -503,7 +572,21 @@ export function Reader() {
         markActiveLine(picked.id);
       } else node.dispatchEvent(new Event("nl-line"));
     };
-    if (restore > 0.02 && restore < 0.98) {
+    if (pagesOn) {
+      // Pages land on a page, not a pixel: the start, the end when the
+      // reader turned back into this section, or wherever they left off.
+      const where: Landing = landAtEndRef.current
+        ? "end"
+        : restore > 0.02 && restore < 0.98
+          ? restore
+          : "start";
+      landAtEndRef.current = false;
+      pendingRestore.current = 0;
+      node.scrollTop = 0;
+      turnerRef.current.land(where);
+      // Two frames: the landing itself waits a frame for the columns.
+      requestAnimationFrame(() => requestAnimationFrame(place));
+    } else if (restore > 0.02 && restore < 0.98) {
       // Wait for the text to have a height before restoring a fraction of it.
       // On a cold open the article has not laid out on the first frame, so a
       // single attempt measured zero, silently skipped, and cleared the pending
@@ -535,7 +618,29 @@ export function Reader() {
     } else if (paged) {
       announce(`Page ${pdfPage} of ${pageCount}`);
     }
+    // pagesOn is read, not followed: switching layout mid-chapter is handled
+    // below, and must not re-run the whole placement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey, pdfPage, chapterIndex, pageText, markActiveLine, chaptered, paged, pageCount]);
+
+  // Switching between pages and scrolling mid-chapter keeps the reader where
+  // they were, by share of the section — the one measure both layouts have.
+  const layoutSeen = useRef(pagesOn);
+  useEffect(() => {
+    if (layoutSeen.current === pagesOn) return;
+    layoutSeen.current = pagesOn;
+    const node = scrollRef.current;
+    if (!node) return;
+    const at = useAppStore.getState().reading.progress;
+    if (pagesOn) {
+      node.scrollTop = 0;
+      turnerRef.current.land(at);
+    } else {
+      requestAnimationFrame(() => {
+        node.scrollTop = at * Math.max(0, node.scrollHeight - node.clientHeight);
+      });
+    }
+  }, [pagesOn]);
 
   useEffect(() => {
     setChunkIndex(0);
@@ -672,14 +777,12 @@ export function Reader() {
       event.preventDefault();
       markActiveLine(line.lineIdx);
       followStateRef.current = { id: line.lineIdx, boxIndex: 0 };
-      scrollRef.current
-        ?.querySelector(`#line-${line.lineIdx}`)
-        ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      revealLine(scrollRef.current?.querySelector(`#line-${line.lineIdx}`));
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [profile.readingMask, isSpeaking, lines, markActiveLine, reduceMotion]);
+  }, [profile.readingMask, isSpeaking, lines, markActiveLine, revealLine]);
 
   // Cmd/Ctrl-F is what everyone reaches for, so it opens the in-book find
   // rather than the browser's — which would only search the section on screen
@@ -695,7 +798,7 @@ export function Reader() {
   }, []);
 
   useEffect(() => {
-    if (!paged && !chaptered) return;
+    if (!paged && !chaptered && !pagesOn) return;
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (
@@ -706,6 +809,21 @@ export function Reader() {
           target.isContentEditable)
       )
         return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (pagesOn) {
+        // Left and right turn one page, crossing into the next chapter at the
+        // end of this one. Space turns forward as it does in every e-reader —
+        // except on a button, where it presses the button.
+        const onControl = target?.closest("button, a, [role='button'], [role='menuitem']");
+        if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !onControl && !event.shiftKey)) {
+          event.preventDefault();
+          turnerRef.current.next();
+        } else if (event.key === "ArrowLeft" || event.key === "PageUp" || (event.key === " " && !onControl && event.shiftKey)) {
+          event.preventDefault();
+          turnerRef.current.prev();
+        }
+        return;
+      }
       if (event.key === "ArrowRight" || event.key === "PageDown") {
         event.preventDefault();
         if (chaptered) setChapter(chapterIndex < 1 ? 1 : chapterIndex + 1);
@@ -724,7 +842,7 @@ export function Reader() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paged, chaptered, pdfPage, chapterIndex, setPdfPage, setChapter]);
+  }, [paged, chaptered, pagesOn, pdfPage, chapterIndex, setPdfPage, setChapter]);
 
   const simplified = useMemo(() => simplifyText(viewText), [viewText]);
   const checkpoints = useMemo(() => buildCheckpoints(viewText), [viewText]);
@@ -760,13 +878,13 @@ export function Reader() {
       window.setTimeout(
         () => {
           const node = scrollRef.current?.querySelector(`#line-${lineIdx}`);
-          node?.scrollIntoView({ block: "center", behavior: "smooth" });
+          revealLine(node);
           if (node instanceof HTMLElement) markActiveLine(lineIdx);
         },
         here ? 60 : 320,
       );
     },
-    [section, paged, chaptered, setPdfPage, setChapter, markActiveLine],
+    [section, paged, chaptered, setPdfPage, setChapter, markActiveLine, revealLine],
   );
 
   // Satisfy a jump asked for from elsewhere (the command palette). Waits for
@@ -973,6 +1091,34 @@ export function Reader() {
       didAnnounceScroll.current = false;
       return;
     }
+    if (pagesOn) {
+      // In pages, auto-scroll turns the page when it has had the time it
+      // should take at the target pace, and stops at the end of the chapter
+      // just as scrolling stops at the end of the page. Touching the page
+      // hands control back, as it does when scrolling.
+      if (!didAnnounceScroll.current) {
+        toast.success(`Turning pages at ${targetWpm} WPM`);
+        didAnnounceScroll.current = true;
+      }
+      const turner = turnerRef.current;
+      const perPage = words.length / Math.max(1, turner.pages);
+      const delay = Math.max(4_000, (perPage / Math.max(60, targetWpm)) * 60_000);
+      const stop = () => setAutoScrolling(false);
+      const timer = window.setTimeout(() => {
+        if (isPinchZoomed()) return;
+        if (turner.page >= turner.pages - 1) {
+          setAutoScrolling(false);
+          toast.success("End of the chapter");
+          return;
+        }
+        turner.next();
+      }, delay);
+      node.addEventListener("pointerdown", stop);
+      return () => {
+        window.clearTimeout(timer);
+        node.removeEventListener("pointerdown", stop);
+      };
+    }
     let frame = 0;
     let last = performance.now();
     let carry = 0;
@@ -1051,7 +1197,19 @@ export function Reader() {
       node.removeEventListener("pointerdown", stopForUser);
       node.removeEventListener("touchmove", stopForUser);
     };
-  }, [autoScrolling, targetWpm, words, setAutoScrolling, rhythmCurve, lines, markActiveLine]);
+  }, [
+    autoScrolling,
+    targetWpm,
+    words,
+    setAutoScrolling,
+    rhythmCurve,
+    lines,
+    markActiveLine,
+    // In pages, each turn schedules the next one.
+    pagesOn,
+    turner.page,
+    turner.pages,
+  ]);
 
   function toggleAutoScroll() {
     if (autoScrolling) {
@@ -1121,8 +1279,12 @@ export function Reader() {
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollRef}
+          data-layout={pagesOn ? "pages" : "scroll"}
           className={cn(
-            "reader-scroll h-full overflow-y-auto",
+            "reader-scroll h-full",
+            // Pages move sideways, one screen per turn, under program control;
+            // nothing should scroll natively in either direction.
+            pagesOn ? "overflow-hidden" : "overflow-y-auto",
             // The options panel is a 24rem drawer down the left. Shifting the
             // column out from under it is what makes the panel useful: you are
             // adjusting type against text you can still see, not text the panel
@@ -1133,11 +1295,15 @@ export function Reader() {
           data-resume={resumeLine ?? undefined}
         >
           <article
+            ref={articleRef}
             aria-labelledby="reading-title"
             className={cn(
               // `relative` so the ink surface can cover exactly this column, and
-              // scroll with it rather than with the viewport.
-              "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
+              // scroll with it rather than with the viewport. In pages the
+              // width, side padding and columns come from the page turner.
+              pagesOn
+                ? "relative pt-24 sm:pt-28"
+                : "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
               FONT_CLASS[profile.fontFamily] ?? "font-sans",
               "break-words",
               profile.wordGuide && "word-guide-on",
@@ -1149,16 +1315,18 @@ export function Reader() {
               lineHeight: profile.lineHeight,
               letterSpacing: `${profile.letterSpacing}em`,
               wordSpacing: `${profile.wordSpacing}em`,
+              ...(pagesOn ? turner.articleStyle : undefined),
             }}
           >
             <InkLayer
+              span={pagesOn ? turner.span : undefined}
               strokes={bookInk}
               section={section}
               tool={inkTool}
               color={inkColor}
               inkMode={inkMode}
               containerRef={scrollRef}
-              layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}`}
+              layoutKey={`${profile.fontSize}|${profile.lineHeight}|${profile.fontFamily}|${profile.letterSpacing}|${profile.wordSpacing}|${profile.align}|${section}|${viewText.length}|${layout}|${turner.pages}`}
               onCommit={({ lineIdx, points }) => {
                 addStroke({ section, lineIdx, tool: inkTool, color: inkColor, points });
                 track("ink_stroke", { tool: inkTool });
@@ -1364,7 +1532,7 @@ export function Reader() {
               a toast is gone before it is read. This is a landing, not a gate:
               Continue is right there, and closing the app is equally fine. */}
             {partDone ? (
-              <div className="nl-part-done mt-10 rounded-lg bg-surface p-4 shadow-border sm:p-5">
+              <div className="nl-part-done mt-10 break-inside-avoid rounded-lg bg-surface p-4 shadow-border sm:p-5">
                 <p className="text-sm font-medium">
                   {chaptered && chapters[chapterIndex - 1]?.title
                     ? `${chapters[chapterIndex - 1]!.title} finished`
@@ -1404,6 +1572,21 @@ export function Reader() {
             ) : null}
           </article>
         </div>
+        {pagesOn ? (
+          <PageControls
+            page={turner.page}
+            pages={turner.pages}
+            canGoBack={turner.page > 0 || (paged ? pdfPage > 1 : chaptered && Math.max(1, chapterIndex) > 1)}
+            canGoOn={
+              turner.page < turner.pages - 1 ||
+              (paged ? pdfPage < pageCount : chaptered && Math.max(1, chapterIndex) < chapterCount)
+            }
+            margin={turner.margin}
+            edges={!controlsOpen && !inkMode}
+            onPrev={turner.prev}
+            onNext={turner.next}
+          />
+        ) : null}
       </div>
 
       <div className="reader-dock pointer-events-none shrink-0 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -1879,7 +2062,35 @@ export function Reader() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => afterMenu(toggleAutoScroll)}>
                   <ChevronsDown size={14} className="icon-motion icon-drop" />
-                  {autoScrolling ? "Pause auto-scroll" : "Auto-scroll"}
+                  {autoScrolling
+                    ? pagesOn
+                      ? "Pause page turning"
+                      : "Pause auto-scroll"
+                    : pagesOn
+                      ? "Turn pages for me"
+                      : "Auto-scroll"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() =>
+                    afterMenu(() => {
+                      const next = pagesOn ? "scroll" : "pages";
+                      // Flipping back to what the setting would choose anyway
+                      // clears this book's exception rather than recording one.
+                      const natural = resolvePageLayout(profile.pageLayout ?? "auto", {
+                        kind: sourceKind,
+                        chaptered: textChapters.length > 1,
+                      });
+                      setBookLayout(bookKey, next === natural ? null : next);
+                      toast(next === "pages" ? "Turning pages in this book" : "Scrolling this book");
+                    })
+                  }
+                >
+                  {pagesOn ? (
+                    <ScrollText size={14} className="icon-motion icon-lift" />
+                  ) : (
+                    <BookOpenText size={14} className="icon-motion icon-lift" />
+                  )}
+                  {pagesOn ? "Scroll instead" : "Turn pages"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => afterMenu(() => setRsvpOpen(true))}>
                   <Play size={14} className="icon-motion icon-lift" />

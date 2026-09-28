@@ -902,6 +902,9 @@ export const useAppStore = create<AppState>((set, get) => ({
           align: current.align,
           companion: current.companion,
           companionEyes: current.companionEyes,
+          // Pages or scrolling is how someone likes to hold a book, not part
+          // of a reading mode.
+          pageLayout: current.pageLayout,
         },
         mode,
       );
@@ -1576,6 +1579,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       "neurolens-coach",
       "neurolens-started",
       "neurolens-pointer-hint",
+      "neurolens-layouts",
     ]);
     if (typeof document !== "undefined") delete document.documentElement.dataset.started;
     forgetPdfDocument();
