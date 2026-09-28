@@ -441,7 +441,7 @@ function Row({
           disabled={disabled}
           className={cn(
             "h-9 rounded-md px-3.5 text-sm font-medium shadow-border",
-            "transition-[background-color] duration-[150ms] ease-[var(--ease-standard)]",
+            "transition-[background-color] duration-150 ease-standard",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
             "disabled:cursor-not-allowed disabled:opacity-60",
             danger ? "bg-danger text-white hover:opacity-90" : "bg-surface hover:bg-fg/6",

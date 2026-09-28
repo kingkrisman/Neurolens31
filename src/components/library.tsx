@@ -74,7 +74,7 @@ function Billboard({
           blurred artwork still reads as colour rather than a flat black panel. */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-black/20"
+        className="absolute inset-0 bg-linear-to-r from-black/90 via-black/65 to-black/20"
       />
 
       <div className="relative flex items-center gap-4 p-4 sm:gap-7 sm:p-7">
@@ -85,10 +85,10 @@ function Billboard({
               alt=""
               width={400}
               height={600}
-              className="aspect-[2/3] w-full object-cover"
+              className="aspect-2/3 w-full object-cover"
             />
           ) : (
-            <div className="flex aspect-[2/3] items-center justify-center bg-white/10">
+            <div className="flex aspect-2/3 items-center justify-center bg-white/10">
               <BookOpen size={30} className="text-white/50" aria-hidden />
             </div>
           )}
@@ -218,7 +218,7 @@ function MarkedPassages() {
                   onClick={() => {
                     if (group.content) startReading(group.content, { title: group.title });
                   }}
-                  className="icon-group flex w-full items-start gap-2.5 rounded-md bg-surface px-3 py-2.5 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:not-disabled:scale-[0.99] disabled:opacity-60"
+                  className="icon-group flex w-full items-start gap-2.5 rounded-md bg-surface px-3 py-2.5 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:not-disabled:scale-[0.99] disabled:opacity-60"
                 >
                   <Highlighter
                     size={14}
@@ -428,7 +428,7 @@ function Catalog() {
                 setSubmitted(item);
               }}
               className={cn(
-                "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                 active ? "bg-fg text-primary-fg" : "bg-surface text-fg hover:bg-fg/6",
               )}
             >
@@ -458,7 +458,7 @@ function Catalog() {
                 <Skeleton className="mb-2 h-4 w-32" />
                 <div className="nl-shelf">
                   {Array.from({ length: 8 }).map((__, index) => (
-                    <Skeleton key={index} className="aspect-[2/3] rounded-lg" />
+                    <Skeleton key={index} className="aspect-2/3 rounded-lg" />
                   ))}
                 </div>
               </div>
@@ -481,7 +481,7 @@ function Catalog() {
               alt="A stack of clothbound books on a linen table"
               width={1200}
               height={900}
-              className="aspect-[16/9] w-full rounded-lg object-cover"
+              className="aspect-16/9 w-full rounded-lg object-cover"
             />
             <div className="px-6 py-8 text-center">
               <BookOpen size={22} className="mx-auto mb-3 text-muted icon-motion icon-lift" />
@@ -652,7 +652,7 @@ export function Library() {
                             toast.error("Could not fetch that book. Check your connection.");
                         });
                       }}
-                      className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                      className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
                     >
                       <span className="block rounded-lg bg-bg px-4 py-4">
                         <p className="text-xs text-muted">{kindLabel(session.kind)}</p>
@@ -707,7 +707,7 @@ export function Library() {
                             progress: item.progress,
                           })
                         }
-                        className="group block w-full rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                        className="group block w-full rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
                       >
                         <span className="block rounded-lg bg-bg px-4 py-4 pr-20">
                           <span className="block truncate font-medium">{item.title}</span>

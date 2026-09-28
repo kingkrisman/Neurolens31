@@ -141,7 +141,7 @@ export function ReaderControls({ onClose }: { onClose: () => void }) {
                   aria-pressed={mode === id}
                   onClick={() => setMode(id)}
                   className={cn(
-                    "flex min-h-11 min-w-0 items-center rounded-md px-3 py-2 text-left text-sm font-medium text-pretty transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                    "flex min-h-11 min-w-0 items-center rounded-md px-3 py-2 text-left text-sm font-medium text-pretty transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                     mode === id ? "bg-fg text-primary-fg" : "bg-fg/4 text-fg hover:bg-fg/8",
                   )}
                 >

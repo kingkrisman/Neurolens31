@@ -144,7 +144,7 @@ export function BibleLibrary() {
                 aria-checked={active}
                 onClick={() => setTranslation(item.id)}
                 className={cn(
-                  "h-9 min-h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                  "h-9 min-h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                   active ? "bg-fg text-primary-fg" : "bg-surface text-fg hover:bg-fg/6",
                 )}
               >
@@ -166,7 +166,7 @@ export function BibleLibrary() {
               type="button"
               onClick={() => openFeatured(item.id)}
               className={cn(
-                "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                 book.name === item.book && chapter === item.chapter && verse === item.verse
                   ? "bg-fg text-primary-fg"
                   : "bg-surface text-fg hover:bg-fg/6",
@@ -227,7 +227,7 @@ export function BibleLibrary() {
                   aria-pressed={active}
                   onClick={() => selectBook(item)}
                   className={cn(
-                    "rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform,background-color] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]",
+                    "rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform,background-color] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]",
                     active && "bg-fg text-primary-fg",
                   )}
                 >

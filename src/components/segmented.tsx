@@ -167,7 +167,7 @@ export function Segmented<T extends string>({
               onChange(option.id);
             }}
             className={cn(
-              "relative z-10 h-8 shrink-0 rounded-sm px-2 text-xs font-medium whitespace-nowrap text-muted transition-colors duration-[150ms] ease-[var(--ease-standard)] sm:px-3 sm:text-sm",
+              "relative z-10 h-8 shrink-0 rounded-sm px-2 text-xs font-medium whitespace-nowrap text-muted transition-colors duration-150 ease-standard sm:px-3 sm:text-sm",
               "hover:text-fg",
               selected && "text-fg",
               option.disabled && "opacity-30",

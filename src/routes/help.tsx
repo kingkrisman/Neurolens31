@@ -349,7 +349,7 @@ function Help() {
             autoComplete="off"
             className={cn(
               "h-14 w-full rounded-2xl bg-surface pr-24 pl-13 text-base text-fg shadow-float placeholder:text-subtle",
-              "transition-[box-shadow] duration-200 ease-[var(--ease-out)]",
+              "transition-[box-shadow] duration-200 ease-out",
               "focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-fg)_22%,transparent),0_12px_32px_-12px_rgba(22,22,21,0.22)] focus:outline-none",
               "[&::-webkit-search-cancel-button]:hidden",
             )}
@@ -391,12 +391,12 @@ function Help() {
                   href={`#${id}`}
                   className={cn(
                     "group flex h-full items-start gap-4 rounded-2xl bg-surface p-5 shadow-border",
-                    "transition-[box-shadow,transform] duration-200 ease-[var(--ease-out)]",
+                    "transition-[box-shadow,transform] duration-200 ease-out",
                     "hover:shadow-[0_0_0_1px_rgba(22,22,21,0.07),0_14px_30px_-16px_rgba(22,22,21,0.28)] active:scale-[0.985]",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
                   )}
                 >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 ease-[var(--ease-out)] group-hover:-rotate-3">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 ease-out group-hover:-rotate-3">
                     <Icon size={18} aria-hidden />
                   </span>
                   <span className="min-w-0">

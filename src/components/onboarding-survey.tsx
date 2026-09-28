@@ -123,7 +123,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
           // skipping after two questions quietly applied settings nobody had
           // been shown — the one thing the preview step promises never happens.
           onClick={() => finish({})}
-          className="h-9 rounded-full px-3.5 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 hover:text-fg"
+          className="h-9 rounded-full px-3.5 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-out hover:bg-fg/5 hover:text-fg"
         >
           Skip
         </button>
@@ -138,7 +138,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
           </p>
           <div className="h-1 overflow-hidden rounded-full bg-fg/10">
             <div
-              className="h-full rounded-full bg-accent transition-[width] duration-300 ease-[var(--ease-out)]"
+              className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
               style={{ width: `${((step + 1) / (QUESTIONS.length + 1)) * 100}%` }}
             />
           </div>
@@ -241,7 +241,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
                 aria-pressed={question.multiple ? on : undefined}
                 onClick={() => choose(choice.id)}
                 className={cn(
-                  "flex min-h-14 items-center gap-3 rounded-xl px-4 py-3 text-left transition-[background-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99]",
+                  "flex min-h-14 items-center gap-3 rounded-xl px-4 py-3 text-left transition-[background-color,transform] duration-150 ease-out active:scale-[0.99]",
                   on ? "bg-fg text-primary-fg" : "bg-fg/5 hover:bg-fg/10",
                 )}
               >
@@ -277,7 +277,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             <button
               type="button"
               onClick={() => setStep((at) => at - 1)}
-              className="inline-flex h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 hover:text-fg"
+              className="inline-flex h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-muted transition-[background-color,color] duration-150 ease-out hover:bg-fg/5 hover:text-fg"
             >
               <ChevronLeft size={15} aria-hidden />
               Back
@@ -290,7 +290,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             <button
               type="button"
               onClick={() => finish(answers)}
-              className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+              className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
             >
               {changes.length ? "Use these settings" : "Start reading"}
             </button>
@@ -301,7 +301,7 @@ export function OnboardingSurvey({ onDone }: { onDone: () => void }) {
             <button
               type="button"
               onClick={() => setStep((at) => at + 1)}
-              className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+              className="ml-auto inline-flex h-11 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
             >
               {chosen.length ? "Continue" : "None of these"}
             </button>

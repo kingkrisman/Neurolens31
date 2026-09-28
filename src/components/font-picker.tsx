@@ -26,7 +26,7 @@ export function FontPicker({
                   aria-pressed={selected}
                   onClick={() => onChange(font.id)}
                   className={cn(
-                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2.5 text-left transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2.5 text-left transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                     selected ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
                   )}
                 >

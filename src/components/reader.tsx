@@ -9,27 +9,19 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
-  Bookmark,
   BookOpenText,
   ChevronLeft,
   ChevronRight,
   ChevronsDown,
-  Compass,
   Copy,
   Download,
-  Focus,
   HelpCircle,
   Highlighter,
   PenLine,
   Languages,
-  MoreHorizontal,
-  Pause,
   Play,
-  Search,
-  Settings2,
   SpellCheck,
   StickyNote,
-  Volume2,
   VolumeX,
   ScrollText,
   Sprout,
@@ -1403,7 +1395,7 @@ export function Reader() {
             // column out from under it is what makes the panel useful: you are
             // adjusting type against text you can still see, not text the panel
             // is sitting on. Only from `lg`, where there is width to give up.
-            "transition-[padding] duration-[250ms] ease-[var(--ease-out)] motion-reduce:transition-none",
+            "transition-[padding] duration-250 ease-out motion-reduce:transition-none",
             controlsOpen && "lg:pl-[24rem]",
           )}
           data-resume={resumeLine ?? undefined}
@@ -2501,7 +2493,7 @@ export function Reader() {
               <button
                 key={`${hit.section}:${hit.lineIdx}:${hit.start}`}
                 type="button"
-                className="icon-group flex w-full flex-col items-start gap-1 rounded-md bg-bg px-3 py-2.5 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                className="icon-group flex w-full flex-col items-start gap-1 rounded-md bg-bg px-3 py-2.5 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
                 onClick={() => {
                   setFindOpen(false);
                   jumpTo(hit.section, hit.lineIdx);

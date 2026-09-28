@@ -79,7 +79,7 @@ export function NavMenu() {
         onClick={() => setOpen((value) => !value)}
         className={cn(
           "icon-group flex size-9 items-center justify-center rounded-md bg-surface text-fg shadow-border",
-          "transition-[box-shadow,transform] duration-[140ms] ease-[var(--ease-out)]",
+          "transition-[box-shadow,transform] duration-140 ease-out",
           "hover:shadow-border-hover active:scale-[0.97]",
           "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-fg)_18%,transparent)]",
         )}
@@ -132,7 +132,7 @@ export function NavMenu() {
                   onClick={() => choose(item.id)}
                   className={cn(
                     "icon-group flex min-h-11 w-full items-center gap-2.5 rounded-md px-3 text-left text-sm font-medium",
-                    "transition-[background-color,color,transform] duration-[140ms] ease-[var(--ease-out)]",
+                    "transition-[background-color,color,transform] duration-140 ease-out",
                     "active:not-disabled:scale-[0.98] focus-visible:outline-none focus-visible:bg-fg/6",
                     disabled
                       ? "pointer-events-none opacity-30"

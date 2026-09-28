@@ -79,7 +79,7 @@ export function SyncStatus({ hidden = false }: { hidden?: boolean }) {
             type="button"
             onClick={() => void retry()}
             disabled={retrying}
-            className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full bg-fg px-3 text-xs font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97] disabled:opacity-60"
+            className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full bg-fg px-3 text-xs font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97] disabled:opacity-60"
           >
             <RefreshCw size={12} aria-hidden className={retrying ? "animate-spin" : undefined} />
             {retrying ? "Trying…" : "Try again"}

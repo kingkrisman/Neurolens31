@@ -82,7 +82,7 @@ export function UploadPrompt() {
       aria-describedby="upload-body"
       className={cn(
         "pointer-events-auto fixed right-4 bottom-4 left-4 z-50 max-w-md rounded-2xl bg-surface p-5 shadow-[0_0_0_1px_rgba(22,22,21,0.07),0_24px_48px_-20px_rgba(22,22,21,0.35)] sm:left-auto sm:right-6 sm:bottom-6 sm:w-[26rem]",
-        "transition-[opacity,transform,filter] duration-300 ease-[var(--ease-out)]",
+        "transition-[opacity,transform,filter] duration-300 ease-out",
         leaving ? "translate-y-3 opacity-0 blur-[4px]" : "translate-y-0 opacity-100 blur-0",
       )}
     >
@@ -116,7 +116,7 @@ export function UploadPrompt() {
             type="button"
             disabled={busy}
             onClick={() => void accept()}
-            className="h-10 flex-1 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97] disabled:opacity-60"
+            className="h-10 flex-1 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97] disabled:opacity-60"
           >
             Upload
           </button>
@@ -124,7 +124,7 @@ export function UploadPrompt() {
             type="button"
             disabled={busy}
             onClick={decline}
-            className="h-10 flex-1 rounded-full bg-bg px-4 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 active:scale-[0.97] disabled:opacity-60"
+            className="h-10 flex-1 rounded-full bg-bg px-4 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-out hover:bg-fg/5 active:scale-[0.97] disabled:opacity-60"
           >
             Keep them here
           </button>

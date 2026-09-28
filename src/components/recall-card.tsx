@@ -39,7 +39,7 @@ export function RecallCard({
       <button
         type="button"
         onClick={() => setStage("asking")}
-        className="mt-4 flex w-full items-center gap-3 rounded-lg bg-fg/4 px-3.5 py-3 text-left transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-fg/7 active:scale-[0.99]"
+        className="mt-4 flex w-full items-center gap-3 rounded-lg bg-fg/4 px-3.5 py-3 text-left transition-[background-color,transform] duration-150 ease-out hover:bg-fg/7 active:scale-[0.99]"
       >
         <Sparkles size={16} className="shrink-0 text-accent" aria-hidden />
         <span className="min-w-0 flex-1">
@@ -98,7 +98,7 @@ export function RecallCard({
               }
               className={cn(
                 "flex min-h-11 w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm leading-snug text-pretty",
-                "transition-[background-color,box-shadow,transform] duration-150 ease-[var(--ease-out)]",
+                "transition-[background-color,box-shadow,transform] duration-150 ease-out",
                 !answered && "bg-bg hover:bg-fg/6 active:scale-[0.99]",
                 // Once answered, the right option is marked and nothing else
                 // is — a wrong pick is simply not the one that lights up.
@@ -134,7 +134,7 @@ export function RecallCard({
                 setIndex(index + 1);
               }
             }}
-            className="h-9 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+            className="h-9 rounded-full bg-fg px-4 text-sm font-medium text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
           >
             {last ? "Done" : "Next"}
           </button>

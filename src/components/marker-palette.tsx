@@ -47,7 +47,7 @@ export function MarkerPalette({
             onClick={() => onChange(color.id)}
             className={cn(
               "relative grid shrink-0 place-items-center rounded-full",
-              "transition-[transform,box-shadow] duration-[150ms] ease-[var(--ease-standard)]",
+              "transition-[transform,box-shadow] duration-150 ease-standard",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
               "hover:scale-110 active:scale-95",
               dot,

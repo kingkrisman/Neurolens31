@@ -129,7 +129,7 @@ export function HighlightReturns() {
             onClick={putAway}
             aria-label="Not today"
             title="Not today"
-            className="grid size-9 place-items-center rounded-full text-muted transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] hover:bg-fg/6 hover:text-fg active:scale-[0.94]"
+            className="grid size-9 place-items-center rounded-full text-muted transition-[background-color,color,transform] duration-150 ease-out hover:bg-fg/6 hover:text-fg active:scale-[0.94]"
           >
             <X size={15} aria-hidden />
           </button>

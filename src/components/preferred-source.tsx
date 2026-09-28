@@ -47,7 +47,7 @@ export function PreferredSourceBadge({
       rel="noopener noreferrer"
       onClick={() => track("preferred_source_click")}
       className={cn(
-        "group inline-flex items-center gap-2 rounded-full text-sm font-medium transition-[transform,background-color,box-shadow] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+        "group inline-flex items-center gap-2 rounded-full text-sm font-medium transition-[transform,background-color,box-shadow] duration-150 ease-out active:scale-[0.97]",
         tone === "card"
           ? "h-11 bg-fg px-5 text-bg hover:opacity-90"
           : "h-9 bg-fg/5 px-3.5 text-fg hover:bg-fg/10",
@@ -56,7 +56,7 @@ export function PreferredSourceBadge({
       <Star
         size={15}
         aria-hidden
-        className="transition-transform duration-200 ease-[var(--ease-out)] group-hover:scale-110"
+        className="transition-transform duration-200 ease-out group-hover:scale-110"
       />
       Add NeuroLens to Google
       <span className="sr-only"> as a preferred source (opens Google in a new tab)</span>

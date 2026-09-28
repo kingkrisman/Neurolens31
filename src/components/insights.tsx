@@ -13,7 +13,7 @@ import { GardenView } from "@/components/garden-view";
 import { useGarden } from "@/lib/garden-store";
 import { PATTERN_META } from "@/lib/reading-patterns";
 import { SAMPLE_TEXTS } from "@/lib/samples";
-import { cn, wordCount } from "@/lib/utils";
+import { wordCount } from "@/lib/utils";
 import { PageEnter, GsapStagger, ScrollScene } from "@/components/gsap-motion";
 import {
   average,
@@ -172,9 +172,9 @@ export function Insights() {
               width={1600}
               height={900}
               data-scrub
-              className="aspect-[16/8] w-full object-cover"
+              className="aspect-16/8 w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/20" />
+            <div className="absolute inset-0 bg-linear-to-t from-fg/80 to-fg/20" />
             <div className="absolute inset-0 flex flex-col justify-end p-5 text-primary-fg sm:p-8">
               <p className="text-xs tracking-wide text-primary-fg/70 uppercase">Session score</p>
               <p className="mt-1 font-serif text-6xl tracking-tight tabular-nums">
@@ -313,7 +313,7 @@ export function Insights() {
                     sourceId: session.sourceId,
                   })
                 }
-                className="group rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                className="group rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
               >
                 <span className="flex items-center justify-between gap-3 rounded-lg bg-bg px-4 py-4">
                   <span className="min-w-0">
@@ -413,7 +413,7 @@ function WeeklyTrend({ sessions }: { sessions: Session[] }) {
                 title={`Week of ${label} · ${week.words.toLocaleString()} words`}
               >
                 <div
-                  className="rounded-t-xs bg-fg/25 transition-[height,background-color] duration-[400ms] ease-[var(--ease-out)] group-hover:bg-fg/45"
+                  className="rounded-t-xs bg-fg/25 transition-[height,background-color] duration-400 ease-out group-hover:bg-fg/45"
                   style={{ height: `${height}%` }}
                 />
               </div>
@@ -471,7 +471,7 @@ function AdaptiveLearning() {
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-fg/8">
                   <div
-                    className="h-full rounded-full bg-fg/45 transition-[width] duration-[400ms] ease-[var(--ease-out)]"
+                    className="h-full rounded-full bg-fg/45 transition-[width] duration-400 ease-out"
                     style={{ width: `${Math.max(4, Math.min(100, pct))}%` }}
                   />
                 </div>

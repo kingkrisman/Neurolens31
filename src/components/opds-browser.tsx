@@ -127,7 +127,7 @@ export function OpdsBrowser() {
               key={preset.id}
               type="button"
               onClick={() => void open(preset.url, true)}
-              className="flex min-h-16 items-center gap-3.5 rounded-xl bg-surface px-4 py-3 text-left shadow-border transition-[transform,box-shadow] duration-150 ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+              className="flex min-h-16 items-center gap-3.5 rounded-xl bg-surface px-4 py-3 text-left shadow-border transition-[transform,box-shadow] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
             >
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
                 <LibraryIcon size={18} aria-hidden />

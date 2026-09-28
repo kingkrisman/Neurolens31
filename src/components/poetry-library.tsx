@@ -140,7 +140,7 @@ export function PoetryLibrary() {
                 type="button"
                 onClick={() => setLoad({ type: "featured", title: item.title })}
                 className={cn(
-                  "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                  "h-9 rounded-md px-3 text-sm font-medium shadow-border transition-[background-color,transform] duration-140 ease-out active:scale-[0.97]",
                   active ? "bg-fg text-primary-fg" : "bg-surface text-fg hover:bg-fg/6",
                 )}
               >
@@ -215,7 +215,7 @@ export function PoetryLibrary() {
                 key={poemKey(item)}
                 type="button"
                 onClick={() => setPoem(item)}
-                className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]"
+                className="rounded-xl bg-surface p-2 text-left shadow-border transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]"
               >
                 <span className="block rounded-lg bg-bg px-4 py-4">
                   <span className="block font-medium">{item.title}</span>

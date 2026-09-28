@@ -92,13 +92,13 @@ export function PublicHome() {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="inline-flex h-9 items-center rounded-full px-3.5 text-sm font-medium text-fg transition-[background-color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5"
+                className="inline-flex h-9 items-center rounded-full px-3.5 text-sm font-medium text-fg transition-[background-color] duration-150 ease-out hover:bg-fg/5"
               >
                 Sign in
               </Link>
               <Link
                 to="/signup"
-                className="inline-flex h-9 items-center rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+                className="inline-flex h-9 items-center rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
               >
                 Get started
               </Link>

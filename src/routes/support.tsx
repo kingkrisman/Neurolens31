@@ -152,7 +152,7 @@ function Support() {
                     onClick={() => setTopic(id)}
                     className={cn(
                       "flex min-h-[4.5rem] flex-col items-start justify-between gap-2 rounded-xl p-3 text-left text-[13px] leading-snug",
-                      "transition-[background-color,color,box-shadow,transform] duration-200 ease-[var(--ease-out)] active:scale-[0.97]",
+                      "transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.97]",
                       "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
                       active
                         ? "bg-fg text-bg shadow-[0_8px_20px_-10px_rgba(22,22,21,0.45)]"
@@ -251,7 +251,7 @@ function Support() {
                 }}
                 className={cn(
                   "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-bg px-5 text-sm font-semibold text-fg",
-                  "transition-[transform,opacity] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+                  "transition-[transform,opacity] duration-150 ease-out active:scale-[0.97]",
                   !ready && "opacity-50",
                 )}
               >
@@ -265,7 +265,7 @@ function Support() {
               >
                 <span
                   className={cn(
-                    "inline-flex items-center gap-2 transition-[opacity,filter,transform] duration-200 ease-[var(--ease-out)]",
+                    "inline-flex items-center gap-2 transition-[opacity,filter,transform] duration-200 ease-out",
                     copied && "scale-95 opacity-0 blur-[3px]",
                   )}
                 >
@@ -275,7 +275,7 @@ function Support() {
                 <span
                   aria-hidden={!copied}
                   className={cn(
-                    "absolute inset-0 inline-flex items-center justify-center gap-2 transition-[opacity,filter,transform] duration-200 ease-[var(--ease-out)]",
+                    "absolute inset-0 inline-flex items-center justify-center gap-2 transition-[opacity,filter,transform] duration-200 ease-out",
                     copied ? "scale-100 opacity-100 blur-0" : "scale-105 opacity-0 blur-[3px]",
                   )}
                 >
@@ -294,7 +294,7 @@ function Support() {
 
           <Link
             to="/account"
-            className="group flex items-start gap-3 rounded-2xl bg-surface p-4 shadow-border transition-[transform,box-shadow] duration-200 ease-[var(--ease-out)] active:scale-[0.985]"
+            className="group flex items-start gap-3 rounded-2xl bg-surface p-4 shadow-border transition-[transform,box-shadow] duration-200 ease-out active:scale-[0.985]"
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
               <Database size={15} aria-hidden />
@@ -360,7 +360,7 @@ function Field({
         aria-invalid={Boolean(error)}
         className={cn(
           "mt-3 w-full resize-y rounded-xl bg-bg px-4 py-3 text-[15px] leading-relaxed text-fg shadow-border placeholder:text-subtle",
-          "transition-[box-shadow] duration-200 ease-[var(--ease-out)]",
+          "transition-[box-shadow] duration-200 ease-out",
           "focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-fg)_28%,transparent),0_0_0_4px_color-mix(in_oklab,var(--color-fg)_6%,transparent)] focus:outline-none",
           error && "shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-danger)_45%,transparent)]",
         )}

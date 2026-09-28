@@ -81,7 +81,7 @@ export function InkToolbar({
           buttons move under the reader's finger. */}
       <div
         className={cn(
-          "flex items-center gap-1 transition-opacity duration-[150ms]",
+          "flex items-center gap-1 transition-opacity duration-150",
           tool === "eraser" && "pointer-events-none opacity-35",
         )}
         role="radiogroup"
@@ -99,7 +99,7 @@ export function InkToolbar({
               title={item.label}
               onClick={() => onColor(item.id)}
               className={cn(
-                "size-6 shrink-0 rounded-full transition-transform duration-[150ms] ease-[var(--ease-standard)]",
+                "size-6 shrink-0 rounded-full transition-transform duration-150 ease-standard",
                 "hover:scale-110 active:scale-95",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
                 active && "ring-2 ring-fg ring-offset-2 ring-offset-surface",

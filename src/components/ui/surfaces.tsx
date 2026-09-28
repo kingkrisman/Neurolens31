@@ -5,7 +5,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-xl bg-surface p-3 shadow-border transition-[box-shadow] duration-[150ms] ease-[var(--ease-out)]",
+        "rounded-xl bg-surface p-3 shadow-border transition-[box-shadow] duration-150 ease-out",
         className,
       )}
       {...props}
@@ -24,7 +24,7 @@ export function Panel({
       className={cn(
         "rounded-xl bg-surface p-2 shadow-border",
         hover &&
-          "transition-[box-shadow,transform] duration-[150ms] ease-[var(--ease-out)] hover:shadow-border-hover active:scale-[0.99]",
+          "transition-[box-shadow,transform] duration-150 ease-out hover:shadow-border-hover active:scale-[0.99]",
         className,
       )}
       {...props}
@@ -131,7 +131,7 @@ export function Progress({
       className={cn("h-1.5 overflow-hidden rounded-full bg-fg/10", className)}
     >
       <div
-        className="h-full origin-left rounded-full bg-fg transition-transform duration-[250ms] ease-[var(--ease-out)] motion-reduce:transition-none"
+        className="h-full origin-left rounded-full bg-fg transition-transform duration-250 ease-out motion-reduce:transition-none"
         style={{ transform: `scaleX(${now / 100})` }}
       />
     </div>
@@ -177,7 +177,7 @@ export function Media({
         onLoad?.(event);
       }}
       className={cn(
-        "media bg-fg/6 transition-opacity duration-300 ease-[var(--ease-out)] motion-reduce:transition-none",
+        "media bg-fg/6 transition-opacity duration-300 ease-out motion-reduce:transition-none",
         zoom && "media-zoom",
         ready ? "opacity-100" : "opacity-0",
         className,

@@ -66,8 +66,8 @@ export function AnalyticsConsent({ hidden = false }: { hidden?: boolean }) {
         "pointer-events-auto fixed right-4 bottom-4 left-4 z-50 max-w-sm rounded-2xl bg-surface p-5 shadow-[0_0_0_1px_rgba(22,22,21,0.07),0_24px_48px_-20px_rgba(22,22,21,0.35)] sm:left-auto sm:right-6 sm:bottom-40 sm:w-[24rem]",
         visible ? "translate-y-0 opacity-100 blur-0" : "translate-y-3 opacity-0 blur-[4px]",
         leaving
-          ? "transition-[opacity,transform,filter] duration-200 ease-[var(--ease-out)]"
-          : "transition-[opacity,transform,filter] duration-500 ease-[var(--ease-out)]",
+          ? "transition-[opacity,transform,filter] duration-200 ease-out"
+          : "transition-[opacity,transform,filter] duration-500 ease-out",
         !visible && "pointer-events-none",
       )}
     >
@@ -91,14 +91,14 @@ export function AnalyticsConsent({ hidden = false }: { hidden?: boolean }) {
         <button
           type="button"
           onClick={() => answer(true)}
-          className="h-10 flex-1 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+          className="h-10 flex-1 rounded-full bg-fg px-4 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
         >
           Share usage
         </button>
         <button
           type="button"
           onClick={() => answer(false)}
-          className="h-10 flex-1 rounded-full bg-bg px-4 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 active:scale-[0.97]"
+          className="h-10 flex-1 rounded-full bg-bg px-4 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-out hover:bg-fg/5 active:scale-[0.97]"
         >
           No thanks
         </button>

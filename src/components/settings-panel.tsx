@@ -122,7 +122,7 @@ export function SettingsPanel() {
                         aria-pressed={selected}
                         onClick={() => setMode(id)}
                         className={cn(
-                          "min-w-0 rounded-md px-3 py-3 text-left text-sm font-medium text-pretty whitespace-normal transition-[background-color,box-shadow,color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-fg)_18%,transparent)]",
+                          "min-w-0 rounded-md px-3 py-3 text-left text-sm font-medium text-pretty whitespace-normal transition-[background-color,box-shadow,color,transform] duration-140 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-fg)_18%,transparent)]",
                           // Every option carries a resting surface so the set reads as
                           // seven controls, not one button beside six inert labels.
                           selected

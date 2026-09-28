@@ -34,7 +34,7 @@ export function AccordionTrigger({
         {children}
         <ChevronRight
           size={16}
-          className="shrink-0 text-muted transition-transform duration-[200ms] ease-[var(--ease-in-out)] group-data-[state=open]:rotate-90 icon-motion icon-shift"
+          className="shrink-0 text-muted transition-transform duration-200 ease-in-out group-data-[state=open]:rotate-90 icon-motion icon-shift"
         />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>

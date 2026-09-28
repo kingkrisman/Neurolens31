@@ -70,7 +70,6 @@ import {
 } from "./ink.ts";
 import type { NeuralEvent } from "./neural.ts";
 import { applyColorScheme, isThemeId } from "./scheme";
-import { resolveRhythmCurve } from "./rhythm";
 import { isCvdKind, type CvdKind } from "./color-vision";
 import { splitPdfPages } from "./pdf-pages";
 import { chapterAtPage, detectChapters, paginateLongText, splitTextChapters } from "./chapters";
@@ -80,7 +79,6 @@ import {
   type Bookmark,
   type Highlight,
   type ContentKind,
-  type FontId,
   type LockableSetting,
   type ReadingFeel,
   type ReadingMode,

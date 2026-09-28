@@ -75,7 +75,7 @@ export function PatternExplorer({
                   aria-pressed={selected}
                   onClick={() => setPicked(key)}
                   className={cn(
-                    "min-h-11 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-[background-color,color,transform] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.97]",
+                    "min-h-11 rounded-full px-3 text-xs font-medium whitespace-nowrap transition-[background-color,color,transform] duration-140 ease-out active:scale-[0.97]",
                     selected ? "bg-fg text-primary-fg" : "bg-fg/6 hover:bg-fg/10",
                   )}
                 >

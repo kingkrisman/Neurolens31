@@ -56,14 +56,14 @@ export function PanelScroller({
       </div>
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-gradient-to-b from-surface to-transparent transition-opacity duration-[150ms] ease-[var(--ease-out)]",
+          "pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-linear-to-b from-surface to-transparent transition-opacity duration-150 ease-out",
           state.top ? "opacity-100" : "opacity-0",
         )}
         aria-hidden
       />
       <div
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-9 bg-gradient-to-t from-surface to-transparent transition-opacity duration-[150ms] ease-[var(--ease-out)]",
+          "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-9 bg-linear-to-t from-surface to-transparent transition-opacity duration-150 ease-out",
           state.bottom ? "opacity-100" : "opacity-0",
         )}
         aria-hidden

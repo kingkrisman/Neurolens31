@@ -38,7 +38,7 @@ export function Poster({
         "disabled:opacity-60",
       )}
     >
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-bg">
+      <div className="relative aspect-2/3 w-full overflow-hidden bg-bg">
         {cover ? (
           <Media
             src={cover}
@@ -48,7 +48,7 @@ export function Poster({
             className="size-full object-cover"
           />
         ) : (
-          <div className="flex size-full items-center justify-center bg-gradient-to-br from-fg/8 to-fg/2">
+          <div className="flex size-full items-center justify-center bg-linear-to-br from-fg/8 to-fg/2">
             <BookOpen size={26} className="text-subtle" aria-hidden />
           </div>
         )}
@@ -57,7 +57,7 @@ export function Poster({
             never dimmed by a wash it does not need. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent"
+          className="absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-black/85 via-black/45 to-transparent"
         />
 
         {badge ? (
@@ -151,7 +151,7 @@ export function Shelf({
               onClick={() => nudge(dir)}
               className={cn(
                 "absolute top-1/2 z-30 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full",
-                "bg-surface/90 text-fg shadow-float backdrop-blur-sm transition-opacity duration-[250ms]",
+                "bg-surface/90 text-fg shadow-float backdrop-blur-sm transition-opacity duration-250",
                 "hover:bg-surface md:flex",
                 dir === -1 ? "-left-2" : "-right-2",
                 visible ? "opacity-100" : "pointer-events-none opacity-0",

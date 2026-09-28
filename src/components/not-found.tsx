@@ -27,7 +27,7 @@ export function NotFound() {
           <li key={to}>
             <Link
               to={to}
-              className="group flex h-full flex-col rounded-2xl bg-surface p-5 shadow-border transition-[transform,box-shadow] duration-200 ease-[var(--ease-out)] hover:shadow-[0_0_0_1px_rgba(22,22,21,0.07),0_14px_30px_-16px_rgba(22,22,21,0.28)] active:scale-[0.985]"
+              className="group flex h-full flex-col rounded-2xl bg-surface p-5 shadow-border transition-[transform,box-shadow] duration-200 ease-out hover:shadow-[0_0_0_1px_rgba(22,22,21,0.07),0_14px_30px_-16px_rgba(22,22,21,0.28)] active:scale-[0.985]"
             >
               <span className="grid size-10 place-items-center rounded-xl bg-accent/10 text-accent">
                 <Icon size={18} aria-hidden />
@@ -37,7 +37,7 @@ export function NotFound() {
                 <ArrowRight
                   size={14}
                   aria-hidden
-                  className="transition-transform duration-200 ease-[var(--ease-out)] group-hover:translate-x-0.5"
+                  className="transition-transform duration-200 ease-out group-hover:translate-x-0.5"
                 />
               </span>
               <span className="mt-1 text-sm leading-snug text-muted">{body}</span>

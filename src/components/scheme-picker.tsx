@@ -29,7 +29,7 @@ function SchemeCard({
       data-scheme={id}
       onClick={() => onChange(id)}
       className={cn(
-        "scheme-card group flex min-h-11 min-w-0 flex-col overflow-hidden rounded-lg bg-bg text-left text-fg transition-[transform,box-shadow] duration-[140ms] ease-[var(--ease-out)] active:scale-[0.98]",
+        "scheme-card group flex min-h-11 min-w-0 flex-col overflow-hidden rounded-lg bg-bg text-left text-fg transition-[transform,box-shadow] duration-140 ease-out active:scale-[0.98]",
         selected ? "shadow-float ring-2 ring-fg" : "shadow-border hover:shadow-border-hover",
       )}
     >

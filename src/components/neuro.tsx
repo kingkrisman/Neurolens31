@@ -320,7 +320,7 @@ export function Neuro() {
       className={cn(
         "fixed z-70 -translate-x-1/2 -translate-y-1/2 select-none",
         dragging ? "cursor-grabbing" : "cursor-grab",
-        !dragging && !reduce && "transition-[left,top] duration-300 ease-[var(--ease-out)]",
+        !dragging && !reduce && "transition-[left,top] duration-300 ease-out",
       )}
       style={{ left: `${dock.x * 100}%`, top: `${dock.y * 100}%` }}
       onPointerDown={onPointerDown}
@@ -337,7 +337,7 @@ export function Neuro() {
           // second circle behind it read as a ring around a smaller head. The
           // button is a hit target, the face is the shape.
           "nl-neuro-orb icon-group flex size-16 items-center justify-center rounded-full",
-          "transition-transform duration-[160ms] ease-[var(--ease-out)]",
+          "transition-transform duration-160 ease-out",
           "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-fg)_22%,transparent)]",
           dragging && "scale-110",
         )}
@@ -438,7 +438,7 @@ export function Neuro() {
                 aria-pressed={dictating}
                 className={cn(
                   "icon-group flex size-9 shrink-0 items-center justify-center rounded-md",
-                  "transition-[background-color,color] duration-[140ms] ease-[var(--ease-out)]",
+                  "transition-[background-color,color] duration-140 ease-out",
                   dictating
                     ? "nl-neuro-listening bg-accent/15 text-accent"
                     : "text-muted hover:bg-fg/6 hover:text-fg",

@@ -96,7 +96,7 @@ export function PublicLayout({
                 alt={imageAlt}
                 width={1600}
                 height={800}
-                className="aspect-[16/9] w-full object-cover sm:aspect-[21/9]"
+                className="aspect-16/9 w-full object-cover sm:aspect-21/9"
               />
             </figure>
           ) : null}
@@ -143,7 +143,7 @@ export function PublicLayout({
                 <ArrowLeft
                   size={15}
                   aria-hidden
-                  className="transition-transform duration-200 ease-[var(--ease-out)] group-hover:-translate-x-0.5"
+                  className="transition-transform duration-200 ease-out group-hover:-translate-x-0.5"
                 />
                 Back to NeuroLens
               </Link>
@@ -164,7 +164,7 @@ function RelatedLink({ to, label }: { to: string; label: string }) {
       aria-current={current ? "page" : undefined}
       className={cn(
         "group inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm",
-        "transition-[background-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97]",
+        "transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
         current ? "bg-fg text-bg" : "bg-surface text-fg shadow-border hover:bg-fg/5",
       )}
@@ -174,7 +174,7 @@ function RelatedLink({ to, label }: { to: string; label: string }) {
         <ArrowUpRight
           size={13}
           aria-hidden
-          className="opacity-40 transition-[opacity,transform] duration-200 ease-[var(--ease-out)] group-hover:translate-x-px group-hover:-translate-y-px group-hover:opacity-80"
+          className="opacity-40 transition-[opacity,transform] duration-200 ease-out group-hover:translate-x-px group-hover:-translate-y-px group-hover:opacity-80"
         />
       )}
     </Link>
@@ -231,7 +231,7 @@ function DocHeader({ label }: { label: string }) {
         <span
           aria-hidden
           className={cn(
-            "hidden text-sm text-muted transition-[opacity,transform] duration-300 ease-[var(--ease-out)] sm:block",
+            "hidden text-sm text-muted transition-[opacity,transform] duration-300 ease-out sm:block",
             scrolled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
           )}
         >
@@ -240,7 +240,7 @@ function DocHeader({ label }: { label: string }) {
 
         <Link
           to="/"
-          className="inline-flex h-9 items-center rounded-full bg-fg px-4 text-sm font-medium text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+          className="inline-flex h-9 items-center rounded-full bg-fg px-4 text-sm font-medium text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
         >
           Open reader
         </Link>
@@ -298,7 +298,7 @@ function DesktopToc({ items }: { items: TocItem[] }) {
               <span
                 aria-hidden
                 className={cn(
-                  "absolute top-1.5 bottom-1.5 -left-px w-px bg-fg transition-transform duration-300 ease-[var(--ease-out)]",
+                  "absolute top-1.5 bottom-1.5 -left-px w-px bg-fg transition-transform duration-300 ease-out",
                   current ? "scale-y-100" : "scale-y-0",
                 )}
               />

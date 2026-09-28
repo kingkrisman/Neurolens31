@@ -85,7 +85,7 @@ export function KindleImport() {
               </li>
             </ol>
 
-            <label className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]">
+            <label className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]">
               {busy ? (
                 <Loader2 size={15} className="animate-spin" aria-hidden />
               ) : (
