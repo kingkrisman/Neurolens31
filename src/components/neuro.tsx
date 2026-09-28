@@ -425,7 +425,7 @@ export function Neuro() {
             <Input
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
-              placeholder={dictating ? "Listening…" : "Reduce the fixation…"}
+              placeholder={dictating ? "Listening…" : "Make the bold lighter…"}
               aria-label="Ask Neuro a question"
               autoFocus
               className="min-w-0 flex-1"
@@ -492,14 +492,31 @@ export function Neuro() {
             ) : (
               <span className="text-xs text-subtle">Voice needs Chrome</span>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 text-xs"
-              onClick={() => setProfile({ ...profile, companion: false })}
-            >
-              Hide me
-            </Button>
+            <div className="flex shrink-0 items-center">
+              {/* Offered where the eyes are noticed, not only in Settings. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn("text-xs", profile.companionEyes === "calm" && "bg-fg/8 text-fg")}
+                aria-pressed={profile.companionEyes === "calm"}
+                onClick={() =>
+                  setProfile({
+                    ...profile,
+                    companionEyes: profile.companionEyes === "calm" ? "lively" : "calm",
+                  })
+                }
+              >
+                Keep still
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => setProfile({ ...profile, companion: false })}
+              >
+                Hide me
+              </Button>
+            </div>
           </div>
 
           {voiceOn ? (

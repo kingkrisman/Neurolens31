@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/prefers-reduced-motion";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export type CompanionMood = "idle" | "watching" | "pleased" | "thinking" | "resting";
@@ -45,6 +46,16 @@ export function Companion({
   const ref = useRef<SVGSVGElement>(null);
   const eyesRef = useRef<SVGGElement>(null);
   const reduce = useReducedMotion();
+  /**
+   * Still eyes: when the reader chose "calm", and always inside the reader.
+   *
+   * Testers found a face that follows the pointer felt like being watched, and
+   * kept looking back at it — the opposite of what a reading aid is for. So on
+   * the page it keeps blinking, which reads as alive, and stops looking around,
+   * which read as attention on them. Read from the store here rather than
+   * passed down so every instance agrees without each caller remembering to.
+   */
+  const still = useAppStore((s) => s.profile.companionEyes === "calm" || s.tab === "read");
   const [blinking, setBlinking] = useState(false);
 
   /**
@@ -91,7 +102,7 @@ export function Companion({
    * instead of a frozen one.
    */
   useEffect(() => {
-    if (reduce || mood === "resting") return;
+    if (reduce || mood === "resting" || still) return;
     const node = ref.current;
     const eyes = eyesRef.current;
     if (!node || !eyes) return;
@@ -153,7 +164,7 @@ export function Companion({
       cancelAnimationFrame(raf);
       eyes.style.transform = "";
     };
-  }, [reduce, mood, follow]);
+  }, [reduce, mood, follow, still]);
 
   // Expression lives in the eyes: their height, and how open they sit.
   const shut = blinking || mood === "resting";

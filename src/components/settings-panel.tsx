@@ -23,6 +23,12 @@ import { motionPermissionNeeded, requestMotionPermission } from "@/lib/device-mo
 import { exportEverything, exportHighlights } from "@/lib/data-export";
 import { PageEnter, ScrollScene } from "@/components/gsap-motion";
 
+const COMPANION_CHOICES = [
+  { id: "lively", label: "Lively", hint: "Looks around and follows your pointer." },
+  { id: "calm", label: "Calm", hint: "Stays still and only blinks." },
+  { id: "hidden", label: "Hidden", hint: "Gone everywhere until you pick it again here." },
+] as const;
+
 export function SettingsPanel() {
   const clearData = useAppStore((s) => s.clearData);
   const applySavedProfile = useAppStore((s) => s.applySavedProfile);
@@ -65,7 +71,9 @@ export function SettingsPanel() {
         Settings
       </h1>
       <p data-enter className="mt-3 text-muted">
-        These controls write to the reader immediately. Nothing is stored off this device.
+        {/* Was "Nothing is stored off this device" — untrue for anyone signed
+            in, whose settings follow their account. */}
+        These controls change the reader immediately, and follow you to your other devices.
       </p>
 
       <div className="mt-10">
@@ -263,8 +271,8 @@ export function SettingsPanel() {
             <Panel>
               <PanelHeader
                 as="h3"
-                title="Fixation"
-                description="Bionic reading marks the letters the eye lands on first, so the rest of the word can be skipped. Stronger marks help tired or wandering attention; lighter marks stay closer to ordinary type."
+                title="Bold word starts"
+                description="Bolds the first letters of each word to give the eye a place to land — often called bionic reading. It helps some readers and distracts others, so set it to what feels right. Off is fine."
               />
               <PanelWell className="space-y-5 p-3">
                 <div className="flex flex-wrap gap-1.5">
@@ -301,7 +309,7 @@ export function SettingsPanel() {
                     onValueChange={([value]) =>
                       setProfile({ ...profile, bionicStrength: value ?? 0 })
                     }
-                    aria-label="Fixation strength"
+                    aria-label="Bold word starts strength"
                   />
                 </div>
                 <div>
@@ -366,23 +374,56 @@ export function SettingsPanel() {
                     aria-describedby="motion-cues-settings-hint"
                   />
                 </div>
-                <div className="flex min-h-11 items-start justify-between gap-3 px-1 py-2">
-                  <span className="flex min-w-0 flex-col">
-                    <Label htmlFor="companion-settings">Neuro, the companion</Label>
-                    <span
-                      id="companion-settings-hint"
-                      className="mt-0.5 text-xs leading-snug text-pretty text-muted"
-                    >
-                      A face you can drag anywhere and ask to change how the page reads. Turning
-                      this off removes it everywhere; this is where it comes back.
-                    </span>
-                  </span>
-                  <Switch
-                    id="companion-settings"
-                    checked={profile.companion !== false}
-                    onCheckedChange={(checked) => setProfile({ ...profile, companion: checked })}
-                    aria-describedby="companion-settings-hint"
-                  />
+                {/* Three states rather than on/off. Testers liked Neuro and still felt
+                    watched by it; hiding it entirely was the only answer on offer. */}
+                <div className="px-1 py-2" role="group" aria-labelledby="companion-settings">
+                  <p id="companion-settings" className="text-sm font-medium">
+                    Neuro, the companion
+                  </p>
+                  <p className="mt-0.5 text-xs leading-snug text-pretty text-muted">
+                    A face you can drag anywhere and ask to change how the page reads. It never
+                    moves its eyes while you are reading.
+                  </p>
+                  <div className="mt-2.5 grid gap-1.5 sm:grid-cols-3">
+                    {COMPANION_CHOICES.map((choice) => {
+                      const current =
+                        profile.companion === false
+                          ? "hidden"
+                          : profile.companionEyes === "calm"
+                            ? "calm"
+                            : "lively";
+                      const selected = current === choice.id;
+                      return (
+                        <button
+                          key={choice.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setProfile({
+                              ...profile,
+                              companion: choice.id !== "hidden",
+                              companionEyes:
+                                choice.id === "hidden" ? profile.companionEyes : choice.id,
+                            })
+                          }
+                          className={cn(
+                            "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-md px-3 py-2 text-left",
+                            selected ? "bg-fg text-primary-fg" : "bg-fg/4 hover:bg-fg/8",
+                          )}
+                        >
+                          <span className="text-sm font-medium">{choice.label}</span>
+                          <span
+                            className={cn(
+                              "text-xs leading-snug text-pretty",
+                              selected ? "text-primary-fg/70" : "text-muted",
+                            )}
+                          >
+                            {choice.hint}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="flex min-h-11 items-center justify-between gap-3 px-1 py-1">
                   <Label htmlFor="justify-settings">Justify text</Label>

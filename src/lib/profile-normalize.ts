@@ -83,5 +83,6 @@ export function normalizeProfile(input: ReadingProfile): ReadingProfile {
     // Present unless the reader has turned it off, so an existing profile that
     // predates the companion still gets one.
     companion: profile.companion !== false,
+    companionEyes: profile.companionEyes === "calm" ? "calm" : "lively",
   };
 }

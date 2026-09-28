@@ -131,3 +131,16 @@ test("account facts are stripped from the profile", () => {
   assert.equal("onboardedAt" in out, false);
   assert.equal("avatar" in out, false);
 });
+
+test("the companion's calm eyes survive a save", () => {
+  // Added after testers said Neuro felt like it was watching them. A choice
+  // this personal disappearing on the next write would be the worst version.
+  assert.equal(normalizeProfile({ ...base(), companionEyes: "calm" }).companionEyes, "calm");
+  assert.equal(normalizeProfile({ ...base(), companionEyes: "lively" }).companionEyes, "lively");
+});
+
+test("an unknown or missing eyes value reads as lively", () => {
+  assert.equal(normalizeProfile(base()).companionEyes, "lively");
+  const junk = { ...base(), companionEyes: "staring" } as unknown as ReadingProfile;
+  assert.equal(normalizeProfile(junk).companionEyes, "lively");
+});

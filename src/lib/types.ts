@@ -86,7 +86,17 @@ export interface ReadingProfile {
   motionCues?: boolean;
   /** Whether Neuro, the companion, is present. */
   companion?: boolean;
+  /**
+   * How much Neuro's eyes move. "lively" follows the pointer and glances
+   * around; "calm" keeps the face still apart from blinking. Testers said a
+   * face that watches them felt like being watched, and kept pulling their eyes
+   * off the page — so this exists, and inside the reader the eyes are still
+   * whatever it says.
+   */
+  companionEyes?: CompanionEyes;
 }
+
+export type CompanionEyes = "lively" | "calm";
 
 export interface SavedProfile {
   id: string;
