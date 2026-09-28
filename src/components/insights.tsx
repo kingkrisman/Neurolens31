@@ -148,7 +148,15 @@ export function Insights() {
     <PageEnter className="mx-auto h-full max-w-5xl px-4 py-10 sm:px-8 sm:py-14">
       <h1 data-enter className="text-5xl">Insights</h1>
       <p data-enter className="mt-3 max-w-lg text-muted">
-        How this sitting moves: fixations, saccades, rereads. Inferred from the page — no camera.
+        How this sitting moves: fixations, saccades, rereads. Inferred from the page — no camera.{" "}
+        {/* Testers asked what "no camera" fixation detection actually measures.
+            The terms are eye-tracking words, so the answer is one tap away. */}
+        <a
+          href="/privacy#measured"
+          className="text-fg underline decoration-fg/30 underline-offset-2 hover:decoration-fg/60"
+        >
+          What this measures
+        </a>
       </p>
 
       <ScrollScene>

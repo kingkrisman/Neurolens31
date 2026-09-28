@@ -72,3 +72,20 @@ export function rememberDeclined(keys: string[]): void {
 export function isDeclined(bookKey: string): boolean {
   return declinedKeys().has(bookKey);
 }
+
+/**
+ * Whether a book may be created in the account from this device.
+ *
+ * "Keep them here" used to cover only the books that were on the device when
+ * the question was asked. The next book somebody opened went straight up, which
+ * is not what the button says. The answer is now the account's standing
+ * choice: after "Keep them here", no new book leaves this device until the
+ * reader turns uploading on from their account page.
+ *
+ * Books already in the account are not affected — they got there by an earlier
+ * yes, or from another device — so this only ever decides about *creating* one.
+ */
+export function mayCreateRemotely(bookKey: string, userId: string): boolean {
+  if (isDeclined(bookKey)) return false;
+  return uploadChoice(userId) !== "declined";
+}

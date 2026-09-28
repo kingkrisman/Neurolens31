@@ -3,7 +3,7 @@ import { legacyBookKey } from "./rows.ts";
 import * as repo from "./repository.ts";
 import * as ids from "./identity.ts";
 import { dequeue, markFailed, readQueue, retryDelay, type PendingWrite } from "./queue.ts";
-import { isDeclined } from "./upload-choice.ts";
+import { mayCreateRemotely } from "./upload-choice.ts";
 
 /**
  * Keeping a device and an account in step.
@@ -161,8 +161,9 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
       if (!session) return "gone";
       let existing = ids.remoteIdFor(session.content);
       // Kept off the account on purpose. Editing it later must not be the thing
-      // that uploads it after the reader said no.
-      if (!existing && isDeclined(write.localId)) return "gone";
+      // that uploads it after the reader said no — and neither must opening a new
+      // book after they chose "Keep them here".
+      if (!existing && !mayCreateRemotely(write.localId, userId)) return "gone";
       // No pairing on this device does not mean no book in the account — a
       // second device, or a cleared cache, arrives here with the same library.
       // Looking first is what stops it being inserted all over again.
@@ -184,9 +185,10 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       // A book must exist remotely before anything can point at it.
       let bookId = session ? ids.remoteIdFor(session.content) : null;
-      if (!bookId && isDeclined(write.localId)) return "gone";
+      if (!bookId && !mayCreateRemotely(write.localId, userId)) return "gone";
       if (!bookId && session) {
-        bookId = (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
+        bookId =
+          (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
         ids.remember(session.content, bookId);
       }
       // The book is not in the account yet — usually because its own write is
@@ -200,9 +202,10 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
     case "ink": {
       const session = store.sessions.find((s) => legacyBookKey(s.content) === write.localId);
       let bookId = session ? ids.remoteIdFor(session.content) : null;
-      if (!bookId && isDeclined(write.localId)) return "gone";
+      if (!bookId && !mayCreateRemotely(write.localId, userId)) return "gone";
       if (!bookId && session) {
-        bookId = (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
+        bookId =
+          (await repo.findBookIdByTitle(session.title)) ?? (await repo.saveBook(session, userId));
         ids.remember(session.content, bookId);
       }
       if (!bookId) return "defer";
@@ -220,6 +223,13 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
       for (const bookmark of store.bookmarks) {
         const session = store.sessions.find((s) => s.title === bookmark.title);
         const bookId = session ? ids.remoteIdFor(session.content) : null;
+        // A bookmark carries its book's title and a passage from it. For a book
+        // kept on this device, sending the bookmark would send exactly what the
+        // reader chose to keep — so it stays here with the book.
+        if (!bookId) {
+          const key = session ? legacyBookKey(session.content) : `bookmark:${bookmark.id}`;
+          if (!mayCreateRemotely(key, userId)) continue;
+        }
         await repo.saveBookmark(bookmark, userId, bookId);
       }
       return "sent";
@@ -262,6 +272,9 @@ export async function flush(settlePass = false): Promise<void> {
   try {
     let deferred = 0;
     for (const item of queue) {
+      // Stopped mid-pass — signed out, or the account is being erased. Sending
+      // the rest would write for nobody, or put back what is being deleted.
+      if (!currentUser) break;
       try {
         const outcome = await send(item.write, currentUser);
         // "defer" keeps it queued: the book it depends on is usually further
@@ -283,6 +296,8 @@ export async function flush(settlePass = false): Promise<void> {
       }
     }
 
+    // Stopped part-way: this pass synced nothing worth reporting.
+    if (!currentUser) return;
     update({ phase: "idle", lastSyncedAt: Date.now(), error: null });
 
     // Anything deferred was waiting on something earlier in this pass, which

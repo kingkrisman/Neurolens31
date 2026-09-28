@@ -8,7 +8,7 @@ export const Route = createFileRoute("/privacy")({
     ...seo({
       title: "Privacy",
       description:
-        "What NeuroLens stores and where: books stay on your device until you choose to upload them, accounts hold only your email, and usage analytics are opt-in, anonymous and schema-locked.",
+        "What NeuroLens stores, where, and what it measures: no camera, one switch decides whether your books go to your account, accounts hold only your email, and usage analytics are opt-in, anonymous and schema-locked.",
       path: "/privacy",
     }),
     scripts: [
@@ -23,11 +23,12 @@ export const Route = createFileRoute("/privacy")({
   component: Privacy,
 });
 
-const UPDATED = "21 September 2026";
+const UPDATED = "28 September 2026";
 
 const TOC = [
   { id: "summary", label: "At a glance" },
   { id: "device", label: "Your books" },
+  { id: "measured", label: "What is measured" },
   { id: "usage", label: "Usage analytics" },
   { id: "bringing", label: "Books from elsewhere" },
   { id: "crashes", label: "When something breaks" },
@@ -50,12 +51,12 @@ function Privacy() {
     <PublicLayout
       eyebrow="Privacy"
       title="Your reading stays with you."
-      lead="Your books stay on this device until you choose to upload them. When you do, they are stored in your account so they reach your other devices — readable by you, and by nobody else."
+      lead="Signed in, your books are saved to your account so they reach your other devices — readable by you, and by nobody else. One switch on your account page keeps them on this device instead."
       meta={
         <>
           <span>Updated {UPDATED}</span>
           <span aria-hidden className="size-1 rounded-full bg-fg/20" />
-          <span>4 minute read</span>
+          <span>6 minute read</span>
         </>
       }
       toc={TOC}
@@ -66,7 +67,7 @@ function Privacy() {
             {
               icon: HardDrive,
               title: "Uploading is your choice",
-              body: "Books stay on this device until you say otherwise, and reading works offline.",
+              body: "On by default, so your library follows you. One switch keeps books on this device, and reading works offline either way.",
             },
             {
               icon: UserX,
@@ -91,17 +92,29 @@ function Privacy() {
       </section>
 
       <DocSection id="device" title="Your books, and where they are">
+        {/* Rewritten 28 September 2026. The old text said books stayed on the
+            device "until you choose to upload them", which was only true of
+            books that were there before signing in: every book opened after
+            that went to the account, including after "Keep them here". The
+            code now honours that choice, and this says what it does. */}
         <p>
-          Files you open are read inside your browser and kept on this device. They stay there, and
-          only there, until you choose to upload them — the first time you sign in with books
-          already saved, NeuroLens asks, tells you exactly how many, and does nothing unless you
-          agree. <Term>Declining leaves everything where it is.</Term>
+          Files you open are read inside your browser, never on our servers. While you are signed
+          in, each book you open is also saved to your account, so it is waiting on your other
+          devices. <Term>You can switch that off</Term> on{" "}
+          <Link to="/account">your account page</Link>, under “Save my books to my account” — from
+          then on, new books stay on this device only.
         </p>
         <p>
-          Once you do upload, a book and everything you have done to it — highlights, notes,
-          drawings, bookmarks, reading position and settings — are stored in your account so they
-          reach whatever you next read on. A copy stays on the device, which is what lets you keep
-          reading with no connection.
+          Books that were already on this device the first time you signed in are handled
+          separately: NeuroLens asks, tells you exactly how many, and does nothing unless you agree.
+          Choosing “Keep them here” also switches uploading off for the books you open afterwards.
+        </p>
+        <p>
+          A book in your account is stored along with everything you have done to it — highlights,
+          notes, drawings, bookmarks, reading position, and the reading summary described{" "}
+          <a href="#measured">below</a>. Your reading settings follow your account either way,
+          because they are how the page is laid out rather than anything you read. A copy of
+          everything stays on the device, which is what lets you keep reading with no connection.
         </p>
         <ul>
           <li>Stored in NeuroLens's database, hosted by Supabase in Ireland, inside the EU.</li>
@@ -118,6 +131,63 @@ function Privacy() {
           <Link to="/account">your account</Link> at any time. Erasing removes it from your account
           and from this device.
         </p>
+      </DocSection>
+
+      <DocSection id="measured" title="What is measured, and how">
+        <p>
+          NeuroLens adjusts the page to how you read, so it keeps track of how you move through the
+          text. <Term>It does this without a camera.</Term> It never asks for one, and nothing in it
+          could use one.
+        </p>
+        <p>
+          What it watches is the page. The line in a band across the upper part of the screen — or
+          the line under your pointer, on a computer — is taken to be the one you are reading, and a
+          clock notes how long it stays there. That is all the raw material there is:
+        </p>
+        <ul>
+          <li>
+            A line held for 0.4 seconds or more is a pause on that line. Insights calls this a{" "}
+            <Term>fixation</Term>; one that lasts a second and a half is a long one.
+          </li>
+          <li>
+            Moving on to the next line is a step forward — a <Term>saccade</Term>, in Insights.
+          </li>
+          <li>
+            Going back to an earlier line is a reread — a <Term>regression</Term>.
+          </li>
+          <li>Jumping three or more lines ahead is a skip.</li>
+          <li>Leaving the text altogether, so no line is in the band, is a break.</li>
+        </ul>
+        <p>
+          From those it works out your pace in words per minute, how often you pause and reread, and
+          a rough pattern — steady, scanning, or going back over things. The words fixation, saccade
+          and regression are borrowed from eye-movement research because they describe the same
+          shape of reading. Here they describe the page, not your eyes.
+        </p>
+        <p>
+          <Term>Where it is kept.</Term> The moment-to-moment detail stays on this device, where it
+          adjusts the page and draws Insights. For a book saved to your account, a short summary
+          goes with it: your pace, how many pauses and rereads, time spent, the pattern, and your
+          score on any comprehension check you took. What the adaptive reader has learned about
+          which changes help you is saved with your settings. None of it is part of usage analytics,
+          and none of it is used for anything except your own reading.
+        </p>
+        <p>
+          <Term>Sensors, only when you switch them on.</Term> Two features use more than the page,
+          and both are off until you turn them on:
+        </p>
+        <ul>
+          <li>
+            Motion cues read your phone’s motion sensor, to steady reading in a moving car or train.
+            The readings are used on the device and never stored or sent.
+          </li>
+          <li>
+            Talking to Neuro uses the microphone to hear its name. Your browser does the listening,
+            and some browsers — Chrome among them — send the audio to their own speech service to
+            turn it into words. NeuroLens never receives or keeps the audio, and it stops listening
+            the moment you switch it off.
+          </li>
+        </ul>
       </DocSection>
 
       <DocSection id="usage" title="Usage analytics">

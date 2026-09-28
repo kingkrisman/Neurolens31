@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { seo } from "@/lib/seo";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Download, LogOut, Trash2, BookOpen, Clock, Highlighter } from "lucide-react";
+import { BookOpen, Clock, CloudUpload, Download, Highlighter, LogOut, Trash2 } from "lucide-react";
+import { Label, Switch } from "@/components/ui/field";
 import { Mark } from "@/components/mark";
 import { Card } from "@/components/ui/surfaces";
 import { PageEnter } from "@/components/gsap-motion";
@@ -10,6 +11,10 @@ import { AvatarPicker } from "@/components/auth/avatar-picker";
 import { AnalyticsSettings } from "@/components/analytics-settings";
 import { PROVIDER_LABEL, signOut, useAuthUser } from "@/lib/auth-ui/session";
 import { useAppStore } from "@/lib/store";
+import { flush } from "@/lib/sync/engine";
+import { eraseAccountAndDevice } from "@/lib/sync/erase";
+import { declineUpload, uploadLocal } from "@/lib/sync/migrate";
+import { uploadChoice } from "@/lib/sync/upload-choice";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/account")({
@@ -35,6 +40,52 @@ function Account() {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [erasing, setErasing] = useState(false);
+  const [eraseError, setEraseError] = useState<string | null>(null);
+
+  /**
+   * Whether books opened on this device go to the account.
+   *
+   * The same standing choice the "Bring this device's library with you?"
+   * prompt records, made changeable. Before this there was no way back from
+   * "Keep them here" short of clearing site data — and no way to stop
+   * uploading at all once you had said yes.
+   */
+  const [uploads, setUploads] = useState(true);
+  useEffect(() => {
+    if (user) setUploads(uploadChoice(user.id) !== "declined");
+  }, [user]);
+
+  function setUploading(on: boolean) {
+    if (!user) return;
+    if (on) {
+      uploadLocal(user.id);
+      void flush();
+    } else {
+      declineUpload(user.id);
+    }
+    setUploads(on);
+  }
+
+  async function eraseEverywhere() {
+    if (!user) return;
+    setEraseError(null);
+    setErasing(true);
+    try {
+      await eraseAccountAndDevice(user.id);
+      setConfirmingClear(false);
+    } catch (err) {
+      // The server's own wording ("JWT cryptographic operation failed") means
+      // nothing to a reader, so it goes to the console for support and the
+      // reader gets what they need: it failed, and nothing here was touched.
+      console.error("Account erase failed", err);
+      setEraseError(
+        "Your account could not be erased — check your connection and try again. Nothing was removed from this device.",
+      );
+    } finally {
+      setErasing(false);
+    }
+  }
 
   const stats = useMemo(() => {
     const books = sessions.length;
@@ -192,9 +243,44 @@ function Account() {
           <div data-enter>
             <h2 className="mt-10 font-serif text-xl italic">Your data</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Your books, highlights, drawings and settings live in this browser. Nothing here is
-              uploaded.
+              {/* This used to say "Nothing here is uploaded" to everyone, including
+                  signed-in readers whose books were in their account. */}
+              {!user
+                ? "Your books, highlights, drawings and settings live in this browser. Nothing here is uploaded."
+                : uploads
+                  ? "Your books, highlights, drawings and settings are saved in your account, and a copy stays in this browser so you can read offline."
+                  : "Your reading settings follow your account. Your books, highlights and drawings stay in this browser only."}{" "}
+              <Link
+                to="/privacy"
+                hash="measured"
+                className="text-fg underline decoration-fg/30 underline-offset-2"
+              >
+                What is stored, and what is measured
+              </Link>
             </p>
+
+            {user ? (
+              <Card className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+                <CloudUpload size={16} className="shrink-0 text-accent" aria-hidden />
+                <span className="flex min-w-0 flex-1 basis-56 flex-col">
+                  <Label htmlFor="upload-books">Save my books to my account</Label>
+                  <span
+                    id="upload-books-hint"
+                    className="mt-0.5 text-xs leading-relaxed text-muted"
+                  >
+                    {uploads
+                      ? "Books you open here are uploaded so they reach your other devices."
+                      : "Books you open here stay on this device. Anything already in your account stays there until you erase it."}
+                  </span>
+                </span>
+                <Switch
+                  id="upload-books"
+                  checked={uploads}
+                  onCheckedChange={setUploading}
+                  aria-describedby="upload-books-hint"
+                />
+              </Card>
+            ) : null}
 
             <div className="mt-4">
               <AnalyticsSettings />
@@ -212,23 +298,32 @@ function Account() {
               <Row
                 icon={Trash2}
                 danger
-                title="Erase everything on this device"
+                title={user ? "Erase everything" : "Erase everything on this device"}
                 detail={
                   confirmingClear
-                    ? "This cannot be undone. Your books, marks and settings will be gone."
-                    : "Removes every book, mark, drawing and setting from this browser."
+                    ? user
+                      ? "This cannot be undone. Your books, marks, drawings and settings will be deleted from your account and from this browser."
+                      : "This cannot be undone. Your books, marks and settings will be gone."
+                    : user
+                      ? "Deletes every book, mark, drawing and setting — from your account and from this browser."
+                      : "Removes every book, mark, drawing and setting from this browser."
                 }
-                action={confirmingClear ? "Yes, erase it all" : "Erase"}
+                action={erasing ? "Erasing…" : confirmingClear ? "Yes, erase it all" : "Erase"}
+                disabled={erasing}
                 onAction={() => {
                   if (!confirmingClear) {
                     setConfirmingClear(true);
+                    return;
+                  }
+                  if (user) {
+                    void eraseEverywhere();
                     return;
                   }
                   clearData();
                   setConfirmingClear(false);
                 }}
                 secondary={
-                  confirmingClear
+                  confirmingClear && !erasing
                     ? { label: "Cancel", onAction: () => setConfirmingClear(false) }
                     : undefined
                 }
@@ -245,6 +340,12 @@ function Account() {
                 />
               ) : null}
             </div>
+
+            {eraseError ? (
+              <p role="alert" className="mt-3 text-xs text-danger">
+                {eraseError}
+              </p>
+            ) : null}
 
             {signOutError ? (
               <p role="alert" className="mt-3 text-xs text-danger">

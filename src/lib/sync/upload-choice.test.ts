@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
-import { declinedKeys, isDeclined, uploadChoice } from "./upload-choice.ts";
+import { declinedKeys, isDeclined, mayCreateRemotely, uploadChoice } from "./upload-choice.ts";
 
 /**
  * The store is a React/zustand module, so `localOnly` and `uploadLocal` are
@@ -80,4 +80,26 @@ test("blocked storage never reads as consent", () => {
   // failure. Uploading because storage was unavailable would not be.
   assert.equal(uploadChoice(USER), null);
   assert.equal(declinedKeys().size, 0);
+});
+
+test("after 'Keep them here', a book opened later stays on the device too", () => {
+  // The reported gap: declining listed the books present at that moment, and
+  // the next one opened was uploaded anyway. The standing choice now covers it.
+  localStorage.setItem(`neurolens-upload-choice:${USER}`, "declined");
+  assert.equal(mayCreateRemotely("a-book-opened-afterwards", USER), false);
+});
+
+test("a declined book stays off even after uploading is switched on", () => {
+  // Switching on goes through uploadLocal, which clears the list deliberately;
+  // until then, a book that was named in the refusal is never created.
+  localStorage.setItem(`neurolens-upload-choice:${USER}`, "uploaded");
+  localStorage.setItem("neurolens-upload-declined", JSON.stringify(["kept"]));
+  assert.equal(mayCreateRemotely("kept", USER), false);
+  assert.equal(mayCreateRemotely("new", USER), true);
+});
+
+test("an account that was never asked uploads what it opens", () => {
+  // Signing in with an empty device asks nothing — there was nothing to ask
+  // about — and syncing is what signing in is for.
+  assert.equal(mayCreateRemotely("new", USER), true);
 });
