@@ -203,7 +203,9 @@ function Privacy() {
         <p>
           With your permission, NeuroLens records anonymous events about how the app is used: which
           tab was opened, which file type was read, that a highlight or pen stroke was made, which
-          setting changed. That is the whole list. <Term>It is off until you switch it on.</Term>
+          setting changed, how far through the tour you got, that you signed in or out, and which
+          avatar style you picked. That is the whole list, apart from the two measurements below.{" "}
+          <Term>It is off until you switch it on.</Term>
         </p>
         <p>
           This is enforced by the code, not just promised. Every event is checked against a fixed
@@ -213,8 +215,14 @@ function Privacy() {
           runs again on arrival, so an event that is not on the list is refused rather than stored.
         </p>
         <p>
-          One more thing is measured: how quickly a page drew, how soon it answered a tap, and
-          whether the text moved under you while you read. Those are kept only as <Term>good</Term>,{" "}
+          The first measurement: when you finish a quick recall or a check of understanding, it
+          records how many questions there were, how many you got right, and the reading mode and
+          layout you were using — so we can see whether a mode helps people remember what they
+          read. Never the questions, your answers, the book or the chapter.
+        </p>
+        <p>
+          The second: how quickly a page drew, how soon it answered a tap, and whether the text
+          moved under you while you read. Those are kept only as <Term>good</Term>,{" "}
           <Term>needs work</Term> or <Term>poor</Term> — never the actual timings, which vary enough
           by device and moment to identify one.
         </p>

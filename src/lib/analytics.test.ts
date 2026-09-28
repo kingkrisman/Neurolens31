@@ -28,6 +28,8 @@ const {
   bucketCount,
   bucketSize,
   formatOf,
+  smallCount,
+  AWAITING_MIGRATION,
   SCHEMA,
 } = await import("./analytics.ts");
 
@@ -110,6 +112,44 @@ describe("track", () => {
   it("caps the queue so it can never crowd out a book", () => {
     for (let i = 0; i < 700; i += 1) track("ink_stroke", { tool: "pen" });
     assert.ok(queuedEvents().length <= 500);
+  });
+});
+
+describe("recall results", () => {
+  it("keeps the counts, mode and layout, and nothing about the book", () => {
+    const clean = sanitize("recall_done", {
+      kind: "recall",
+      asked: "2",
+      right: "1",
+      mode: "dyslexia",
+      layout: "pages",
+      question: "Which of these was in the chapter you just read?",
+      answer: "The lighthouse keeper's daughter",
+    });
+    assert.deepEqual(clean, {
+      kind: "recall",
+      asked: "2",
+      right: "1",
+      mode: "dyslexia",
+      layout: "pages",
+    });
+  });
+
+  it("caps a count so an unusual one cannot stand out", () => {
+    assert.equal(smallCount(0), "0");
+    assert.equal(smallCount(3), "3");
+    assert.equal(smallCount(12), "5+");
+    assert.equal(smallCount(Number.NaN), "0");
+  });
+
+  it("is stored apart from events the database already knows", () => {
+    // The table's own list of names changes only when the migration is run.
+    assert.ok(AWAITING_MIGRATION.has("recall_done"));
+    assert.ok(!AWAITING_MIGRATION.has("tab_view"));
+  });
+
+  it("every event waiting on a migration is one the schema names", () => {
+    for (const name of AWAITING_MIGRATION) assert.ok(name in SCHEMA, name);
   });
 });
 

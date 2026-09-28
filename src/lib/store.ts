@@ -20,7 +20,7 @@ import { PREFERENCE_WEIGHT, readPreference } from "./adaptive/preference.ts";
 import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { fitSessions } from "./session-storage.ts";
-import { track } from "./analytics.ts";
+import { smallCount, track } from "./analytics.ts";
 import { noteModeSwitch } from "./comfort.ts";
 import {
   mergeMeta,
@@ -308,7 +308,11 @@ interface AppState {
   removeBookmark: (id: string) => void;
   submitReadingFeel: (feel: ReadingFeel) => void;
   /** A recall card or understanding check finished on the open book. */
-  recordRecall: (right: number, asked: number) => void;
+  recordRecall: (
+    right: number,
+    asked: number,
+    context?: { kind: "recall" | "check"; layout: "pages" | "scroll" },
+  ) => void;
   setCvdPreview: (kind: CvdKind) => void;
   clearData: () => void;
 }
@@ -1544,12 +1548,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ bookmarks: next });
   },
 
-  recordRecall: (right, asked) => {
+  recordRecall: (right, asked, context) => {
     // Kept on the book: the counts locally, the share in `comprehension`,
     // which travels with the book's reading summary to the account the next
     // time the book itself is saved. Nothing here was ever recorded before —
     // the old check showed a score and threw it away.
     if (asked <= 0) return;
+    // And, for someone who opted in to usage analytics, the counts alone —
+    // with the mode and layout, which is what makes them worth having.
+    track("recall_done", {
+      kind: context?.kind ?? "recall",
+      asked: smallCount(asked),
+      right: smallCount(Math.max(0, Math.min(asked, right))),
+      mode: get().mode,
+      layout: context?.layout,
+    });
     const text = get().text;
     if (!text) return;
     let changed = false;

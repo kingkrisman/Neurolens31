@@ -24,6 +24,7 @@
 const BUCKETS = ["0", "1-9", "10-49", "50-199", "200-999", "1000+"] as const;
 const SIZE_BUCKETS = ["<100KB", "100KB-1MB", "1-5MB", "5-20MB", "20MB+"] as const;
 const FORMATS = ["pdf", "epub", "docx", "html", "rtf", "md", "txt", "other"] as const;
+const SMALL_COUNTS = ["0", "1", "2", "3", "4", "5+"] as const;
 
 type Field = readonly string[] | "bool";
 
@@ -93,9 +94,35 @@ export const SCHEMA = {
     rating: ["good", "needs-improvement", "poor"],
     view: ["home", "reader", "document"],
   },
+  /**
+   * A recall card or understanding check was finished: how many questions,
+   * how many were right, and under which reading mode and layout.
+   *
+   * This is what can answer "does a mode help people remember what they
+   * read?" — the question readers ask. Never the questions, the answers, the
+   * book or the chapter; small counts only, capped at five.
+   */
+  recall_done: {
+    kind: ["recall", "check"],
+    asked: SMALL_COUNTS,
+    right: SMALL_COUNTS,
+    mode: ["default", "adhd", "dyslexia", "focus", "academic", "speed", "adaptive"],
+    layout: ["scroll", "pages"],
+  },
 } as const satisfies Record<string, Record<string, Field>>;
 
 export type EventName = keyof typeof SCHEMA;
+
+/**
+ * Events newer than the database's own list of allowed names.
+ *
+ * The table checks each name against a list of its own (see
+ * supabase/migrations), and that list changes only when someone runs the
+ * migration. Until then an insert naming one of these would fail — and take
+ * every other event in the same batch with it — so the endpoint stores them
+ * separately, and a refusal loses only them.
+ */
+export const AWAITING_MIGRATION: ReadonlySet<string> = new Set<EventName>(["recall_done"]);
 
 export interface StoredEvent {
   e: EventName;
@@ -308,6 +335,13 @@ export function bucketCount(n: number): (typeof BUCKETS)[number] {
   if (n < 200) return "50-199";
   if (n < 1000) return "200-999";
   return "1000+";
+}
+
+/** A count of a handful of things, capped so a large one reads as "5+". */
+export function smallCount(n: number): (typeof SMALL_COUNTS)[number] {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  if (n >= 5) return "5+";
+  return String(Math.floor(n)) as (typeof SMALL_COUNTS)[number];
 }
 
 export function bucketSize(bytes: number): (typeof SIZE_BUCKETS)[number] {

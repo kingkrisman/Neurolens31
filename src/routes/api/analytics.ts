@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { sanitize, type EventName } from "@/lib/analytics";
+import { AWAITING_MIGRATION, sanitize, type EventName } from "@/lib/analytics";
 import { insertRows, telemetryConfigured } from "@/lib/telemetry/insert";
 
 /**
@@ -106,19 +106,36 @@ export const Route = createFileRoute("/api/analytics")({
           return Response.json({ stored: 0 }, { headers: { "cache-control": "no-store" } });
         }
 
+        // Events the database may not know yet go in their own insert, so a
+        // table still on the old list of names refuses only them.
+        const settled = rows.filter((row) => !AWAITING_MIGRATION.has(row.name));
+        const pending = rows.filter((row) => AWAITING_MIGRATION.has(row.name));
+
         // One request rather than a loop: a queue flush arriving after a long
         // offline stretch can be hundreds of rows, and hundreds of round trips
         // is how an analytics endpoint becomes the slowest thing in the app.
-        const result = await insertRows("analytics_events", rows);
-        if (!result.ok) {
-          // Logged server-side and nowhere else. The reader is not told, and
-          // nothing is retried into a loop: a failure to record usage is our
-          // problem, never theirs.
-          console.error("[analytics] insert failed:", result.reason);
-          return Response.json({ error: "Could not store" }, { status: 503 });
+        if (settled.length) {
+          const result = await insertRows("analytics_events", settled);
+          if (!result.ok) {
+            // Logged server-side and nowhere else. The reader is not told, and
+            // nothing is retried into a loop: a failure to record usage is our
+            // problem, never theirs.
+            console.error("[analytics] insert failed:", result.reason);
+            return Response.json({ error: "Could not store" }, { status: 503 });
+          }
         }
 
-        return Response.json({ stored: rows.length }, { headers: { "cache-control": "no-store" } });
+        let stored = settled.length;
+        if (pending.length) {
+          const result = await insertRows("analytics_events", pending);
+          // Not a 503: the client would resend the whole queue, and the events
+          // above would be stored twice. These are dropped until the migration
+          // is run, which is the kind of loss usage data is allowed.
+          if (result.ok) stored += pending.length;
+          else console.error("[analytics] newer events refused (run the latest migration):", result.reason);
+        }
+
+        return Response.json({ stored }, { headers: { "cache-control": "no-store" } });
       },
     },
   },

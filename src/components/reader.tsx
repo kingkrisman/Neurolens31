@@ -1652,7 +1652,7 @@ export function Reader() {
                   questions={recallQuestions}
                   growthNote={gardenNote}
                   onFinish={(right, asked) => {
-                    useAppStore.getState().recordRecall(right, asked);
+                    useAppStore.getState().recordRecall(right, asked, { kind: "recall", layout });
                     const note = recordBloom({ id: plantId, title: readingTitle, section });
                     setRecallDone(true);
                     if (note) setGardenNote(note);
@@ -2437,7 +2437,10 @@ export function Reader() {
                 // Kept on the book now, not just shown and dropped.
                 useAppStore
                   .getState()
-                  .recordRecall(results.filter(Boolean).length, results.length);
+                  .recordRecall(results.filter(Boolean).length, results.length, {
+                    kind: "check",
+                    layout,
+                  });
                 const pct = score == null ? 0 : Math.round(score * 100);
                 toast.success(`${pct}% on this check`);
                 setCheckOpen(false);
