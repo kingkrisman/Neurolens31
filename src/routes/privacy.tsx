@@ -177,10 +177,12 @@ function Privacy() {
           is used for anything except your own reading.
         </p>
         <p>
-          Your reading garden — the plants that grow as you finish chapters — stays on this device
-          only. It names the books you have read, so it is never sent anywhere, even when your books
-          are. The same goes for the record of which highlights have come back to you on the
-          Explore page, and when: dates only, kept on this device.
+          Your reading garden — the plants that grow as you finish chapters — follows you to your
+          other devices only for books already saved to your account. What is sent is the
+          account's own number for the book, which chapters grew and which flowered, and when —
+          never a title. A book you keep on this device keeps its plant here too. The record of
+          which highlights have come back to you on the Explore page, and when, stays on this
+          device: dates only.
         </p>
         <p>
           <Term>Sensors, only when you switch them on.</Term> Two features use more than the page,

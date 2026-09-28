@@ -102,6 +102,15 @@ export function enqueue(write: PendingWrite): void {
     queue.push({ write, at: Date.now(), tries: 0 });
   }
   persist(queue);
+  for (const listener of listeners) listener();
+}
+
+const listeners = new Set<() => void>();
+
+/** Told whenever something is queued, so the engine can send it soon. */
+export function onEnqueue(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
 /** Drop one, once the server has it. */

@@ -2,8 +2,18 @@ import { useAppStore } from "@/lib/store";
 import { legacyBookKey } from "./rows.ts";
 import * as repo from "./repository.ts";
 import * as ids from "./identity.ts";
-import { dequeue, markFailed, readQueue, retryDelay, type PendingWrite } from "./queue.ts";
+import {
+  dequeue,
+  markFailed,
+  onEnqueue,
+  readQueue,
+  retryDelay,
+  type PendingWrite,
+} from "./queue.ts";
 import { mayCreateRemotely } from "./upload-choice.ts";
+import { settingsChanged } from "./notify.ts";
+import { knowsMore, normalizeSynced, plantIdFor, type GardenPlant } from "@/lib/garden";
+import { accountGarden, mergeAccountGarden } from "@/lib/garden-store";
 
 /**
  * Keeping a device and an account in step.
@@ -62,6 +72,22 @@ export function subscribeSync(listener: (state: SyncState) => void): () => void 
 let currentUser: string | null = null;
 let flushing = false;
 let retryTimer: number | undefined;
+
+/**
+ * Which account book a garden plant belongs to, or null when its book is not
+ * in the account — in which case the plant is not sent.
+ */
+function accountBookOf(plant: GardenPlant): string | null {
+  for (const session of useAppStore.getState().sessions) {
+    if (!session.content.trim()) {
+      if (session.remoteId && plant.id === `b-${session.remoteId}`) return session.remoteId;
+      continue;
+    }
+    if (plantIdFor(legacyBookKey(session.content)) !== plant.id) continue;
+    return ids.remoteIdFor(session.content) ?? session.remoteId ?? null;
+  }
+  return null;
+}
 
 /** Reading a book means fetching its text, which a listing deliberately omits. */
 export async function loadContent(text: string): Promise<string | null> {
@@ -130,6 +156,22 @@ export async function pull(): Promise<void> {
     bookmarks: account.bookmarks,
     settings: account.settings ?? undefined,
   });
+
+  // The garden rides on the settings row, as plants keyed by the account's
+  // book id. A plant is placed under the local id its book's text gives, or —
+  // for a book only listed here so far — under the account id, and the reader
+  // finds it by that when the book is opened.
+  const theirGarden = normalizeSynced(account.settings?.meta?.garden);
+  const listed = new Map(merged.map((book) => [book.id, book]));
+  mergeAccountGarden(theirGarden, (bookId) => {
+    const book = listed.get(bookId);
+    if (!book) return null;
+    return {
+      id: book.content ? plantIdFor(legacyBookKey(book.content)) : `b-${bookId}`,
+      title: book.title,
+    };
+  });
+  if (knowsMore(accountGarden(accountBookOf), theirGarden)) settingsChanged();
 
   update({ phase: "idle", lastSyncedAt: Date.now() });
 }
@@ -244,7 +286,10 @@ async function send(write: PendingWrite, userId: string): Promise<Outcome> {
           lockedSettings: store.lockedSettings,
           savedProfiles: store.savedProfiles,
           adaptiveMemory: store.adaptiveMemory as Record<string, unknown>,
-          meta: store.meta as unknown as Record<string, unknown>,
+          meta: {
+            ...(store.meta as unknown as Record<string, unknown>),
+            garden: accountGarden(accountBookOf),
+          },
         },
         userId,
       );
@@ -315,6 +360,48 @@ export async function flush(settlePass = false): Promise<void> {
   }
 }
 
+/**
+ * Send what was just queued, shortly.
+ *
+ * Edits used to wait for the next launch, a reconnect or a manual retry — a
+ * passage marked on the phone reached the laptop only once the phone's app was
+ * reopened. Now each edit sends itself a couple of seconds after the last one,
+ * so a burst (scrolling, a run of highlights) is one pass, and a reader who
+ * keeps going still syncs at least every twenty seconds.
+ */
+const SEND_AFTER_MS = 2_000;
+const SEND_AT_LEAST_EVERY_MS = 20_000;
+let sendTimer: number | undefined;
+let waitingSince: number | null = null;
+let queuedWhileFlushing = false;
+let stopListening: (() => void) | null = null;
+
+function sendSoon(): void {
+  if (typeof window === "undefined" || !currentUser) return;
+  // A failed pass has its own backoff (scheduleRetry), and going around it on
+  // every edit would hammer a server that is down.
+  if (state.phase === "error" || state.phase === "offline") return;
+  if (flushing) {
+    queuedWhileFlushing = true;
+    return;
+  }
+  const now = Date.now();
+  waitingSince ??= now;
+  const overdue = now - waitingSince >= SEND_AT_LEAST_EVERY_MS;
+  window.clearTimeout(sendTimer);
+  sendTimer = window.setTimeout(
+    () => {
+      waitingSince = null;
+      void flush().then(() => {
+        if (!queuedWhileFlushing) return;
+        queuedWhileFlushing = false;
+        sendSoon();
+      });
+    },
+    overdue ? 0 : SEND_AFTER_MS,
+  );
+}
+
 function scheduleRetry(tries: number): void {
   if (typeof window === "undefined") return;
   window.clearTimeout(retryTimer);
@@ -346,6 +433,8 @@ export async function startSync(userId: string): Promise<void> {
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
   }
+  stopListening?.();
+  stopListening = onEnqueue(sendSoon);
 
   try {
     await pull();
@@ -360,10 +449,15 @@ export async function startSync(userId: string): Promise<void> {
 
 export function stopSync(): void {
   currentUser = null;
+  stopListening?.();
+  stopListening = null;
+  waitingSince = null;
+  queuedWhileFlushing = false;
   if (typeof window !== "undefined") {
     window.removeEventListener("online", onOnline);
     window.removeEventListener("offline", onOffline);
     window.clearTimeout(retryTimer);
+    window.clearTimeout(sendTimer);
   }
   update({ phase: "idle", error: null, lastSyncedAt: null });
 }

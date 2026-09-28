@@ -1,17 +1,22 @@
 import { useSyncExternalStore } from "react";
 import { scopedKey } from "./storage-scope";
+import * as sync from "./sync/notify";
 import {
   EMPTY_GARDEN,
   describeGrowth,
+  mergeSynced,
   normalizeGarden,
+  syncedGarden,
   withBloom,
   withChapterFinished,
   type Garden,
+  type GardenPlant,
+  type SyncedPlant,
 } from "./garden";
 
 /**
  * The garden, kept in this browser under the reader's account scope. See
- * `garden.ts` for why it is never synced.
+ * `garden.ts` for what of it reaches the account, and why no title does.
  */
 
 const KEY = "neurolens-garden";
@@ -61,21 +66,44 @@ function save(next: Garden): void {
   for (const listener of listeners) listener();
 }
 
-type Growth = { id: string; title: string; section: number };
+type Growth = { id: string; title: string; section: number; book?: string | null };
+
+function record(
+  growth: Growth,
+  apply: (garden: Garden, growth: Growth & { at: number }) => Garden,
+): string | null {
+  const before = snapshot();
+  const after = apply(before, { ...growth, at: Date.now() });
+  if (after === before) return null;
+  save(after);
+  // Only a plant whose book is in the account travels; for any other, the
+  // settings write that follows carries nothing new about it.
+  if (growth.book) sync.settingsChanged();
+  return describeGrowth(before, after, after.plants.find((p) => p.book && p.book === growth.book)?.id ?? growth.id);
+}
 
 /** Returns the sentence to show, or null if nothing new happened. */
 export function recordChapterFinished(growth: Growth): string | null {
-  const before = snapshot();
-  const after = withChapterFinished(before, { ...growth, at: Date.now() });
-  if (after === before) return null;
-  save(after);
-  return describeGrowth(before, after, growth.id);
+  return record(growth, withChapterFinished);
 }
 
 export function recordBloom(growth: Growth): string | null {
+  return record(growth, withBloom);
+}
+
+/** What to send to the account: plants for books that are in it, untitled. */
+export function accountGarden(bookOf: (plant: GardenPlant) => string | null): SyncedPlant[] {
+  return syncedGarden(snapshot(), bookOf);
+}
+
+/** Fold in what the account has. True when this device's garden changed. */
+export function mergeAccountGarden(
+  incoming: SyncedPlant[],
+  place: (book: string) => { id: string; title: string } | null,
+): boolean {
   const before = snapshot();
-  const after = withBloom(before, { ...growth, at: Date.now() });
-  if (after === before) return null;
+  const after = mergeSynced(before, incoming, place);
+  if (after === before) return false;
   save(after);
-  return describeGrowth(before, after, growth.id);
+  return true;
 }

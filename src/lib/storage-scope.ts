@@ -40,7 +40,8 @@ const SCOPED = [
   "neurolens-meta",
   // Per-book "pages" or "scroll" flips. Per account, like the books.
   "neurolens-layouts",
-  // The reading garden. Per account and never synced — see lib/garden.ts.
+  // The reading garden. Per account; only plants for books in the account are
+  // synced, and without titles — see lib/garden.ts.
   "neurolens-garden",
   // When each highlight last came back. Ids and dates only — see resurface.ts.
   "neurolens-returns",

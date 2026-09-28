@@ -62,6 +62,7 @@ import { resolvePageLayout } from "@/lib/page-layout";
 import { usePageTurner, type Landing } from "@/lib/use-page-turner";
 import { setBookLayout, useBookLayout } from "@/lib/book-layout";
 import { legacyBookKey } from "@/lib/sync/rows";
+import { remoteIdFor } from "@/lib/sync/identity";
 import { PageEdges, TurnPager } from "@/components/page-controls";
 import { RecallCard } from "@/components/recall-card";
 import { buildRecallCard } from "@/lib/recall";
@@ -1315,6 +1316,15 @@ export function Reader() {
   }, [hasPartDone, chaptered, chapterIndex, textChapters, paged, pdfPage, pdfPages, viewText, sectionWord]);
 
   const plantId = useMemo(() => plantIdFor(bookKey), [bookKey]);
+  // Asked at growth time rather than once: a book can reach the account while
+  // it is open, and a plant that knows its book can follow the reader.
+  const accountBook = useCallback(
+    () =>
+      remoteIdFor(text) ??
+      useAppStore.getState().sessions.find((item) => item.content === text)?.remoteId ??
+      null,
+    [text],
+  );
   const [gardenNote, setGardenNote] = useState<string | null>(null);
   const [recallDone, setRecallDone] = useState(false);
   useEffect(() => {
@@ -1331,7 +1341,12 @@ export function Reader() {
     const check = (progress: number) => {
       if (counted || progress < 0.95 || Date.now() - openedAt < minMs) return;
       counted = true;
-      const note = recordChapterFinished({ id: plantId, title: readingTitle, section });
+      const note = recordChapterFinished({
+        id: plantId,
+        title: readingTitle,
+        section,
+        book: accountBook(),
+      });
       if (!note) return;
       // Divided books say it in the chapter's closing card; a single piece
       // has no such card, so a quiet toast carries it.
@@ -1346,7 +1361,7 @@ export function Reader() {
       stop();
       window.clearInterval(timer);
     };
-  }, [pageKey, plantId, readingTitle, section, words.length, targetWpm, chaptered, paged]);
+  }, [pageKey, plantId, accountBook, readingTitle, section, words.length, targetWpm, chaptered, paged]);
 
   useGSAP(
     () => {
@@ -1653,7 +1668,12 @@ export function Reader() {
                   growthNote={gardenNote}
                   onFinish={(right, asked) => {
                     useAppStore.getState().recordRecall(right, asked, { kind: "recall", layout });
-                    const note = recordBloom({ id: plantId, title: readingTitle, section });
+                    const note = recordBloom({
+                      id: plantId,
+                      title: readingTitle,
+                      section,
+                      book: accountBook(),
+                    });
                     setRecallDone(true);
                     if (note) setGardenNote(note);
                   }}
