@@ -286,8 +286,15 @@
      that whole window every line matches the dim rule and the page is a wall of
      grey with nothing to read. This makes the mask inert until there is a line
      to actually mask around, which also covers an empty part and a tracker that
-     has failed to pick anything. */
-  .has-reading-mask:not(:has(.reading-line.active)) .reading-line {
+     has failed to pick anything.
+
+     Keyed on a flag the reader sets (see markActiveLine), not on
+     `:has(.reading-line.active)`. The `:has()` version made the browser
+     re-check this rule for every line of the chapter each time the band moved
+     — on every scroll frame — and with the mask on, a long chapter scrolled at
+     half speed on a slower phone. The flag changes only when the band appears
+     or goes, so moving it restyles two lines, not all of them. */
+  .has-reading-mask .reader-scroll:not([data-band="on"]) .reading-line {
     color: inherit;
   }
 

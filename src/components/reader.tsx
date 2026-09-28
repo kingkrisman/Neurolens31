@@ -408,8 +408,15 @@ export function Reader() {
         node
           .querySelectorAll(".reading-line.active")
           .forEach((el) => el.classList.remove("active"));
+        delete node.dataset.band;
       } else {
-        node.querySelector(`#line-${lineIdx}`)?.classList.add("active");
+        const line = node.querySelector(`#line-${lineIdx}`);
+        line?.classList.add("active");
+        // Tells the mask there is a line to dim around (see the reading mask
+        // styles) — only when the line really is there, or the whole page
+        // would dim around nothing.
+        if (line) node.dataset.band = "on";
+        else delete node.dataset.band;
         node.dispatchEvent(new Event("nl-line"));
       }
     }

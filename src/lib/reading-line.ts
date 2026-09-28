@@ -196,28 +196,38 @@ export function beside(box: LineBox, viewLeft: number, viewRight: number): boole
 export function collectReadingHits(scrollNode: HTMLElement, view?: DOMRect | null): ReadingHit[] {
   const lines = Array.from(scrollNode.querySelectorAll<HTMLElement>(".reading-line"));
   const hits: ReadingHit[] = [];
-  // In pages, text runs through the columns in document order, so the lines
-  // on screen are one contiguous run. Find where it starts by halving, and
-  // stop at the first line on the next page — instead of measuring every line
-  // of a long chapter on every turn, which was most of the cost of a turn
-  // once rendering was fixed. Scrolling measures every line, as before.
+  // Text runs in document order in both layouts — down the page when
+  // scrolling, across the columns in pages — so the lines near the view are
+  // one contiguous run. Find where it starts by halving and stop once past it,
+  // instead of measuring every line of a long chapter. This runs on every
+  // scroll frame, and measuring a whole novel's chapter each time was what
+  // made scrolling long books heavy on slower phones.
+  //
+  // Scrolling keeps a screen's worth either side of the view: the band rides
+  // a line just scrolled out of sight (see chooseFollowHit), and it has to be
+  // among the hits to be ridden. Pages keep exactly the page on screen.
   const paged = view != null && scrollNode.dataset.layout === "pages";
+  const margin = view && !paged ? view.height : 0;
+  const before = (rect: DOMRect) =>
+    paged ? rect.right <= view!.left + 2 : rect.bottom <= view!.top - margin;
+  const after = (rect: DOMRect) =>
+    paged ? rect.left >= view!.right - 2 : rect.top >= view!.bottom + margin;
   let from = 0;
-  if (paged) {
+  if (view && lines.length > 48) {
     let lo = 0;
     let hi = lines.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (lines[mid]!.getBoundingClientRect().right <= view.left + 2) lo = mid + 1;
+      if (before(lines[mid]!.getBoundingClientRect())) lo = mid + 1;
       else hi = mid;
     }
     from = lo;
   }
   for (let i = from; i < lines.length; i += 1) {
     const el = lines[i]!;
-    if (paged) {
+    if (view && lines.length > 48) {
       const rect = el.getBoundingClientRect();
-      if (rect.width > 0 && rect.left >= view.right - 2) break;
+      if (rect.width > 0 && after(rect)) break;
     }
     const raw = el.id.startsWith("line-") ? Number(el.id.slice(5)) : Number.NaN;
     if (!Number.isFinite(raw)) continue;
