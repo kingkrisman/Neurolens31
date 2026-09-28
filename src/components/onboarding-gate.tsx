@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAppStore } from "@/lib/store";
 import { subscribeSync, syncState, type SyncState } from "@/lib/sync/engine";
 import { OnboardingSurvey } from "@/components/onboarding-survey";
+import { useAuthUser } from "@/lib/auth-ui/session";
+import { predatesSurvey } from "@/lib/onboarding/launch";
 
 /**
  * Decides whether this account has ever been asked.
@@ -42,6 +44,14 @@ function accountHasAnswered(state: SyncState): boolean {
 export function OnboardingGate({ children }: { children: ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
   const onboardedAt = useAppStore((s) => s.meta.onboardedAt);
+  const setMeta = useAppStore((s) => s.setMeta);
+  const user = useAuthUser();
+  // An account from before the survey worked is not new — see
+  // lib/onboarding/launch.ts. Recorded, so it syncs and is settled everywhere.
+  const veteran = predatesSurvey(user?.createdAt);
+  useEffect(() => {
+    if (hydrated && veteran && !onboardedAt && user) setMeta({ onboardedAt: user.createdAt });
+  }, [hydrated, veteran, onboardedAt, user, setMeta]);
 
   const [settled, setSettled] = useState(() => accountHasAnswered(syncState()));
   useEffect(() => subscribeSync((state) => setSettled(accountHasAnswered(state))), []);
@@ -58,7 +68,7 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
    */
   const [dismissed, setDismissed] = useState(false);
 
-  const ask = hydrated && (settled || gaveUp) && !onboardedAt && !dismissed;
+  const ask = hydrated && (settled || gaveUp) && !onboardedAt && !dismissed && !veteran;
 
   return (
     <>
