@@ -66,6 +66,10 @@ test("a short flick turns the page; a small drag springs back", () => {
   assert.equal(swipeTarget(2, -120, 0.1, 390), 3);
   // A tremor with speed but no distance is not a swipe.
   assert.equal(swipeTarget(2, -6, 2, 390), 2);
+  // Forgiving enough for a natural swipe: a fifth of a phone screen, or a
+  // quick short flick, both turn.
+  assert.equal(swipeTarget(2, -80, 0.1, 390), 3);
+  assert.equal(swipeTarget(2, -20, 0.3, 390), 3);
 });
 
 test("turning one page of a short chapter is a step, not a skip", () => {

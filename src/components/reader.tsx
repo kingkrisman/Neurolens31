@@ -62,7 +62,7 @@ import { resolvePageLayout } from "@/lib/page-layout";
 import { usePageTurner, type Landing } from "@/lib/use-page-turner";
 import { setBookLayout, useBookLayout } from "@/lib/book-layout";
 import { legacyBookKey } from "@/lib/sync/rows";
-import { PageControls } from "@/components/page-controls";
+import { PageEdges, TurnPager } from "@/components/page-controls";
 import { RecallCard } from "@/components/recall-card";
 import { buildRecallCard } from "@/lib/recall";
 import { plantIdFor } from "@/lib/garden";
@@ -191,7 +191,17 @@ export function Reader() {
   const setAutoScrolling = useAppStore((s) => s.setAutoScrolling);
   const targetWpm = useAppStore((s) => s.targetWpm);
   const highlights = useAppStore((s) => s.highlights);
-  const elapsedActiveMs = useAppStore((s) => s.reading.elapsedActiveMs);
+  /**
+   * Whole minutes read, not milliseconds. The reader subscribed to the raw
+   * elapsed time, which the tracker reports every second, so the entire
+   * reader — every paragraph of the chapter — re-rendered once a second for as
+   * long as anyone read, and again on every scroll. Only the chapter's closing
+   * card uses it, and it shows minutes; a selector that only changes once a
+   * minute re-renders once a minute.
+   */
+  const minutesRead = useAppStore((s) =>
+    Math.max(1, Math.round(s.reading.elapsedActiveMs / 60_000)),
+  );
   const addHighlight = useAppStore((s) => s.addHighlight);
   const markerColor = useAppStore((s) => s.markerColor);
   const setMarkerColor = useAppStore((s) => s.setMarkerColor);
@@ -352,9 +362,15 @@ export function Reader() {
   turnerRef.current = turner;
 
   // A page turn is a change a screen reader cannot see; say where it landed.
+  // Subscribed rather than rendered: see PageTurner.getPage.
+  const subscribeToPage = turner.subscribe;
   useEffect(() => {
-    if (pagesOn && turner.pages > 1) announce(`Page ${turner.page + 1} of ${turner.pages}`);
-  }, [pagesOn, turner.page, turner.pages]);
+    if (!pagesOn) return;
+    return subscribeToPage(() => {
+      const { getPage, pages } = turnerRef.current;
+      if (pages > 1) announce(`Page ${getPage() + 1} of ${pages}`);
+    });
+  }, [pagesOn, subscribeToPage]);
 
   /**
    * Show a line — the page it is on, or scroll it to the middle.
@@ -367,7 +383,7 @@ export function Reader() {
   const revealLine = useCallback(
     (el: Element | null | undefined, smooth = true) => {
       if (!el) return;
-      if (pagesOn) turnerRef.current.reveal(el, smooth);
+      if (pagesOn) turnerRef.current.reveal(el);
       else el.scrollIntoView({ behavior: smooth && !reduceMotion ? "smooth" : "auto", block: "center" });
     },
     [pagesOn, reduceMotion],
@@ -926,7 +942,7 @@ export function Reader() {
     const words = viewText.trim() ? viewText.trim().split(/\s+/).length : 0;
     if (!words) return null;
 
-    const minutes = Math.max(1, Math.round(elapsedActiveMs / 60_000));
+    const minutes = minutesRead;
     const markCount = bookHighlights.filter((h) => h.section === section).length;
     const summary = [
       `${words.toLocaleString()} words`,
@@ -948,7 +964,7 @@ export function Reader() {
     chaptered,
     paged,
     viewText,
-    elapsedActiveMs,
+    minutesRead,
     bookHighlights,
     section,
     pageCount,
@@ -1105,18 +1121,27 @@ export function Reader() {
       const perPage = words.length / Math.max(1, turner.pages);
       const delay = Math.max(4_000, (perPage / Math.max(60, targetWpm)) * 60_000);
       const stop = () => setAutoScrolling(false);
-      const timer = window.setTimeout(() => {
-        if (isPinchZoomed()) return;
-        if (turner.page >= turner.pages - 1) {
-          setAutoScrolling(false);
-          toast.success("End of the chapter");
-          return;
-        }
-        turner.next();
-      }, delay);
+      let timer = 0;
+      // Each turn, however it happened, starts the clock for the next one.
+      const arm = () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          if (isPinchZoomed()) return arm();
+          const current = turnerRef.current;
+          if (current.getPage() >= current.pages - 1) {
+            setAutoScrolling(false);
+            toast.success("End of the chapter");
+            return;
+          }
+          current.next();
+        }, delay);
+      };
+      arm();
+      const unsubscribe = turner.subscribe(arm);
       node.addEventListener("pointerdown", stop);
       return () => {
         window.clearTimeout(timer);
+        unsubscribe();
         node.removeEventListener("pointerdown", stop);
       };
     }
@@ -1206,9 +1231,7 @@ export function Reader() {
     rhythmCurve,
     lines,
     markActiveLine,
-    // In pages, each turn schedules the next one.
     pagesOn,
-    turner.page,
     turner.pages,
   ]);
 
@@ -1371,7 +1394,7 @@ export function Reader() {
               // scroll with it rather than with the viewport. In pages the
               // width, side padding and columns come from the page turner.
               pagesOn
-                ? "relative pt-24 sm:pt-28"
+                ? "relative pt-20 sm:pt-24"
                 : "relative mx-auto max-w-2xl px-5 pt-24 pb-16 sm:px-8 sm:pt-28 sm:pb-20",
               FONT_CLASS[profile.fontFamily] ?? "font-sans",
               "break-words",
@@ -1659,28 +1682,29 @@ export function Reader() {
           </article>
         </div>
         {pagesOn ? (
-          <PageControls
-            page={turner.page}
-            pages={turner.pages}
-            canGoBack={turner.page > 0 || (paged ? pdfPage > 1 : chaptered && Math.max(1, chapterIndex) > 1)}
-            canGoOn={
-              turner.page < turner.pages - 1 ||
-              (paged ? pdfPage < pageCount : chaptered && Math.max(1, chapterIndex) < chapterCount)
-            }
+          <PageEdges
+            turner={turner}
+            enabled={!controlsOpen && !inkMode}
             margin={turner.margin}
-            edges={!controlsOpen && !inkMode}
-            onPrev={turner.prev}
-            onNext={turner.next}
+            hasPrevSection={paged ? pdfPage > 1 : chaptered && Math.max(1, chapterIndex) > 1}
+            hasNextSection={
+              paged ? pdfPage < pageCount : chaptered && Math.max(1, chapterIndex) < chapterCount
+            }
           />
         ) : null}
       </div>
 
       <div className="reader-dock pointer-events-none shrink-0 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-2">
-          <ReadingCoach />
-          <ReadingFeelBar />
+          {/* In pages these step aside. On a phone the pace question, the
+              tips and the "watching how you read" line took a third of the
+              screen, so every page was short and turning never stopped. The
+              recommendation and the reconnect prompt stay: they are rare and
+              they matter. */}
+          {pagesOn ? null : <ReadingCoach />}
+          {pagesOn ? null : <ReadingFeelBar />}
           <RecommendationBanner />
-          <PatternHint />
+          {pagesOn ? null : <PatternHint />}
           <ReconnectDock
             text={viewText}
             open={reconnectOpen}
@@ -2228,18 +2252,37 @@ export function Reader() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {paged || chaptered ? (
+            {paged || chaptered || pagesOn ? (
               <>
                 <div className="mx-0.5 hidden h-5 w-px bg-fg/12 sm:block" aria-hidden />
-                <ReaderPager
-                  page={paged ? pdfPage : chapterIndex}
-                  pageCount={paged ? pageCount : 0}
-                  chapter={chapterIndex}
-                  chapterCount={chapterCount}
-                  chapters={chapters}
-                  onPage={setPdfPage}
-                  onChapter={setChapter}
-                />
+                {pagesOn ? (
+                  <TurnPager
+                    turner={turner}
+                    hasPrevSection={paged ? pdfPage > 1 : chaptered && Math.max(1, chapterIndex) > 1}
+                    hasNextSection={
+                      paged
+                        ? pdfPage < pageCount
+                        : chaptered && Math.max(1, chapterIndex) < chapterCount
+                    }
+                    page={paged ? pdfPage : chapterIndex}
+                    pageCount={paged ? pageCount : 0}
+                    chapter={chapterIndex}
+                    chapterCount={chapterCount}
+                    chapters={chapters}
+                    onPage={setPdfPage}
+                    onChapter={setChapter}
+                  />
+                ) : (
+                  <ReaderPager
+                    page={paged ? pdfPage : chapterIndex}
+                    pageCount={paged ? pageCount : 0}
+                    chapter={chapterIndex}
+                    chapterCount={chapterCount}
+                    chapters={chapters}
+                    onPage={setPdfPage}
+                    onChapter={setChapter}
+                  />
+                )}
               </>
             ) : null}
             {chunkOn && chunks.length > 1 ? (
@@ -2267,7 +2310,10 @@ export function Reader() {
                 </Button>
               </div>
             ) : null}
-            <ReaderProgress />
+            {/* In pages the page count says where you are; a percentage beside
+                it was a second number for the same thing, and on a phone it
+                pushed the next-page arrow off the screen. */}
+            {pagesOn ? null : <ReaderProgress />}
           </div>
         </div>
       </div>

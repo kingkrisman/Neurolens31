@@ -77,14 +77,17 @@ export function pageOf(offset: number, step: number): number {
 /**
  * Where a finger swipe lands.
  *
- * A quarter of the page, or a flick, turns it; anything less springs back.
+ * A fifth of the page, or a flick, turns it; anything less springs back.
  * The flick threshold matters most: people turn pages with a quick short
  * swipe, and a rule that wanted distance alone felt stuck. May return -1 or
  * `pages` — the caller decides what crossing into the next chapter means.
  */
 export function swipeTarget(page: number, dx: number, velocity: number, width: number): number {
-  const flicked = Math.abs(velocity) > 0.35 && Math.abs(dx) > 12;
-  const far = Math.abs(dx) > width * 0.25;
+  // Tuned down after "swiping felt unreliable": a fifth of the page, or a
+  // quick flick of 16px, turns it. Anything shorter or slower is a tremor or a
+  // change of mind and springs back.
+  const flicked = Math.abs(velocity) > 0.25 && Math.abs(dx) > 16;
+  const far = Math.abs(dx) > width * 0.2;
   if (!flicked && !far) return page;
   return dx < 0 ? page + 1 : page - 1;
 }

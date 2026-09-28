@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type RefObject,
 } from "react";
@@ -29,8 +30,24 @@ const RUBBER = 0.35;
 
 export type Landing = "start" | "end" | number;
 
+/**
+ * The current page, for a component that shows it. Only that component
+ * re-renders on a turn — see `PageTurner.getPage`.
+ */
+export function usePageNumber(turner: Pick<PageTurner, "getPage" | "subscribe">): number {
+  return useSyncExternalStore(turner.subscribe, turner.getPage, () => 0);
+}
+
 export interface PageTurner {
-  page: number;
+  /**
+   * The current page, read on demand. Deliberately not a value that
+   * re-renders anything: the first version kept it in React state, and every
+   * turn re-rendered the whole reader — every paragraph of the chapter — which
+   * was most of why turning felt heavy. Components that show the page number
+   * subscribe with `usePageNumber`, and only they update.
+   */
+  getPage: () => number;
+  subscribe: (listener: () => void) => () => void;
   pages: number;
   /** Styles that turn the article into pages; undefined in scroll layout. */
   articleStyle: CSSProperties | undefined;
@@ -40,9 +57,9 @@ export interface PageTurner {
   span: number;
   next: () => void;
   prev: () => void;
-  goTo: (page: number, smooth?: boolean) => void;
+  goTo: (page: number) => void;
   /** Show the page an element is on. */
-  reveal: (el: Element, smooth?: boolean) => void;
+  reveal: (el: Element) => void;
   /** Where to land once the next section has laid out. */
   land: (where: Landing) => void;
 }
@@ -71,8 +88,8 @@ export function usePageTurner({
 }): PageTurner {
   const [width, setWidth] = useState(0);
   const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(0);
   const widthRef = useRef(0);
+  const listeners = useRef(new Set<() => void>());
   const pagesRef = useRef(1);
   const pageRef = useRef(0);
   /** The line at the top of the current page — what a re-flow keeps in view. */
@@ -130,8 +147,17 @@ export function usePageTurner({
   }, [articleRef]);
 
   const setCurrent = useCallback((next: number) => {
+    if (pageRef.current === next) return;
     pageRef.current = next;
-    setPage(next);
+    for (const listener of listeners.current) listener();
+  }, []);
+
+  const getPage = useCallback(() => pageRef.current, []);
+  const subscribe = useCallback((listener: () => void) => {
+    listeners.current.add(listener);
+    return () => {
+      listeners.current.delete(listener);
+    };
   }, []);
 
   const pageOfElement = useCallback(
@@ -145,15 +171,29 @@ export function usePageTurner({
     [articleRef],
   );
 
-  /** The first line on a page, in the layout as it is now. */
+  /**
+   * The first line on a page, in the layout as it is now.
+   *
+   * A binary search: text flows through the columns in document order, so
+   * lines' pages never go down. The first version walked every line from the
+   * top and measured each one, which on page thirty of a long chapter was
+   * hundreds of layout reads per turn.
+   */
   const anchorFor = useCallback(
     (target: number): string | null => {
       const article = articleRef.current;
       if (!article) return null;
-      for (const line of article.querySelectorAll<HTMLElement>(".reading-line")) {
-        if (pageOfElement(line) === target) return line.id;
+      const lines = article.querySelectorAll<HTMLElement>(".reading-line");
+      let lo = 0;
+      let hi = lines.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        const at = pageOfElement(lines[mid]!) ?? 0;
+        if (at < target) lo = mid + 1;
+        else hi = mid;
       }
-      return null;
+      const found = lines[lo];
+      return found && pageOfElement(found) === target ? found.id : null;
     },
     [articleRef, pageOfElement],
   );
@@ -170,7 +210,7 @@ export function usePageTurner({
    * the reader backwards through the book.
    */
   const goTo = useCallback(
-    (target: number, smooth = true, reanchor = true) => {
+    (target: number, reanchor = true) => {
       const node = scrollRef.current;
       const step = widthRef.current;
       if (!node || step <= 0) return;
@@ -179,15 +219,19 @@ export function usePageTurner({
       if (reanchor) anchorRef.current = anchorFor(to);
       turnedAt.current = performance.now();
       setCurrent(to);
-      node.scrollTo({ left: to * step, behavior: smooth && !reduceMotion ? "smooth" : "auto" });
+      // Instant, always. A page turn happens hundreds of times a sitting, and
+      // the first version slid each one across the screen: motion the reader
+      // had to sit through on every page, and it stuttered. Swipes get their
+      // movement from the finger (below), not from here.
+      node.scrollTo({ left: to * step, behavior: "instant" });
     },
-    [scrollRef, countNow, setCurrent, reduceMotion, anchorFor],
+    [scrollRef, countNow, setCurrent, anchorFor],
   );
 
   const reveal = useCallback(
-    (el: Element, smooth = true) => {
+    (el: Element) => {
       const target = pageOfElement(el);
-      if (target != null && target !== pageRef.current) goTo(target, smooth);
+      if (target != null && target !== pageRef.current) goTo(target);
     },
     [pageOfElement, goTo],
   );
@@ -224,7 +268,7 @@ export function usePageTurner({
               ? total - 1
               : Math.round(Math.min(1, Math.max(0, where)) * (total - 1));
         landingRef.current = null;
-        goTo(target, false);
+        goTo(target);
       };
       requestAnimationFrame(attempt);
     },
@@ -240,8 +284,7 @@ export function usePageTurner({
       // A different chapter: start it at the top until told where to land.
       sectionRef.current = sectionKey;
       anchorRef.current = null;
-      pageRef.current = 0;
-      setPage(0);
+      setCurrent(0);
       const node = scrollRef.current;
       if (node) node.scrollLeft = 0;
       return;
@@ -251,9 +294,9 @@ export function usePageTurner({
     const line = id ? document.getElementById(id) : null;
     if (line) {
       const target = pageOfElement(line);
-      if (target != null) goTo(target, false, false);
+      if (target != null) goTo(target, false);
     } else {
-      goTo(pageRef.current, false);
+      goTo(pageRef.current);
     }
     // Keyed on the layout, not on every callback identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -279,7 +322,7 @@ export function usePageTurner({
         if (at === pageRef.current && aligned) return;
         // Somewhere between pages: finish the turn to the nearest one, so
         // the reader never sits looking at half of two pages.
-        goTo(at, !aligned);
+        goTo(at);
       }, 140);
     };
     node.addEventListener("scroll", onScroll, { passive: true });
@@ -290,8 +333,14 @@ export function usePageTurner({
   }, [on, scrollRef, goTo]);
 
   // Swipes. Touch only: a mouse drag is how text gets selected to highlight,
-  // and a pen draws. The page follows the finger one-to-one and springs to the
-  // nearest page on release — a turn that lags the finger reads as broken.
+  // and a pen draws.
+  //
+  // The page follows the finger by moving the article with a transform, not
+  // by scrolling. The first version scrolled, and every pixel of movement then
+  // ran the reader's scroll handlers — line following measures every line of
+  // the chapter — so the page stuttered under the finger. A transform is
+  // composited: nothing else runs until the finger lifts, and then the turn is
+  // committed as one instant scroll.
   useEffect(() => {
     if (!on) return;
     const node = scrollRef.current;
@@ -306,17 +355,57 @@ export function usePageTurner({
     const viewport = window.visualViewport;
     viewport?.addEventListener("resize", syncTouchAction);
 
-    let start: { x: number; y: number; left: number; id: number } | null = null;
+    let start: { x: number; y: number; id: number } | null = null;
     let dragging = false;
+    let offset = 0;
     let samples: Array<{ x: number; t: number }> = [];
     let swallowClickUntil = 0;
+    let settling: Animation | null = null;
 
     const rubber = (over: number) => Math.min(widthRef.current * 0.2, over * RUBBER);
 
+    const paint = (x: number) => {
+      const article = articleRef.current;
+      if (article) article.style.transform = x ? `translate3d(${x}px, 0, 0)` : "";
+    };
+
+    /** Carry the page from where the finger left it to `to`, then commit. */
+    const settle = (to: number, commit: () => void) => {
+      const article = articleRef.current;
+      if (!article || reduceMotion || Math.abs(to - offset) < 1) {
+        commit();
+        paint(0);
+        article?.style.removeProperty("will-change");
+        return;
+      }
+      // Short and ease-out: the finger already did most of the moving, so
+      // this only finishes a gesture the reader started.
+      const animation = article.animate(
+        [
+          { transform: `translate3d(${offset}px, 0, 0)` },
+          { transform: `translate3d(${to}px, 0, 0)` },
+        ],
+        { duration: 170, easing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+      );
+      settling = animation;
+      paint(to);
+      animation.onfinish = () => {
+        settling = null;
+        // Same task, so the browser paints the new page and the reset
+        // transform together — no frame of the old page flashes between.
+        commit();
+        paint(0);
+        article.style.removeProperty("will-change");
+      };
+    };
+
     const down = (event: PointerEvent) => {
       if (event.pointerType !== "touch" || !event.isPrimary || isPinchZoomed()) return;
-      start = { x: event.clientX, y: event.clientY, left: node.scrollLeft, id: event.pointerId };
+      // A new touch during a settle finishes the previous turn first.
+      settling?.finish();
+      start = { x: event.clientX, y: event.clientY, id: event.pointerId };
       dragging = false;
+      offset = 0;
       samples = [{ x: event.clientX, t: event.timeStamp }];
     };
 
@@ -329,9 +418,12 @@ export function usePageTurner({
           start = null;
           return;
         }
-        if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        // Forgiving on purpose: a natural swipe is rarely level, and one that
+        // had to be level to count read as the page ignoring the reader.
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
         dragging = true;
         draggingRef.current = true;
+        articleRef.current?.style.setProperty("will-change", "transform");
         try {
           node.setPointerCapture(event.pointerId);
         } catch {
@@ -339,11 +431,12 @@ export function usePageTurner({
         }
       }
       samples = [...samples.slice(-4), { x: event.clientX, t: event.timeStamp }];
-      const max = (pagesRef.current - 1) * widthRef.current;
-      let left = start.left - dx;
-      if (left < 0) left = -rubber(-left);
-      else if (left > max) left = max + rubber(left - max);
-      node.scrollLeft = left;
+      const atStart = pageRef.current === 0;
+      const atEnd = pageRef.current >= pagesRef.current - 1;
+      // Past the first or last page of a chapter the page resists; a full
+      // swipe there still crosses into the next chapter on release.
+      offset = (dx > 0 && atStart) || (dx < 0 && atEnd) ? Math.sign(dx) * rubber(Math.abs(dx)) : dx;
+      paint(offset);
     };
 
     const up = (event: PointerEvent) => {
@@ -361,20 +454,22 @@ export function usePageTurner({
       const from = pageRef.current;
       const target = swipeTarget(from, dx, velocity, widthRef.current);
       if (target >= pagesRef.current) {
-        goTo(from);
+        paint(0);
         edges.current.onPastEnd();
       } else if (target < 0) {
-        goTo(from);
+        paint(0);
         edges.current.onPastStart();
+      } else if (target === from) {
+        settle(0, () => {});
       } else {
-        goTo(target);
+        settle(-(target - from) * widthRef.current, () => goTo(target));
       }
     };
 
     const cancel = (event: PointerEvent) => {
       if (!start || event.pointerId !== start.id) return;
       start = null;
-      if (dragging) goTo(pageRef.current);
+      if (dragging) settle(0, () => {});
       dragging = false;
       draggingRef.current = false;
     };
@@ -395,6 +490,8 @@ export function usePageTurner({
     node.addEventListener("click", click, true);
     return () => {
       viewport?.removeEventListener("resize", syncTouchAction);
+      settling?.cancel();
+      paint(0);
       node.style.touchAction = "";
       node.removeEventListener("pointerdown", down);
       node.removeEventListener("pointermove", move);
@@ -402,7 +499,7 @@ export function usePageTurner({
       node.removeEventListener("pointercancel", cancel);
       node.removeEventListener("click", click, true);
     };
-  }, [on, scrollRef, goTo]);
+  }, [on, scrollRef, articleRef, goTo, reduceMotion]);
 
   // Leaving pages: put the scroller back where scrolling expects it.
   useEffect(() => {
@@ -424,10 +521,10 @@ export function usePageTurner({
       boxSizing: "border-box",
       paddingLeft: `${metrics.pad}px`,
       paddingRight: `${metrics.pad}px`,
-      // Room under the text for the page footer (44px, 8px off the bottom).
-      // The dock sits below the reading area, not over it, so nothing else
-      // needs clearing — and every line of padding is a line less per page.
-      paddingBottom: "4.25rem",
+      // Just a breath under the last line. The page controls live in the
+      // reader's dock, below the reading area, so nothing here needs clearing
+      // — and every line of padding is a line less on every page.
+      paddingBottom: "1.25rem",
       columnWidth: `${metrics.column}px`,
       columnGap: `${metrics.gap}px`,
       columnFill: "auto",
@@ -435,7 +532,8 @@ export function usePageTurner({
   }, [metrics, width]);
 
   return {
-    page,
+    getPage,
+    subscribe,
     pages,
     articleStyle,
     margin: metrics?.pad ?? 0,

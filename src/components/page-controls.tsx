@@ -1,111 +1,104 @@
+import type { ComponentProps } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ReaderPager } from "@/components/pdf-pager";
+import { usePageNumber, type PageTurner } from "@/lib/use-page-turner";
 
 /**
- * Turning controls for pages: a small footer on every screen, and — where
- * there is margin to spare — the page edges themselves.
+ * The page controls, as small components that each follow the page number.
  *
- * The footer is always there because swiping is invisible: nobody learns a
- * gesture from a blank page, and a mouse has no swipe at all. Edges only take
- * taps when they are real margin. On a phone the text runs almost to the
- * edge, and an edge zone there would swallow taps meant for words — which is
- * how definitions and the one-line band are moved.
+ * They subscribe on their own so a turn re-renders them and nothing else. The
+ * first version passed the page down from the reader, and every turn re-drew
+ * every paragraph of the chapter to change one number in the dock.
  */
-export function PageControls({
-  page,
-  pages,
-  canGoBack,
-  canGoOn,
+
+type Edges = {
+  turner: PageTurner;
+  /** A previous chapter or PDF page exists to turn back into. */
+  hasPrevSection: boolean;
+  /** A next chapter or PDF page exists to turn on into. */
+  hasNextSection: boolean;
+};
+
+function useCanTurn({ turner, hasPrevSection, hasNextSection }: Edges) {
+  const page = usePageNumber(turner);
+  return {
+    page,
+    canPrev: page > 0 || hasPrevSection,
+    canNext: page < turner.pages - 1 || hasNextSection,
+  };
+}
+
+/**
+ * The chapter control in the reader's dock, turning pages.
+ *
+ * In pages its arrows turn a screen and the count sits beside the chapter
+ * name. There used to be a floating "‹ 3 of 12 ›" bar over the text as well;
+ * it was one more thing on screen at all times and read as pressure.
+ */
+export function TurnPager({
+  turner,
+  hasPrevSection,
+  hasNextSection,
+  ...pager
+}: Omit<ComponentProps<typeof ReaderPager>, "turn"> & Edges) {
+  const { page, canPrev, canNext } = useCanTurn({ turner, hasPrevSection, hasNextSection });
+  return (
+    <ReaderPager
+      {...pager}
+      turn={{ page, pages: turner.pages, canPrev, canNext, prev: turner.prev, next: turner.next }}
+    />
+  );
+}
+
+/**
+ * The page edges, as places to click, on wide screens.
+ *
+ * Only where there is real margin beside the text. On a phone the text runs
+ * almost to the edge, and a tap zone there would swallow taps meant for words
+ * — which is how definitions and the one-line band are moved. Phones turn by
+ * swiping, or with the arrows in the dock.
+ *
+ * Hidden from assistive tech: the dock carries the same two actions, named,
+ * and doubling them only adds noise.
+ */
+export function PageEdges({
+  enabled,
   margin,
-  edges,
-  onPrev,
-  onNext,
-}: {
-  page: number;
-  pages: number;
-  /** False only on the very first page of the book. */
-  canGoBack: boolean;
-  /** False only on the very last page of the book. */
-  canGoOn: boolean;
-  margin: number;
-  edges: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  const edgeWidth = Math.max(0, margin - 12);
+  ...edges
+}: Edges & { enabled: boolean; margin: number }) {
+  const { canPrev, canNext } = useCanTurn(edges);
+  const width = Math.max(0, margin - 12);
+  if (!enabled || width < 56) return null;
   return (
     <>
-      {edges && edgeWidth >= 56 ? (
-        <>
-          {/* Hidden from assistive tech: the footer carries the same two
-              actions with names, and doubling them only adds noise. */}
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-hidden
-            onClick={onPrev}
-            disabled={!canGoBack}
-            className="page-edge group absolute inset-y-24 left-0 flex items-center justify-start pl-4 disabled:pointer-events-none"
-            style={{ width: edgeWidth }}
-          >
-            <ChevronLeft
-              size={22}
-              className="text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-70"
-            />
-          </button>
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-hidden
-            onClick={onNext}
-            disabled={!canGoOn}
-            className="page-edge group absolute inset-y-24 right-0 flex items-center justify-end pr-4 disabled:pointer-events-none"
-            style={{ width: edgeWidth }}
-          >
-            <ChevronRight
-              size={22}
-              className="text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-70"
-            />
-          </button>
-        </>
-      ) : null}
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-        <nav
-          aria-label="Pages"
-          className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-surface/90 p-0.5 text-xs text-muted tabular-nums shadow-border backdrop-blur"
-        >
-          <button
-            type="button"
-            onClick={onPrev}
-            disabled={!canGoBack}
-            aria-label="Previous page"
-            className={cn(
-              "grid size-11 place-items-center rounded-full sm:size-9",
-              "transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-fg/6 active:scale-[0.94]",
-              "disabled:opacity-35 disabled:hover:bg-transparent",
-            )}
-          >
-            <ChevronLeft size={16} aria-hidden />
-          </button>
-          <span className="min-w-16 px-1 text-center">
-            {page + 1} of {pages}
-          </span>
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={!canGoOn}
-            aria-label="Next page"
-            className={cn(
-              "grid size-11 place-items-center rounded-full sm:size-9",
-              "transition-[background-color,transform] duration-150 ease-[var(--ease-out)] hover:bg-fg/6 active:scale-[0.94]",
-              "disabled:opacity-35 disabled:hover:bg-transparent",
-            )}
-          >
-            <ChevronRight size={16} aria-hidden />
-          </button>
-        </nav>
-      </div>
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        onClick={edges.turner.prev}
+        disabled={!canPrev}
+        className="group absolute inset-y-20 left-0 flex items-center justify-start pl-4 disabled:pointer-events-none"
+        style={{ width }}
+      >
+        <ChevronLeft
+          size={22}
+          className="text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-60"
+        />
+      </button>
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden
+        onClick={edges.turner.next}
+        disabled={!canNext}
+        className="group absolute inset-y-20 right-0 flex items-center justify-end pr-4 disabled:pointer-events-none"
+        style={{ width }}
+      >
+        <ChevronRight
+          size={22}
+          className="text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-60"
+        />
+      </button>
     </>
   );
 }

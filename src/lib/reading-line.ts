@@ -45,7 +45,9 @@ export function lineBoxesOf(el: Element): LineBox[] {
 }
 
 function visibleBoxes(boxes: LineBox[], floor: number, viewBottom: number): LineBox[] {
-  return boxes.filter((box) => box.height >= 2 && box.bottom > floor + 4 && box.top < viewBottom - 4);
+  return boxes.filter(
+    (box) => box.height >= 2 && box.bottom > floor + 4 && box.top < viewBottom - 4,
+  );
 }
 
 export function boxOnScreen(box: LineBox, floor: number, viewBottom: number): boolean {
@@ -58,7 +60,12 @@ export function boxInPane(box: LineBox, viewTop: number, viewBottom: number): bo
 }
 
 /** Topmost visible line-box — the line you enter, not the middle of a wrap. */
-export function firstVisibleBox(boxes: LineBox[], viewTop: number, viewBottom: number, floor?: number): LineBox | null {
+export function firstVisibleBox(
+  boxes: LineBox[],
+  viewTop: number,
+  viewBottom: number,
+  floor?: number,
+): LineBox | null {
   const visible = visibleBoxes(boxes, floor ?? viewTop, viewBottom);
   if (!visible.length) return null;
   let best = visible[0]!;
@@ -69,7 +76,12 @@ export function firstVisibleBox(boxes: LineBox[], viewTop: number, viewBottom: n
 }
 
 /** Pick the line-box nearest the reading anchor, ignoring boxes outside the view. */
-export function pickClosestBox(boxes: LineBox[], anchorY: number, viewTop: number, viewBottom: number): LineBox | null {
+export function pickClosestBox(
+  boxes: LineBox[],
+  anchorY: number,
+  viewTop: number,
+  viewBottom: number,
+): LineBox | null {
   const visible = visibleBoxes(boxes, viewTop, viewBottom);
   if (!visible.length) return null;
   const covering = visible.filter((box) => box.top <= anchorY && box.bottom >= anchorY);
@@ -106,7 +118,8 @@ export function chooseFollowHit<T extends { id: number; boxIndex: number; box: L
 ): T | null {
   if (!hits.length) return null;
   const inPane = (hit: T) => boxInPane(hit.box, viewTop, viewBottom);
-  const indexOf = (id: number, boxIndex: number) => hits.findIndex((hit) => hit.id === id && hit.boxIndex === boxIndex);
+  const indexOf = (id: number, boxIndex: number) =>
+    hits.findIndex((hit) => hit.id === id && hit.boxIndex === boxIndex);
 
   const firstInPaneAfter = (from: number) => {
     for (let j = from + 1; j < hits.length; j += 1) {
@@ -158,7 +171,12 @@ export function chooseFollowHit<T extends { id: number; boxIndex: number; box: L
   }
 
   const floor = readingFloorY(viewTop, Math.max(1, viewBottom - viewTop));
-  return hits.find((hit) => boxOnScreen(hit.box, floor, viewBottom)) ?? hits.find(inPane) ?? hits[0] ?? null;
+  return (
+    hits.find((hit) => boxOnScreen(hit.box, floor, viewBottom)) ??
+    hits.find(inPane) ??
+    hits[0] ??
+    null
+  );
 }
 
 /**
@@ -176,9 +194,31 @@ export function beside(box: LineBox, viewLeft: number, viewRight: number): boole
 }
 
 export function collectReadingHits(scrollNode: HTMLElement, view?: DOMRect | null): ReadingHit[] {
-  const lines = scrollNode.querySelectorAll<HTMLElement>(".reading-line");
+  const lines = Array.from(scrollNode.querySelectorAll<HTMLElement>(".reading-line"));
   const hits: ReadingHit[] = [];
-  for (const el of lines) {
+  // In pages, text runs through the columns in document order, so the lines
+  // on screen are one contiguous run. Find where it starts by halving, and
+  // stop at the first line on the next page — instead of measuring every line
+  // of a long chapter on every turn, which was most of the cost of a turn
+  // once rendering was fixed. Scrolling measures every line, as before.
+  const paged = view != null && scrollNode.dataset.layout === "pages";
+  let from = 0;
+  if (paged) {
+    let lo = 0;
+    let hi = lines.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (lines[mid]!.getBoundingClientRect().right <= view.left + 2) lo = mid + 1;
+      else hi = mid;
+    }
+    from = lo;
+  }
+  for (let i = from; i < lines.length; i += 1) {
+    const el = lines[i]!;
+    if (paged) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.left >= view.right - 2) break;
+    }
     const raw = el.id.startsWith("line-") ? Number(el.id.slice(5)) : Number.NaN;
     if (!Number.isFinite(raw)) continue;
     const boxes = lineBoxesOf(el);

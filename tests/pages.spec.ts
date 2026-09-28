@@ -99,8 +99,12 @@ test("a book scrolls unless the reader has turned pages on", async ({ page }) =>
   // Pages were the default for books for one release and were reported as
   // stressful. They are off until a reader asks for them.
   await openBook(page, "5e5e5e5e-1111-4111-8111-111111111111", false);
-  await expect(page.getByRole("navigation", { name: "Pages" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next page" })).toHaveCount(0);
 });
+
+/** The chapter button in the dock, which carries the page count ("Ch. I · 3/12"). */
+const dockCount = (page: Page) =>
+  page.getByRole("button", { name: /page \d+ of \d+\. Choose a chapter$/ });
 
 const scroller = (page: Page) =>
   page.evaluate(() => {
@@ -122,7 +126,10 @@ const readerState = (page: Page) =>
 
 test("a book with chapters opens in pages, and a turn is exactly one screen", async ({ page }) => {
   await openBook(page, "5a5a5a5a-1111-4111-8111-111111111111");
-  await expect(page.getByRole("navigation", { name: "Pages" })).toContainText(/1 of \d+/);
+  // The count sits in the dock beside the chapter name — not in a bar over
+  // the text, which was one more thing on screen and read as pressure.
+  await expect(dockCount(page)).toHaveAccessibleName(/page 1 of \d+\./);
+  await expect(page.getByRole("navigation", { name: "Pages" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Next page" }).click();
   await expect.poll(async () => (await scroller(page)).left).toBe((await scroller(page)).width);
@@ -150,7 +157,7 @@ test("the edges of a chapter lead into the next and back into the last page", as
   await expect.poll(async () => (await readerState(page)).chapter).toBe(start);
   // Turning back opens the previous chapter where the reader left it: its end.
   await expect.poll(async () => (await scroller(page)).left).toBeGreaterThan(0);
-  await expect(page.getByRole("navigation", { name: "Pages" })).toContainText(/(\d+) of \1/);
+  await expect(dockCount(page)).toHaveAccessibleName(/page (\d+) of \1\./);
 
   // None of that was skipping ahead.
   expect((await readerState(page)).skips).toBe(0);
@@ -164,7 +171,7 @@ test("one book can be switched to scrolling from the reader's menu", async ({ pa
     .click();
   await page.getByRole("menuitem", { name: "Scroll instead" }).click();
   await expect(page.locator(".reader-scroll")).toHaveAttribute("data-layout", "scroll");
-  await expect(page.getByRole("navigation", { name: "Pages" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next page" })).toHaveCount(0);
 });
 
 test.describe("on a phone", () => {
