@@ -40,6 +40,8 @@ const SCOPED = [
   "neurolens-meta",
   // Per-book "pages" or "scroll" flips. Per account, like the books.
   "neurolens-layouts",
+  // The reading garden. Per account and never synced — see lib/garden.ts.
+  "neurolens-garden",
 ] as const;
 
 function storage(): Storage | null {

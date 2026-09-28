@@ -188,7 +188,10 @@ export interface Session {
   elapsedMs?: number;
   kind?: ContentKind;
   sourceId?: string;
+  /** Share of recall questions answered right in this book, 0–1. */
   comprehension?: number | null;
+  /** The counts behind `comprehension`, kept so each new card adds to them. */
+  recall?: { asked: number; right: number };
   pattern?: ReadingPatternId;
   /**
    * Which part of the book was on screen, 1-based; absent for an undivided one.

@@ -1754,6 +1754,33 @@
     }
   }
 
+  /* The flower at the end of a recall card opens rather than appears: it
+     starts a little small and turned, and settles. A rare moment — once a
+     chapter — which is the only kind that earns a flourish. Never from zero
+     scale: nothing real appears from nothing. */
+  .recall-bloom {
+    animation: nl-bloom 520ms var(--ease-out) backwards;
+    transform-origin: 50% 50%;
+  }
+
+  @keyframes nl-bloom {
+    from {
+      opacity: 0;
+      transform: scale(0.72) rotate(-24deg);
+    }
+  }
+
+  .recall-done {
+    animation: nl-part-done var(--motion-emphasis) var(--ease-out) backwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .recall-bloom,
+    .recall-done {
+      animation: none;
+    }
+  }
+
   .hold-fill {
     clip-path: inset(0 100% 0 0);
     transition: clip-path 200ms var(--ease-out);

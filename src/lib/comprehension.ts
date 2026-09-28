@@ -71,14 +71,12 @@ export function buildCheckpoints(text: string): CheckpointQuestion[] {
       [mid, last, extra[0] ?? "The passage is mainly a list of unrelated facts."],
       text.length + 11,
     ),
-    choice(
-      "detail",
-      0.67,
-      "Which of these was actually stated in the passage?",
-      mid,
-      [first, last, extra[1] ?? extra[0] ?? "None of these ideas appear in the text."],
-      text.length + 29,
-    ),
+    // There was a third question here — "Which of these was actually stated
+    // in the passage?" — whose options were all sentences from the passage.
+    // Every answer was right, so it measured nothing and scored everyone
+    // alike. A question needs one answer the text proves; the two above and
+    // below have that (the opening, the ending), and the chapter-end recall
+    // card asks "was it here?" fairly, with sentences from other chapters.
     choice(
       "recall",
       0.92,

@@ -172,10 +172,15 @@ function Privacy() {
         <p>
           <Term>Where it is kept.</Term> The moment-to-moment detail stays on this device, where it
           adjusts the page and draws Insights. For a book saved to your account, a short summary
-          goes with it: your pace, how many pauses and rereads, time spent, the pattern, and your
-          score on any comprehension check you took. What the adaptive reader has learned about
-          which changes help you is saved with your settings. None of it is part of usage analytics,
-          and none of it is used for anything except your own reading.
+          goes with it: your pace, how many pauses and rereads, time spent, the pattern, and how many
+          recall questions you got right. What the adaptive reader has learned about which changes
+          help you is saved with your settings. None of it is part of usage analytics, and none of it
+          is used for anything except your own reading.
+        </p>
+        <p>
+          Your reading garden — the plants that grow as you finish chapters — stays on this device
+          only. It names the books you have read, so it is never sent anywhere, even when your books
+          are.
         </p>
         <p>
           <Term>Sensors, only when you switch them on.</Term> Two features use more than the page,

@@ -11,12 +11,12 @@ A calmer page is not a shorter one. It is a page that asks less of the systems a
 `;
 
 describe("buildCheckpoints", () => {
-  it("builds three extractive questions from a real passage", () => {
+  it("builds extractive questions from a real passage", () => {
     const questions = buildCheckpoints(SAMPLE);
-    assert.equal(questions.length, 3);
+    assert.equal(questions.length, 2);
     assert.deepEqual(
       questions.map((q) => q.kind),
-      ["main", "detail", "recall"],
+      ["main", "recall"],
     );
     for (const question of questions) {
       assert.ok(question.options.length >= 2);
@@ -40,7 +40,7 @@ The next trial confirmed it, and the authors reported first-pass fluency rather 
 When a page presents too many competing cues at once, the reader spends energy on orientation rather than meaning.
 A calmer page is not a shorter one. It is a page that asks less of the systems already under load.
 `);
-    assert.equal(questions.length, 3);
+    assert.equal(questions.length, 2);
     const blob = questions.flatMap((q) => q.options).join(" ");
     assert.equal(blob.includes("Dr. Chen measured"), true);
     assert.equal(/U\.S\.\s+The/.test(blob), false);
@@ -55,5 +55,16 @@ describe("scoreComprehension", () => {
   it("averages real answers instead of inventing a score", () => {
     assert.equal(scoreComprehension([true, true, false]), 2 / 3);
     assert.equal(scoreComprehension([true, true, true]), 1);
+  });
+});
+
+describe("fairness", () => {
+  it("never asks which option was stated when every option was", () => {
+    // Each option is a sentence of the passage, so "which was stated?" has
+    // three right answers. Only position questions survive: the opening line
+    // and the closing line each have exactly one.
+    for (const question of buildCheckpoints(SAMPLE)) {
+      assert.notEqual(question.prompt, "Which of these was actually stated in the passage?");
+    }
   });
 });

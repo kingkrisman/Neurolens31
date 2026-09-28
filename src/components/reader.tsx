@@ -32,6 +32,7 @@ import {
   Volume2,
   VolumeX,
   ScrollText,
+  Sprout,
 } from "lucide-react";
 import { processBionicText } from "@/lib/bionic";
 import { applyPlainLanguage, simplifyText } from "@/lib/text-simplifier";
@@ -62,6 +63,10 @@ import { usePageTurner, type Landing } from "@/lib/use-page-turner";
 import { setBookLayout, useBookLayout } from "@/lib/book-layout";
 import { legacyBookKey } from "@/lib/sync/rows";
 import { PageControls } from "@/components/page-controls";
+import { RecallCard } from "@/components/recall-card";
+import { buildRecallCard } from "@/lib/recall";
+import { plantIdFor } from "@/lib/garden";
+import { recordBloom, recordChapterFinished } from "@/lib/garden-store";
 import { announce } from "@/lib/announce";
 import { useReadingTracker } from "@/lib/adaptive/use-reading-tracker";
 import { useLineDwell } from "@/lib/adaptive/use-line-dwell";
@@ -1249,6 +1254,74 @@ export function Reader() {
       ?.slice(0, 80) ||
     "Untitled reading";
 
+  /**
+   * The end of a chapter: a recall card, and the garden.
+   *
+   * The card is built from this section and the ones either side of it — see
+   * lib/recall.ts for why neighbours make fair wrong answers. The garden grows
+   * when a section is genuinely finished: its end reached, after at least a
+   * quarter of the time it should take to read, so flicking to the last page
+   * does not count. Both are once per section; see lib/garden.ts.
+   */
+  const sectionWord = paged
+    ? "page"
+    : /^part\b/i.test(chapters[Math.max(0, chapterIndex - 1)]?.title ?? "")
+      ? "part"
+      : "chapter";
+  const hasPartDone = partDone != null;
+  const recallQuestions = useMemo(() => {
+    if (!hasPartDone) return [];
+    const neighbours: string[] = [];
+    if (chaptered) {
+      const here = Math.max(1, chapterIndex) - 1;
+      for (const j of [here - 1, here + 1, here - 2, here + 2]) {
+        const body = textChapters[j]?.body;
+        if (body) neighbours.push(body);
+      }
+    } else if (paged) {
+      const here = Math.max(1, pdfPage) - 1;
+      for (const j of [here - 1, here + 1, here - 2, here + 2]) {
+        const page = pdfPages[j];
+        if (page) neighbours.push(page);
+      }
+    }
+    return buildRecallCard(viewText, neighbours, sectionWord);
+  }, [hasPartDone, chaptered, chapterIndex, textChapters, paged, pdfPage, pdfPages, viewText, sectionWord]);
+
+  const plantId = useMemo(() => plantIdFor(bookKey), [bookKey]);
+  const [gardenNote, setGardenNote] = useState<string | null>(null);
+  const [recallDone, setRecallDone] = useState(false);
+  useEffect(() => {
+    setGardenNote(null);
+    setRecallDone(false);
+  }, [pageKey]);
+
+  useEffect(() => {
+    if (words.length < 150) return;
+    const openedAt = Date.now();
+    const expectedMs = (words.length / Math.max(60, targetWpm)) * 60_000;
+    const minMs = Math.max(8_000, expectedMs * 0.25);
+    let counted = false;
+    const check = (progress: number) => {
+      if (counted || progress < 0.95 || Date.now() - openedAt < minMs) return;
+      counted = true;
+      const note = recordChapterFinished({ id: plantId, title: readingTitle, section });
+      if (!note) return;
+      // Divided books say it in the chapter's closing card; a single piece
+      // has no such card, so a quiet toast carries it.
+      if (chaptered || paged) setGardenNote(note);
+      else toast(note);
+    };
+    const stop = useAppStore.subscribe((state) => check(state.reading.progress));
+    // The store goes quiet while the reader sits still on the last page, so
+    // the time threshold is also checked on its own.
+    const timer = window.setInterval(() => check(useAppStore.getState().reading.progress), 4_000);
+    return () => {
+      stop();
+      window.clearInterval(timer);
+    };
+  }, [pageKey, plantId, readingTitle, section, words.length, targetWpm, chaptered, paged]);
+
   useGSAP(
     () => {
       const bar = toolbarRef.current;
@@ -1542,6 +1615,23 @@ export function Reader() {
                   distant end, no score — the effort, reported back while it
                   still feels like yours. */}
                 <p className="mt-1 text-sm text-muted tabular-nums">{partDone.summary}</p>
+                {gardenNote && !recallDone ? (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted">
+                    <Sprout size={13} className="shrink-0 text-accent" aria-hidden />
+                    {gardenNote}
+                  </p>
+                ) : null}
+                <RecallCard
+                  key={pageKey}
+                  questions={recallQuestions}
+                  growthNote={gardenNote}
+                  onFinish={(right, asked) => {
+                    useAppStore.getState().recordRecall(right, asked);
+                    const note = recordBloom({ id: plantId, title: readingTitle, section });
+                    setRecallDone(true);
+                    if (note) setGardenNote(note);
+                  }}
+                />
                 {partDone.next ? (
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     {/* Anticipation rather than obligation: dopamine tracks the
@@ -2252,7 +2342,7 @@ export function Reader() {
         <DialogContent>
           <DialogTitle className="mb-2 text-lg font-medium">Check understanding</DialogTitle>
           <DialogDescription className="mb-4 text-sm text-muted">
-            Three gist questions from this page. Nothing is scored off this device.
+            A couple of quick questions about this page.
           </DialogDescription>
           <div className="max-h-80 space-y-4 overflow-y-auto">
             {checkpoints.map((question, index) => (
@@ -2298,6 +2388,10 @@ export function Reader() {
                   (question, index) => checkPicks[index] === question.answerIndex,
                 );
                 const score = scoreComprehension(results);
+                // Kept on the book now, not just shown and dropped.
+                useAppStore
+                  .getState()
+                  .recordRecall(results.filter(Boolean).length, results.length);
                 const pct = score == null ? 0 : Math.round(score * 100);
                 toast.success(`${pct}% on this check`);
                 setCheckOpen(false);

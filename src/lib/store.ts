@@ -307,6 +307,8 @@ interface AppState {
   toggleBookmark: () => void;
   removeBookmark: (id: string) => void;
   submitReadingFeel: (feel: ReadingFeel) => void;
+  /** A recall card or understanding check finished on the open book. */
+  recordRecall: (right: number, asked: number) => void;
   setCvdPreview: (kind: CvdKind) => void;
   clearData: () => void;
 }
@@ -1542,6 +1544,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ bookmarks: next });
   },
 
+  recordRecall: (right, asked) => {
+    // Kept on the book: the counts locally, the share in `comprehension`,
+    // which travels with the book's reading summary to the account the next
+    // time the book itself is saved. Nothing here was ever recorded before —
+    // the old check showed a score and threw it away.
+    if (asked <= 0) return;
+    const text = get().text;
+    if (!text) return;
+    let changed = false;
+    const sessions = get().sessions.map((session) => {
+      if (session.content.length !== text.length || session.content !== text) return session;
+      changed = true;
+      const total = {
+        asked: (session.recall?.asked ?? 0) + asked,
+        right: (session.recall?.right ?? 0) + Math.max(0, Math.min(asked, right)),
+      };
+      return { ...session, recall: total, comprehension: total.right / total.asked };
+    });
+    if (!changed) return;
+    set({ sessions });
+    persistSessions(sessions);
+  },
+
   submitReadingFeel: (feel) => {
     const state = get();
     const recommendation = refreshRecommendation(
@@ -1580,6 +1605,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       "neurolens-started",
       "neurolens-pointer-hint",
       "neurolens-layouts",
+      "neurolens-garden",
     ]);
     if (typeof document !== "undefined") delete document.documentElement.dataset.started;
     forgetPdfDocument();

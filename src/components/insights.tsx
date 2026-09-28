@@ -9,6 +9,8 @@ import { Media, Panel, PanelHeader, PanelWell } from "@/components/ui/surfaces";
 import { evaluateScheme, formatContrastRatio, bestContrastTheme } from "@/lib/contrast";
 import { PatternPanel } from "@/components/pattern-panel";
 import { AdaptivePanel } from "@/components/adaptive-panel";
+import { GardenView } from "@/components/garden-view";
+import { useGarden } from "@/lib/garden-store";
 import { PATTERN_META } from "@/lib/reading-patterns";
 import { SAMPLE_TEXTS } from "@/lib/samples";
 import { cn, wordCount } from "@/lib/utils";
@@ -194,6 +196,10 @@ export function Insights() {
             </div>
           </div>
         </Panel>
+      </div>
+
+      <div data-enter className="mt-4">
+        <GardenPanel />
       </div>
 
       <div data-enter className="mt-4">
@@ -497,6 +503,31 @@ function StatCard({
           {typeof value === "number" ? <NumberFlow value={value} /> : value}
         </p>
         <p className="mt-4 text-sm text-muted">{hint}</p>
+      </PanelWell>
+    </Panel>
+  );
+}
+
+/**
+ * The reading garden: every book a plant, grown by finishing chapters and
+ * flowered by recall cards. Near the top of Insights on purpose — it is the
+ * one panel here that is only ever good news.
+ */
+function GardenPanel() {
+  const garden = useGarden();
+  const flowers = garden.plants.reduce((total, plant) => total + plant.blooms.length, 0);
+  return (
+    <Panel>
+      <PanelHeader
+        title="Your garden"
+        description={
+          garden.plants.length === 0
+            ? "Every book you read grows a plant here."
+            : `${garden.plants.length} ${garden.plants.length === 1 ? "book" : "books"}, ${flowers} ${flowers === 1 ? "flower" : "flowers"}. Finishing a chapter helps a plant grow; the recall card at the end of one opens a flower. Nothing here ever wilts.`
+        }
+      />
+      <PanelWell className="px-4 pt-2 pb-4">
+        <GardenView garden={garden} />
       </PanelWell>
     </Panel>
   );
