@@ -8,6 +8,8 @@ import { ChevronRight } from "lucide-react";
 import { processBionicText } from "@/lib/bionic";
 import { processDocument } from "@/lib/document-processor";
 import { DEMO_SENTENCE, SAMPLE_TEXTS } from "@/lib/samples";
+import { SCHEME_COUNT } from "@/lib/scheme";
+import { READING_PROFILES } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { openBook } from "@/lib/sync/open-book";
 import { Button } from "@/components/ui/button";
@@ -59,7 +61,7 @@ const FEATURES = [
 
 const START_MODES = [
   { id: "default" as const, label: "Standard", hint: "A calm page, nothing extra." },
-  { id: "adhd" as const, label: "ADHD", hint: "Stronger fixation, quieter chrome." },
+  { id: "adhd" as const, label: "ADHD", hint: "Bolder word starts, quieter chrome." },
   {
     id: "dyslexia" as const,
     label: "Dyslexia",
@@ -379,18 +381,24 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                 <p className="max-w-sm font-serif text-2xl leading-snug italic sm:text-3xl">
                   Built for the way attention actually works.
                 </p>
+                {/* These were "92% Focus gain" and "40% Less fatigue", with no study
+                    behind either. Testers were already asking whether NeuroLens
+                    claims speed or retention; an unsourced percentage is the first
+                    thing a careful reader questions, and the answer would have
+                    been that there is no source. Counts of what the app actually
+                    has are true, and are read from the code so they stay true. */}
                 <div className="flex gap-8">
                   <div>
                     <p className="font-serif text-4xl tracking-tight">
-                      <GsapCount value={92} suffix="%" />
+                      <GsapCount value={Object.keys(READING_PROFILES).length} />
                     </p>
-                    <p className="mt-1 text-xs text-primary-fg/70">Focus gain</p>
+                    <p className="mt-1 text-xs text-primary-fg/70">Reading modes</p>
                   </div>
                   <div>
                     <p className="font-serif text-4xl tracking-tight">
-                      <GsapCount value={40} suffix="%" />
+                      <GsapCount value={SCHEME_COUNT} />
                     </p>
-                    <p className="mt-1 text-xs text-primary-fg/70">Less fatigue</p>
+                    <p className="mt-1 text-xs text-primary-fg/70">Colour palettes</p>
                   </div>
                 </div>
               </div>
@@ -751,14 +759,14 @@ function FixationDemo() {
     >
       <Card className="material-surface overflow-hidden p-4 sm:p-5">
         <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="font-serif text-sm text-accent italic">Fixation</span>
+          <span className="font-serif text-sm text-accent italic">Bold word starts</span>
           <Segmented
             value={demoBionic ? "bionic" : "standard"}
             onChange={(id) => {
               setDemoTaken(true);
               setDemoBionic(id === "bionic");
             }}
-            label="Fixation preview"
+            label="Bold word starts preview"
             options={[
               { id: "bionic", label: "Bionic" },
               { id: "standard", label: "Standard" },

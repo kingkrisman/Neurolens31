@@ -168,10 +168,10 @@ function resolve(id: TopicId, direction: Direction): NeuroReply {
   const down = direction === "less";
   switch (id) {
     case "fixation":
-      if (direction === "off") return { text: "Fixation off — plain type from here.", action: { kind: "setBionic", value: 0 } };
+      if (direction === "off") return { text: "Bold word starts off — plain type from here.", action: { kind: "setBionic", value: 0 } };
       return down
-        ? { text: "Softening the fixation. The bolded lead of each word gets lighter.", action: { kind: "adjustBionic", delta: -0.15 } }
-        : { text: "Strengthening the fixation, so more of each word leads in bold.", action: { kind: "adjustBionic", delta: 0.15 } };
+        ? { text: "Making the bold lighter. The start of each word leads less.", action: { kind: "adjustBionic", delta: -0.15 } }
+        : { text: "Making the bold stronger, so more of each word leads in bold.", action: { kind: "adjustBionic", delta: 0.15 } };
     case "size":
       return down
         ? { text: "Making the type a little smaller.", action: { kind: "adjustFontSize", delta: -1 } }
@@ -237,7 +237,7 @@ function resolve(id: TopicId, direction: Direction): NeuroReply {
     case "help":
     default:
       return {
-        text: "Ask me to change how the page reads — softer fixation, larger type, more line spacing, slower pace, higher contrast — or ask how a feature works. I can also take you to the library, your insights, or your highlights.",
+        text: "Ask me to change how the page reads — lighter bold, larger type, more line spacing, slower pace, higher contrast — or ask how a feature works. I can also take you to the library, your insights, or your highlights.",
         action: { kind: "none" },
       };
   }
@@ -333,7 +333,7 @@ export function askNeuro(input: string): NeuroReply {
 }
 
 export const NEURO_SUGGESTIONS = [
-  "Soften the fixation",
+  "Make the bold lighter",
   "More line spacing",
   "Larger type",
   "Higher contrast",

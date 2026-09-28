@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
+import { describe, it, test } from "node:test";
 import assert from "node:assert/strict";
-import { askNeuro } from "./neuro-intents.ts";
+import { askNeuro, NEURO_SUGGESTIONS } from "./neuro-intents.ts";
 
 describe("askNeuro", () => {
   it("softens the fixation when asked to reduce it", () => {
@@ -209,4 +209,30 @@ describe("askNeuro answers questions about words", () => {
   it("leaves place names in the app alone", () => {
     assert.equal(askNeuro("open the library").action.kind, "goTab");
   });
+});
+
+test("the bold suggestion lightens the bold, and the old wording still works", () => {
+  // The control was renamed from "Fixation" to "Bold word starts" because the
+  // same word meant a line pause in Insights. Readers who learned the old
+  // wording must still be understood.
+  for (const phrase of ["Make the bold lighter", "reduce the fixation", "less bold please"]) {
+    const reply = askNeuro(phrase);
+    assert.deepEqual(reply.action, { kind: "adjustBionic", delta: -0.15 }, phrase);
+  }
+  assert.deepEqual(askNeuro("turn off bold").action, { kind: "setBionic", value: 0 });
+});
+
+test("every suggestion chip Neuro offers does something", () => {
+  // A chip that answers "I did not catch that" teaches people the panel is
+  // broken. Each one must act or answer.
+  for (const suggestion of NEURO_SUGGESTIONS) {
+    const reply = askNeuro(suggestion);
+    assert.ok(reply.action || !/didn.t catch|not sure what/i.test(reply.text), suggestion);
+  }
+});
+
+test("'lighter' on its own still means a lighter page, not lighter bold", () => {
+  // Adding "lighter" as a direction word must not steal the colour request.
+  assert.deepEqual(askNeuro("make it lighter").action, { kind: "setTheme", value: "paper" });
+  assert.deepEqual(askNeuro("heavier bold").action, { kind: "adjustBionic", delta: 0.15 });
 });

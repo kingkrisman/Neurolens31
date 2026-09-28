@@ -130,8 +130,11 @@ export function tokenMatches(token: string, term: string): boolean {
   return editDistance(a, b, cap) <= cap;
 }
 
-const MORE_WORDS = ["more", "increase", "raise", "higher", "up", "stronger", "bolder", "bigger", "larger", "wider", "faster", "boost"];
-const LESS_WORDS = ["less", "reduce", "lower", "decrease", "down", "weaker", "softer", "soften", "smaller", "shorter", "slower", "calmer", "gentler", "subtle"];
+// "lighter"/"heavier" and friends are how people talk about bold, and they were
+// missing: "make the bold lighter" had no direction word, fell through to the
+// default, and made the bold *heavier* — the opposite of what was asked.
+const MORE_WORDS = ["more", "increase", "raise", "higher", "up", "stronger", "bolder", "bigger", "larger", "wider", "faster", "boost", "heavier", "thicker"];
+const LESS_WORDS = ["less", "reduce", "lower", "decrease", "down", "weaker", "softer", "soften", "smaller", "shorter", "slower", "calmer", "gentler", "subtle", "lighter", "thinner", "fainter"];
 const OFF_WORDS = ["off", "disable", "stop", "remove", "hide", "cancel", "none", "without", "kill"];
 
 /**

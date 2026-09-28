@@ -16,6 +16,9 @@ const SCHEMES: ThemeId[] = [
   "butter",
 ];
 
+/** How many palettes there are — counted, so a claim about it cannot drift. */
+export const SCHEME_COUNT = SCHEMES.length;
+
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === "string" && SCHEMES.includes(value as ThemeId);
 }

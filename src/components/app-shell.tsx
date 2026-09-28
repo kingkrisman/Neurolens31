@@ -23,6 +23,7 @@ import { GlassHeader } from "@/components/glass-header";
 import { Neuro } from "@/components/neuro";
 import { MotionCues } from "@/components/motion-cues";
 import { OfflineReady } from "@/components/offline-ready";
+import { ComfortNudge } from "@/components/comfort-nudge";
 import { LiveAnnouncer } from "@/components/live-announcer";
 import { FontLoader } from "@/components/font-loader";
 import { LensLoader } from "@/components/ui/loader";
@@ -456,6 +457,7 @@ export function AppShell() {
         <LiveAnnouncer />
         <FontLoader />
         <OfflineReady />
+        <ComfortNudge />
         <Suspense fallback={null}>
           <CommandPalette />
         </Suspense>

@@ -47,7 +47,7 @@ Before you start, gather:
     title: "Neurological focus",
     image: "/images/nook.jpg",
     alt: "A reader in a sunlit armchair",
-    text: `Saccadic movements represent rapid eye relocations between fixations. By anchoring initial phonemes with weighted typography, readers process vocabulary prior to full visual scanning, reducing cognitive fatigue by up to 40%.
+    text: `Saccades are the rapid jumps the eye makes between fixations, the brief pauses where reading actually happens. Weighting the start of each word gives those jumps a clearer place to land. Whether that helps is personal: some readers feel it at once, and others find it busy.
 
 A fixation is not a still camera. It is a brief window in which the visual system gathers enough of a word to proceed. Between those windows the eye jumps. If the landing zone is poorly marked, the jump undershoots or overshoots, and the reader pays for a correction. Those corrections are cheap one at a time and expensive in aggregate. Over a chapter they become the difference between finishing and stopping.
 

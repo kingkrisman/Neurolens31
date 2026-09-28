@@ -313,7 +313,7 @@ export function ReaderControls({ onClose }: { onClose: () => void }) {
           <section id="rc-guides" className="rc-section space-y-5">
             <div>
               <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                <Label className="text-pretty">Fixation</Label>
+                <Label className="text-pretty">Bold word starts</Label>
                 <span className="shrink-0 tabular-nums text-muted">
                   {nearestFixationPreset(profile.bionicStrength).label}
                 </span>
@@ -343,7 +343,7 @@ export function ReaderControls({ onClose }: { onClose: () => void }) {
                 step={0.05}
                 value={[profile.bionicStrength]}
                 onValueChange={([value]) => setProfile({ ...profile, bionicStrength: value ?? 0 })}
-                aria-label="Fixation strength"
+                aria-label="Bold word starts strength"
               />
             </div>
             <ToggleRow

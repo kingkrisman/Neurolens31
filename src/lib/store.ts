@@ -21,6 +21,7 @@ import type { SkipEvent } from "./reconnect";
 import { classifyReading } from "./reading-patterns.ts";
 import { fitSessions } from "./session-storage.ts";
 import { track } from "./analytics.ts";
+import { noteModeSwitch } from "./comfort.ts";
 import {
   mergeMeta,
   metaFromLegacyProfile,
@@ -886,8 +887,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const base = READING_PROFILES[mode];
       if (!base) return;
+      // Every caller of setMode is a reader's own choice (or the survey's one
+      // answer), so this is where flipping between modes can be noticed.
+      if (mode !== get().mode) noteModeSwitch();
       const current = get().profile;
-      const next = persistAndApply({ ...base, theme: current.theme, align: current.align }, mode);
+      // Kept across a mode change: palette and alignment, and whether Neuro is
+      // there and how it moves. A reading mode is about the page; hiding the
+      // companion is about the person, and switching modes used to bring it
+      // back for everyone who had put it away.
+      const next = persistAndApply(
+        {
+          ...base,
+          theme: current.theme,
+          align: current.align,
+          companion: current.companion,
+          companionEyes: current.companionEyes,
+        },
+        mode,
+      );
       const state = get();
       set({
         mode,
@@ -1328,10 +1345,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
 
     const seen = new Set(get().bookmarks.map((mark) => mark.id));
-    const bookmarks = [
-      ...get().bookmarks,
-      ...extraBookmarks.filter((mark) => !seen.has(mark.id)),
-    ];
+    const bookmarks = [...get().bookmarks, ...extraBookmarks.filter((mark) => !seen.has(mark.id))];
 
     if (touched.length === 0 && bookmarks.length === get().bookmarks.length) return;
 
