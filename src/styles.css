@@ -1813,6 +1813,319 @@
     }
   }
 
+  /* ── Explore: "Watch a page change" ──────────────────────────────────────
+     The page is pinned with sticky positioning; the step is set by an
+     IntersectionObserver (see page-story.tsx). On a phone the page pins at
+     the top and the steps pass beneath it; wider, it sits beside them. */
+  .story-grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .story-stage-wrap {
+    position: sticky;
+    top: 4.25rem;
+    z-index: 2;
+    align-self: start;
+  }
+
+  .story-stage {
+    position: relative;
+    height: 18.5rem;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: var(--color-surface);
+    padding: 1rem 1.1rem 0;
+    box-shadow:
+      0 0 0 1px var(--color-border),
+      0 18px 40px -24px rgb(22 22 21 / 0.35);
+  }
+
+  .story-stage::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 4.5rem;
+    background: linear-gradient(to bottom, transparent, var(--color-surface) 70%);
+    pointer-events: none;
+  }
+
+  .story-meter {
+    height: 3px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-fg) 10%, transparent);
+  }
+
+  .story-meter > i {
+    display: block;
+    height: 100%;
+    background: var(--color-accent);
+    transform-origin: left;
+    transform: scaleX(calc((var(--story-step) + 1) / 4));
+    transition: transform 450ms var(--ease-out);
+  }
+
+  /* Its layout never reaches the rest of the page, so a change inside it —
+     bold starts arriving, a sentence stepping back — is laid out alone. */
+  .story-stage {
+    contain: content;
+  }
+
+  .story-layers {
+    position: relative;
+  }
+
+  .story-text {
+    margin: 0;
+    color: var(--color-fg);
+    opacity: 0;
+    transition: opacity 450ms var(--ease-out);
+  }
+
+  .story-text.is-shown {
+    opacity: 1;
+  }
+
+  .story-dense {
+    font-size: 13px;
+    line-height: 1.38;
+    letter-spacing: -0.01em;
+    word-spacing: -0.03em;
+    text-align: justify;
+    hyphens: auto;
+  }
+
+  .story-roomy {
+    position: absolute;
+    inset: 0 0 auto;
+    font-size: 15px;
+    line-height: 1.85;
+    letter-spacing: 0.03em;
+    word-spacing: 0.12em;
+    text-align: left;
+  }
+
+  .story-sentence {
+    transition: opacity 450ms var(--ease-out);
+  }
+
+  .story-sentence.is-back {
+    opacity: 0.25;
+  }
+
+  .story-label {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-accent);
+    background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface));
+    animation: nl-story-label 300ms var(--ease-out) backwards;
+  }
+
+  @keyframes nl-story-label {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  .story-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .story-step {
+    display: flex;
+    align-items: flex-start;
+    min-height: 62svh;
+    padding-top: 1rem;
+  }
+
+  .story-step:last-child {
+    min-height: 48svh;
+  }
+
+  /* The step being shown is marked by a bar, not by fading the others: faded
+     text fails contrast, and every step has to stay readable. */
+  .story-step-card {
+    border-left: 2px solid transparent;
+    padding-left: 1rem;
+    transition: border-color 300ms var(--ease-out);
+  }
+
+  .story-step-card.is-current {
+    border-left-color: var(--color-accent);
+  }
+
+  @media (min-width: 768px) {
+    .story-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      gap: 3.5rem;
+    }
+
+    .story-stage-wrap {
+      order: 2;
+      top: max(5.5rem, calc(50% - 13rem));
+    }
+
+    .story-stage {
+      height: 26rem;
+      padding: 1.5rem 1.75rem 0;
+    }
+
+    .story-dense {
+      font-size: 16px;
+    }
+
+    .story-roomy {
+      font-size: 19px;
+    }
+
+    .story-step {
+      align-items: center;
+      min-height: 72vh;
+      padding-top: 0;
+    }
+
+    .story-step:first-child {
+      align-items: flex-start;
+      padding-top: 4rem;
+    }
+
+    .story-step:last-child {
+      min-height: 60vh;
+    }
+  }
+
+  /* ── Explore: "Wherever you read" ────────────────────────────────────────
+     By default an ordinary sideways scroller. Where scroll-driven animations
+     exist and motion is welcome, the section becomes three screens tall, its
+     frame pins, and the row slides as a CSS animation on the section's own
+     view timeline — compositor work, no scroll listener. --pane-h is the
+     scroller's height, set from reading-scenes.tsx. */
+  .scenes-window {
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  }
+
+  .scenes-track {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .scenes-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scenes-card {
+    flex: 0 0 auto;
+    width: min(72vw, 19rem);
+    scroll-snap-align: start;
+  }
+
+  .scenes-progress {
+    display: none;
+  }
+
+  @supports (animation-timeline: view()) and (container-type: inline-size) {
+    @media (prefers-reduced-motion: no-preference) {
+      .scenes {
+        height: calc(var(--pane-h, 100svh) * 3);
+        view-timeline: --nl-scenes block;
+      }
+
+      .scenes-pin {
+        position: sticky;
+        top: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: var(--pane-h, 100svh);
+        padding-block: 4.5rem 1.5rem;
+      }
+
+      .scenes-window {
+        overflow: clip;
+        container-type: inline-size;
+      }
+
+      .scenes-track {
+        width: max-content;
+        overflow: visible;
+        padding-bottom: 0;
+        scroll-snap-type: none;
+        will-change: transform;
+        animation: nl-scenes-slide linear both;
+        animation-timeline: --nl-scenes;
+        animation-range: contain 0% contain 100%;
+      }
+
+      .scenes-card {
+        width: min(72vw, 21rem, calc((var(--pane-h, 100svh) - 17rem) * 0.75));
+      }
+
+      .scenes-progress {
+        display: block;
+        width: 8rem;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--color-fg) 12%, transparent);
+      }
+
+      .scenes-progress > i {
+        display: block;
+        height: 100%;
+        background: var(--color-accent);
+        transform-origin: left;
+        animation: nl-scenes-progress linear both;
+        animation-timeline: --nl-scenes;
+        animation-range: contain 0% contain 100%;
+      }
+    }
+  }
+
+  @keyframes nl-scenes-slide {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(calc(-100% + 100cqw), 0, 0);
+    }
+  }
+
+  @keyframes nl-scenes-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .story-text,
+    .story-sentence,
+    .story-step-card,
+    .story-meter > i {
+      transition: none;
+    }
+
+    .story-label {
+      animation: none;
+    }
+  }
+
   .hold-fill {
     clip-path: inset(0 100% 0 0);
     transition: clip-path 200ms var(--ease-out);

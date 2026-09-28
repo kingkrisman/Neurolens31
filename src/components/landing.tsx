@@ -13,6 +13,9 @@ import { READING_PROFILES } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { openBook } from "@/lib/sync/open-book";
 import { HighlightReturns } from "@/components/highlight-returns";
+import { PageStory } from "@/components/explore/page-story";
+import { ReadingScenes } from "@/components/explore/reading-scenes";
+import { ModesAtAGlance, PrivacyBand, SmallThings } from "@/components/explore/more-sections";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { Badge, Card, Media } from "@/components/ui/surfaces";
@@ -126,13 +129,13 @@ function LockedStart() {
           <div className="mt-8 flex w-full max-w-xs flex-col gap-2.5">
             <Link
               to="/signup"
-              className="inline-flex h-12 items-center justify-center rounded-lg bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-[var(--ease-out)] hover:opacity-90 active:scale-[0.97]"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-fg px-5 text-sm font-semibold text-bg transition-[transform,opacity] duration-150 ease-out hover:opacity-90 active:scale-[0.97]"
             >
               Create a free account
             </Link>
             <Link
               to="/login"
-              className="inline-flex h-12 items-center justify-center rounded-lg bg-bg px-5 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:bg-fg/5 active:scale-[0.97]"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-bg px-5 text-sm font-medium text-fg shadow-border transition-[transform,background-color] duration-150 ease-out hover:bg-fg/5 active:scale-[0.97]"
             >
               I already have one
             </Link>
@@ -378,9 +381,9 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                 width={1600}
                 height={900}
                 data-scrub
-                className="aspect-[16/9] w-full object-cover parallax-entry sm:aspect-[21/9]"
+                className="aspect-16/9 w-full object-cover parallax-entry sm:aspect-21/9"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/15" />
+              <div className="absolute inset-0 bg-linear-to-t from-fg/80 to-fg/15" />
               <div className="absolute inset-0 flex flex-col justify-end gap-6 p-5 text-primary-fg sm:flex-row sm:items-end sm:justify-between sm:p-8">
                 <p className="max-w-sm font-serif text-2xl leading-snug italic sm:text-3xl">
                   Built for the way attention actually works.
@@ -486,7 +489,7 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                           type="button"
                           data-batch
                           onClick={() => setInput(sample.text)}
-                          className="group flex w-full items-start gap-3 rounded-md p-2 text-left transition-[background-color] duration-[150ms] ease-[var(--ease-standard)] hover:bg-fg/4 active:scale-[0.97]"
+                          className="group flex w-full items-start gap-3 rounded-md p-2 text-left transition-[background-color] duration-150 ease-standard hover:bg-fg/4 active:scale-[0.97]"
                         >
                           <Media
                             src={sample.image}
@@ -514,6 +517,8 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
             </>
           )}
 
+          <PageStory />
+
           <section id="how-it-works" className="snap-block mt-24">
             <Reveal>
               <p className="mb-3 font-serif text-base text-accent italic">Designed for attention</p>
@@ -540,7 +545,7 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                             height={1600}
                             zoom
                             data-scrub
-                            className="aspect-[4/5] w-full object-cover sm:aspect-[5/4]"
+                            className="aspect-4/5 w-full object-cover sm:aspect-5/4"
                           />
                         </div>
                       </Magnetic>
@@ -557,6 +562,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
               ))}
             </div>
           </section>
+
+          <ReadingScenes />
+
+          <ModesAtAGlance />
 
           <section id="patterns" className="snap-block mt-24">
             <Reveal>
@@ -579,6 +588,8 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
             </div>
           </section>
 
+          <SmallThings />
+
           <section id="case-studies" className="snap-block mt-24">
             <Reveal>
               <p className="mb-3 font-serif text-base text-accent italic">How it lands</p>
@@ -597,7 +608,7 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                       height={900}
                       zoom
                       data-scrub
-                      className="aspect-[16/10] w-full object-cover"
+                      className="aspect-16/10 w-full object-cover"
                     />
                   </div>
                   <div className="px-4 pt-5 pb-4 sm:px-5">
@@ -666,6 +677,8 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
             </div>
           </section>
 
+          <PrivacyBand />
+
           <section id="faq" className="snap-block mt-24 pb-8">
             <Reveal>
               <h2 data-scrub-fade className="mb-6 max-w-xl text-4xl sm:text-5xl">
@@ -694,7 +707,7 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                 data-scrub
                 className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-fg/80 to-fg/25" />
+              <div className="absolute inset-0 bg-linear-to-t from-fg/80 to-fg/25" />
               <div className="relative px-8 py-12 text-center text-primary-fg sm:px-12 sm:py-16">
                 <Badge className="mb-4 bg-primary-fg/10 text-primary-fg">Private by default</Badge>
                 <h2 className="font-serif text-4xl italic sm:text-5xl">
@@ -824,7 +837,7 @@ function FloatingStartCta() {
       className={cn(
         // Clears the footer row below it.
         "fixed right-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 inline-flex h-12 items-center gap-1 rounded-lg bg-primary px-4 pr-3.5 text-sm font-medium text-primary-fg shadow-float sm:hidden",
-        "transition-[opacity,transform] duration-[250ms] ease-[var(--ease-out)] active:scale-[0.97] motion-reduce:transition-none",
+        "transition-[opacity,transform] duration-250 ease-out active:scale-[0.97] motion-reduce:transition-none",
         heroCtaGone ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
       )}
     >
