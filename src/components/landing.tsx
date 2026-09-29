@@ -38,25 +38,26 @@ import { scrollToId } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
 import { markStarted } from "@/components/reading-coach";
 import { FAQ } from "@/lib/faq";
+import { photo, type PhotoName } from "@/lib/photos";
 
 const FEATURES = [
   {
-    image: "/images/hands.jpg",
-    alt: "Hands turning a paperback beside a terracotta mug",
+    image: "turning-page",
+    alt: "A reader in a grey sweater turning the page of a well-worn paperback",
     index: "01",
     title: "Adaptive formatting",
     text: "Emphasis, spacing, type, and contrast that make dense pages easier to enter.",
   },
   {
-    image: "/images/feature-focus.jpg",
-    alt: "A beam of window light falling across an open book",
+    image: "sunlit-pages",
+    alt: "Late sunlight falling across the pages of an open book",
     index: "02",
     title: "Focus-friendly rhythm",
     text: "Visual anchors that keep your eyes on the line without losing the thread.",
   },
   {
-    image: "/images/feature-books.jpg",
-    alt: "Clothbound books beside a closed tablet on a linen table",
+    image: "book-spines",
+    alt: "Shelves of old clothbound books in faded colours",
     index: "03",
     title: "Read your way",
     text: "Paste text, open a PDF, look up a Bible chapter, or read a poem.",
@@ -539,10 +540,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                       <Magnetic strength={6}>
                         <div className="overflow-hidden rounded-sm">
                           <Media
-                            src={feature.image}
+                            {...photo(feature.image, "(min-width: 768px) 540px, 100vw")}
                             alt={feature.alt}
-                            width={1200}
-                            height={1600}
+                            width={1600}
+                            height={1067}
                             zoom
                             data-scrub
                             className="aspect-4/5 w-full object-cover sm:aspect-5/4"
@@ -602,10 +603,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                 <Card className="group overflow-hidden p-2">
                   <div className="overflow-hidden rounded-sm">
                     <Media
-                      src="/images/reading-room.jpg"
-                      alt="A graduate student working in a sunlit reading room"
+                      {...photo("desk-notes", "(min-width: 1024px) 660px, 100vw")}
+                      alt="A student at a desk writing notes in a textbook beside a laptop"
                       width={1600}
-                      height={900}
+                      height={1067}
                       zoom
                       data-scrub
                       className="aspect-16/10 w-full object-cover"
@@ -616,10 +617,11 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                     <h3 className="mt-2 font-serif text-2xl">A clearer first pass</h3>
                     {/* Present tense, deliberately. These are three situations the
                         app is built for, not three customers — the photographs are
-                        generated and nobody is being quoted. Past tense ("made
-                        research approachable") beside a role label and a portrait
-                        reads as a testimonial, which would be a claim we cannot
-                        back. See public/images/CREDITS.md. */}
+                        stock, the people in them do not use NeuroLens, and nobody
+                        is being quoted. Past tense ("made research approachable")
+                        beside a role label and a real person's photograph reads as
+                        a testimonial, which would be a claim we cannot back. See
+                        public/images/CREDITS.md. */}
                     <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
                       A calmer layout is meant to make intimidating research blocks approachable in
                       shorter sessions.
@@ -636,15 +638,15 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
               <div className="grid gap-4 lg:col-span-2">
                 {[
                   {
-                    image: "/images/case-team.jpg",
-                    alt: "Product documentation spread across a sunlit desk",
+                    image: "desk-brief" as PhotoName,
+                    alt: "A man at a desk going through a printed document with a pen",
                     label: "Product team",
                     title: "Docs with less friction",
                     text: "Shared documents are easier to scan when a decision has to move.",
                   },
                   {
-                    image: "/images/nook.jpg",
-                    alt: "A reader in an armchair by a window",
+                    image: "sofa-reader" as PhotoName,
+                    alt: "A woman on a sofa reading a book with a red cover",
                     label: "Daily reader",
                     title: "Energy for the last page",
                     text: "A personalized rhythm helps you keep going when attention is thin.",
@@ -655,10 +657,10 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
                       <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[8.5rem_minmax(0,1fr)]">
                         <div className="overflow-hidden rounded-sm">
                           <Media
-                            src={study.image}
+                            {...photo(study.image, "140px")}
                             alt={study.alt}
-                            width={1200}
-                            height={1600}
+                            width={1600}
+                            height={1067}
                             zoom
                             data-scrub
                             className="h-full min-h-28 w-full object-cover"
@@ -700,14 +702,14 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
           <Reveal>
             <Card className="relative mt-16 mb-8 overflow-hidden p-0">
               <Media
-                src="/images/nook.jpg"
+                {...photo("library-shelf", "(min-width: 1200px) 1110px, 100vw")}
                 alt=""
-                width={1200}
-                height={1600}
+                width={1600}
+                height={1067}
                 data-scrub
                 className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-fg/80 to-fg/25" />
+              <div className="absolute inset-0 bg-linear-to-t from-fg/90 via-fg/70 to-fg/50" />
               <div className="relative px-8 py-12 text-center text-primary-fg sm:px-12 sm:py-16">
                 <Badge className="mb-4 bg-primary-fg/10 text-primary-fg">Private by default</Badge>
                 <h2 className="font-serif text-4xl italic sm:text-5xl">

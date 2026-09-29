@@ -72,17 +72,29 @@ test.describe("with motion", () => {
 
   test("the page stays pinned while its four changes are applied to it", async ({ page }) => {
     await signIn(page, "8a8a8a8a-1111-4111-8111-111111111111");
-    const stage = page.locator(".story-stage");
+    const card = page.locator(".calm-story-card");
+    const pills = page.locator(".calm-pill");
     const tops: number[] = [];
     for (let step = 0; step < 4; step += 1) {
-      await scrollPaneTo(page, `[data-step="${step}"]`, 0.44);
-      await expect(stage).toHaveAttribute("data-step", String(step));
-      // The first step is read before the page has reached its pinned place.
-      if (step > 0) tops.push(Math.round((await stage.boundingBox())!.y));
+      // The middle of each step's stretch of the section, at the middle of
+      // the scroller: where the observer's band is.
+      await scrollPaneTo(page, `.calm-story-markers [data-step="${step}"]`, 0.25);
+      await expect(pills.nth(step)).toHaveAttribute("aria-pressed", "true");
+      // The first step is read before the card has reached its pinned place.
+      if (step > 0) tops.push(Math.round((await card.boundingBox())!.y));
     }
-    // Pinned: the page did not move while the later steps went past it.
+    // Pinned: the card did not move while the later steps went past it.
     expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(2);
-    await expect(stage.locator(".story-roomy .story-sentence.is-back").first()).toBeAttached();
+    await expect(card.locator(".calm-roomy .calm-sentence.is-back").first()).toBeAttached();
+  });
+
+  test("a step's pill takes you to it", async ({ page }) => {
+    await signIn(page, "8e8e8e8e-1111-4111-8111-111111111111");
+    await scrollPaneTo(page, '.calm-story-markers [data-step="0"]', 0.25);
+    await page.locator(".calm-pill").nth(2).click();
+    await expect(page.locator(".calm-pill").nth(2)).toHaveAttribute("aria-pressed", "true", {
+      timeout: 5000,
+    });
   });
 
   test("the reel slides sideways while pinned, and clips load only when near", async ({ page }) => {
