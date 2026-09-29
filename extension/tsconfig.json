@@ -1,0 +1,11 @@
+{
+  // The extension runs in the browser's extension pages and in web pages, not
+  // in the app, so it gets the extension APIs' types and nothing from Vite.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["chrome", "node"],
+    "baseUrl": ".",
+    "paths": {}
+  },
+  "include": ["src", "../src/lib/bionic.ts", "../src/lib/sentences.ts"]
+}

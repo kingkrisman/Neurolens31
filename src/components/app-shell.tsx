@@ -7,6 +7,7 @@ import { TABS, type TabId } from "@/lib/types";
 import { isDarkScheme } from "@/lib/scheme";
 import { CVD_LABELS } from "@/lib/color-vision";
 import { useAppStore } from "@/lib/store";
+import { startExtensionBridge } from "@/lib/extension-bridge";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/surfaces";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -206,6 +207,10 @@ export function AppShell() {
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // Hands the reading settings to the browser extension, if it is installed,
+  // and opens pages it sends. Silent when it is not.
+  useEffect(() => startExtensionBridge(), []);
 
   // Mirrored onto the document so the motion-cue rules can reach parallax and
   // scroll-linked layers wherever they are, without every one of them having to

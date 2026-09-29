@@ -23,7 +23,7 @@ export const Route = createFileRoute("/privacy")({
   component: Privacy,
 });
 
-const UPDATED = "28 September 2026";
+const UPDATED = "29 September 2026";
 
 const TOC = [
   { id: "summary", label: "At a glance" },
@@ -31,6 +31,7 @@ const TOC = [
   { id: "measured", label: "What is measured" },
   { id: "usage", label: "Usage analytics" },
   { id: "bringing", label: "Books from elsewhere" },
+  { id: "extension", label: "Browser extension" },
   { id: "crashes", label: "When something breaks" },
   { id: "accounts", label: "Accounts" },
   { id: "services", label: "Outside services" },
@@ -56,7 +57,7 @@ function Privacy() {
         <>
           <span>Updated {UPDATED}</span>
           <span aria-hidden className="size-1 rounded-full bg-fg/20" />
-          <span>6 minute read</span>
+          <span>7 minute read</span>
         </>
       }
       toc={TOC}
@@ -266,6 +267,38 @@ function Privacy() {
           your browser. Nothing about it is sent anywhere — not to us, and certainly not to Amazon,
           who have no part in this. The highlights become highlights in your library, and follow the
           same rules as any other: on this device until you choose to upload them.
+        </p>
+      </DocSection>
+
+      <DocSection id="extension" title="The browser extension">
+        <p>
+          The NeuroLens extension for Chrome, Edge and Firefox is optional. It does two things, and
+          each happens only when you ask for it.
+        </p>
+        <p>
+          <Term>Your settings, on sites you choose.</Term> When you open NeuroLens with the
+          extension installed, the app gives it your typeface, text size, spacing, bold word starts
+          and palette — nothing else. Not your books, highlights, account or email. They pass
+          between two scripts on the same page, so no server is involved and the extension has no
+          sign-in of its own. It keeps them in its own storage, in that browser only.
+        </p>
+        <p>
+          It changes a site only after you switch it on for that site, and the browser asks you to
+          allow that one site first. Switching it off gives the access back. The extension never
+          asks for every site at once. Its changes are made on your device, and nothing about the
+          pages you visit — their address, their words, what you do there — is sent anywhere or
+          kept.
+        </p>
+        <p>
+          <Term>Reading a page here.</Term> When you choose <em>Read this page in NeuroLens</em>, it
+          takes the article from the tab you are on, or just the part you selected, and passes it to
+          the app in a new tab. It waits in the extension&apos;s storage for at most ten minutes and
+          is removed as soon as the app takes it. From then on it is a book like any other, and the
+          rules above apply.
+        </p>
+        <p>
+          The extension has no analytics and sends no crash reports, and every font and line of code
+          it runs is inside it; it loads nothing from the web.
         </p>
       </DocSection>
 

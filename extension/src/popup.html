@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuroLens</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="top">
+        <img src="icons/icon-32.png" width="22" height="22" alt="" />
+        <h1>NeuroLens</h1>
+        <button type="button" class="link" id="open-app">Open app</button>
+      </header>
+
+      <section class="look" id="look" hidden aria-labelledby="look-line">
+        <p class="sample" id="sample" aria-hidden="true">Reading should feel this easy on every page you open.</p>
+        <p class="look-line" id="look-line"></p>
+      </section>
+
+      <section class="empty" id="no-look" hidden>
+        <h2>Bring your settings across</h2>
+        <p>Open NeuroLens in this browser and your typeface, spacing and colours come across on their own. The extension has no sign-in of its own.</p>
+        <button type="button" class="secondary" id="connect">Open NeuroLens</button>
+      </section>
+
+      <section class="site" id="site" hidden>
+        <label class="switch-row">
+          <span class="switch-text">
+            <span class="switch-label">Use my settings on</span>
+            <strong id="site-name"></strong>
+          </span>
+          <input type="checkbox" role="switch" id="site-toggle" />
+        </label>
+        <fieldset class="options" id="options">
+          <legend>What to change</legend>
+          <label><input type="checkbox" name="typeface" /> Typeface and size</label>
+          <label><input type="checkbox" name="spacing" /> Spacing</label>
+          <label><input type="checkbox" name="bold" /> Bold word starts</label>
+          <label><input type="checkbox" name="colours" /> Colours</label>
+        </fieldset>
+      </section>
+
+      <p class="note" id="restricted" hidden>
+        Browsers keep their own pages and web stores off limits to every extension, so there is nothing to change here.
+      </p>
+
+      <button type="button" class="primary" id="read">Read this page in NeuroLens</button>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+
+      <footer>
+        Your settings stay in this browser, and nothing about the pages you visit is sent anywhere.
+        <button type="button" class="link" id="privacy">Privacy</button>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

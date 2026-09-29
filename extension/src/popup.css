@@ -1,0 +1,334 @@
+@font-face {
+  font-family: "NL Newsreader";
+  src: url("fonts/serif-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --bg: #f0e8dc;
+  --surface: #faf4ea;
+  --fg: #1c1611;
+  --muted: #5c5046;
+  --primary: #3d2a1f;
+  --primary-fg: #f4ece1;
+  --accent: #7a4332;
+  --border: rgba(28, 22, 17, 0.12);
+  --border-strong: rgba(28, 22, 17, 0.22);
+  --focus: #7a4332;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1612;
+    --surface: #231d18;
+    --fg: #f3eadf;
+    --muted: #c2b3a3;
+    --primary: #f4ece1;
+    --primary-fg: #1c1611;
+    --accent: #e0a98f;
+    --border: rgba(243, 234, 223, 0.12);
+    --border-strong: rgba(243, 234, 223, 0.24);
+    --focus: #e0a98f;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.45 "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+.popup {
+  width: 340px;
+  padding: 14px 16px 12px;
+  display: grid;
+  gap: 12px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top img {
+  border-radius: 6px;
+}
+
+h1 {
+  margin: 0;
+  flex: 1;
+  font: 400 19px/1 "NL Newsreader", "Iowan Old Style", Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font: 400 17px/1.2 "NL Newsreader", "Iowan Old Style", Georgia, serif;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.link {
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* The reader's own look, as a sample of what a page will become. */
+.look {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 6px 18px -10px rgba(22, 22, 21, 0.28);
+}
+
+.sample {
+  padding: 14px 16px 12px;
+  max-height: 124px;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+
+.sample b {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.look-line {
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.empty {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+  display: grid;
+  gap: 6px;
+}
+
+.empty p {
+  color: var(--muted);
+}
+
+.empty .secondary {
+  justify-self: start;
+  margin-top: 6px;
+}
+
+.site {
+  display: grid;
+  gap: 10px;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+
+.switch-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.switch-label {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.switch-text strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A switch drawn from the checkbox itself, so it keeps every native behaviour. */
+input[role="switch"] {
+  appearance: none;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+
+input[role="switch"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 220ms var(--ease-out);
+}
+
+input[role="switch"]:checked {
+  background: var(--primary);
+}
+
+input[role="switch"]:checked::after {
+  transform: translateX(16px);
+  background: var(--primary-fg);
+}
+
+input[role="switch"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.options {
+  border: 0;
+  margin: 0;
+  padding: 0 2px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.options legend {
+  padding: 0;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.options input {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+}
+
+.options:disabled {
+  opacity: 0.5;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.primary,
+.secondary {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-weight: 600;
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 180ms ease;
+}
+
+.primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+
+.primary:hover {
+  background: color-mix(in oklab, var(--primary) 88%, var(--bg));
+}
+
+.secondary {
+  padding: 8px 12px;
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+
+.primary:active,
+.secondary:active {
+  transform: scale(0.98);
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.status {
+  min-height: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status:empty {
+  display: none;
+}
+
+footer {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::after {
+    transition-duration: 0ms !important;
+  }
+}
