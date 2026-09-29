@@ -2,13 +2,12 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The Explore page's pinned sections and clips.
+ * The Explore page's pinned reel and its clips.
  *
- * "Watch a page change" holds one page still while four changes are applied
- * to it; "Wherever you read" slides a row of clips sideways while pinned.
- * Both have to stay smooth, which here means: nothing downloads before it is
- * near, only what is on screen plays, and reduced motion gets neither the
- * slide nor the video.
+ * "Wherever you read" slides a row of clips sideways while pinned. It has to
+ * stay smooth, which here means: nothing downloads before it is near, only
+ * what is on screen plays, and reduced motion gets neither the slide nor the
+ * video.
  */
 
 function fakeSession(id: string) {
@@ -44,7 +43,7 @@ async function signIn(page: Page, id: string) {
   );
   await page.goto("/", { waitUntil: "domcontentloaded" });
   // The signed-out page renders first; wait for the app's own scrolling pane.
-  await expect(page.locator(".pane-scroll #see-it-change")).toBeAttached({ timeout: 15_000 });
+  await expect(page.locator(".pane-scroll #scenes")).toBeAttached({ timeout: 15_000 });
 }
 
 /** Scroll the pane so `selector` sits `offset` of a screen from the top. */
@@ -65,37 +64,10 @@ async function scrollPaneTo(page: Page, selector: string, offset = 0, within = 0
   await page.waitForTimeout(500);
 }
 
-// The suite runs with reduced motion on (playwright.config.ts). These two are
+// The suite runs with reduced motion on (playwright.config.ts). This one is
 // about the motion itself.
 test.describe("with motion", () => {
   test.use({ reducedMotion: "no-preference" });
-
-  test("the page stays pinned while its four changes are applied to it", async ({ page }) => {
-    await signIn(page, "8a8a8a8a-1111-4111-8111-111111111111");
-    const card = page.locator(".calm-story-card");
-    const pills = page.locator(".calm-pill");
-    const tops: number[] = [];
-    for (let step = 0; step < 4; step += 1) {
-      // The middle of each step's stretch of the section, at the middle of
-      // the scroller: where the observer's band is.
-      await scrollPaneTo(page, `.calm-story-markers [data-step="${step}"]`, 0.25);
-      await expect(pills.nth(step)).toHaveAttribute("aria-pressed", "true");
-      // The first step is read before the card has reached its pinned place.
-      if (step > 0) tops.push(Math.round((await card.boundingBox())!.y));
-    }
-    // Pinned: the card did not move while the later steps went past it.
-    expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(2);
-    await expect(card.locator(".calm-roomy .calm-sentence.is-back").first()).toBeAttached();
-  });
-
-  test("a step's pill takes you to it", async ({ page }) => {
-    await signIn(page, "8e8e8e8e-1111-4111-8111-111111111111");
-    await scrollPaneTo(page, '.calm-story-markers [data-step="0"]', 0.25);
-    await page.locator(".calm-pill").nth(2).click();
-    await expect(page.locator(".calm-pill").nth(2)).toHaveAttribute("aria-pressed", "true", {
-      timeout: 5000,
-    });
-  });
 
   test("the reel slides sideways while pinned, and clips load only when near", async ({ page }) => {
     const videos: string[] = [];
@@ -148,15 +120,14 @@ test("reduced motion gets no slide and no video", async ({ browser }) => {
 
 test("the new sections have no accessibility violations", async ({ page }) => {
   await signIn(page, "8d8d8d8d-1111-4111-8111-111111111111");
-  for (const selector of ["#see-it-change", "#scenes", "#modes", "#features"]) {
+  for (const selector of ["#scenes", "#features", "#privacy-title"]) {
     await scrollPaneTo(page, selector, 0.1);
   }
   await page.waitForTimeout(800);
   const results = await new AxeBuilder({ page })
-    .include("#see-it-change")
     .include("#scenes")
-    .include("#modes")
     .include("#features")
+    .include('section[aria-labelledby="privacy-title"]')
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([]);

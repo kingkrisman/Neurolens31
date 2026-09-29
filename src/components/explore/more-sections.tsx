@@ -1,90 +1,20 @@
-import type { CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { Plant } from "@/components/garden-view";
 import { Media } from "@/components/ui/surfaces";
-import { processBionicText } from "@/lib/bionic";
 import type { GardenPlant } from "@/lib/garden";
 import { photo } from "@/lib/photos";
-import { FONT_CLASS, READING_PROFILES, type ReadingMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /*
- * Three calm sections for Explore, in one visual language: soft tinted cards
+ * Two calm sections for Explore, in one visual language: soft tinted cards
  * with generous rounding and room around everything, no borders, no shadows,
  * nothing that moves on its own. The tints are mixed from the page colour, so
  * they follow the reader's palette, dark ones included (see .calm-* in CSS).
  */
 
 const TINTS = ["calm-sand", "calm-sage", "calm-blush", "calm-mist"] as const;
-
-/* ── Reading modes ───────────────────────────────────────────────────────── */
-
-const MODE_NOTES: Record<ReadingMode, string> = {
-  default: "Even spacing, nothing added.",
-  adhd: "Bold starts and a word guide.",
-  dyslexia: "OpenDyslexic, double spacing, syllables.",
-  focus: "Large type; everything else dims.",
-  academic: "A serif page on sepia.",
-  speed: "Strong bold starts, for skimming.",
-  adaptive: "Suggests changes as it learns you.",
-};
-
-const SAMPLE = "Words settle in.";
-
-/**
- * Each mode as a soft card with the same short line set in that mode's own
- * font, spacing and bold starts — read from the profiles the reader uses, so
- * the card and the app cannot disagree.
- */
-export function ModesAtAGlance() {
-  const modes = Object.values(READING_PROFILES);
-  return (
-    <section id="modes" aria-labelledby="modes-title" className="snap-block mt-28">
-      <Reveal>
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <h2 id="modes-title" className="max-w-lg text-4xl text-balance sm:text-5xl">
-            {modes.length} ways to set the page.
-          </h2>
-          <p className="max-w-sm text-[15px] leading-relaxed text-muted">
-            A mode is only a starting point. Change any setting, and lock the ones you like.
-          </p>
-        </div>
-      </Reveal>
-      <ul className="calm-modes mt-10" data-batch-children>
-        {modes.map((mode, index) => (
-          <li key={mode.id} className={cn("calm-card calm-mode", TINTS[index % TINTS.length])}>
-            <span className="calm-tag">{mode.name}</span>
-            <p
-              aria-hidden
-              className={cn("calm-mode-sample", FONT_CLASS[mode.fontFamily] ?? "font-sans")}
-              style={
-                {
-                  letterSpacing: `${mode.letterSpacing}em`,
-                  wordSpacing: `${mode.wordSpacing}em`,
-                } as CSSProperties
-              }
-              dangerouslySetInnerHTML={{
-                __html: processBionicText(SAMPLE, mode.bionicStrength, true),
-              }}
-            />
-            <p className="calm-mode-note">{MODE_NOTES[mode.id]}</p>
-          </li>
-        ))}
-        <li className="calm-card calm-mode calm-paper-card">
-          <span className="calm-tag">Not sure?</span>
-          <p className="calm-mode-note text-fg">
-            Pick one when you start. Changing later takes one tap.
-          </p>
-          <a href="#reader-start" className="calm-link">
-            Choose a mode <ChevronRight size={14} aria-hidden />
-          </a>
-        </li>
-      </ul>
-    </section>
-  );
-}
 
 /* ── Also in the app ─────────────────────────────────────────────────────── */
 

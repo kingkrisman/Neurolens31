@@ -13,9 +13,8 @@ import { READING_PROFILES } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { openBook } from "@/lib/sync/open-book";
 import { HighlightReturns } from "@/components/highlight-returns";
-import { PageStory } from "@/components/explore/page-story";
 import { ReadingScenes } from "@/components/explore/reading-scenes";
-import { ModesAtAGlance, PrivacyBand, SmallThings } from "@/components/explore/more-sections";
+import { PrivacyBand, SmallThings } from "@/components/explore/more-sections";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { Badge, Card, Media } from "@/components/ui/surfaces";
@@ -518,8 +517,6 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
             </>
           )}
 
-          <PageStory />
-
           <section id="how-it-works" className="snap-block mt-24">
             <Reveal>
               <p className="mb-3 font-serif text-base text-accent italic">Designed for attention</p>
@@ -565,8 +562,6 @@ export function Landing({ locked = false }: { locked?: boolean } = {}) {
           </section>
 
           <ReadingScenes />
-
-          <ModesAtAGlance />
 
           <section id="patterns" className="snap-block mt-24">
             <Reveal>
