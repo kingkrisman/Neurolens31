@@ -12,22 +12,57 @@ import type { Look, Options } from "./settings.ts";
  * making them bigger or wider breaks them, and nobody reads a menu for long.
  */
 
-/** Reading text: what gets the typeface, size and spacing. */
+/** Reading text on ordinary pages: what gets the typeface, size and spacing. */
 export const PROSE = "p, li, dd, dt, blockquote, figcaption";
+
+/**
+ * The body of a post on the social sites, where it is not a paragraph.
+ *
+ * These sites mark posts up with divs and spans, so `p` finds nothing. The
+ * attributes here are the ones they hang their own tests and accessibility on,
+ * which makes them steadier than class names. They get the size as well as the
+ * typeface: a post is the reading text of a feed.
+ */
+export const POSTS = [
+  "[data-testid='tweetText']", // X
+  "[data-testid='postText']", // Bluesky
+  "[data-ad-preview='message']", // Facebook
+  "[data-ad-comet-preview='message']", // Facebook
+  "[slot='text-body']", // Reddit
+  "[slot='comment']", // Reddit
+  "#content-text", // YouTube comments
+  ".update-components-text", // LinkedIn
+  ".comments-comment-item__main-content", // LinkedIn
+  ".status__content", // Mastodon
+].join(", ");
+
+/**
+ * Text the social sites write left to right or right to left as it comes:
+ * captions, comments and replies on Facebook, Instagram and Threads. Many are
+ * short labels too, so these get the typeface and spacing but keep their size,
+ * and only the longer ones get bold word starts (see content.ts).
+ */
+export const LOOSE = "div[dir='auto'], span[dir='auto'], h1[dir='auto']";
+
+/** Everything that counts as reading text, for the bold word starts. */
+export const BLOCKS = `${PROSE}, ${POSTS}, ${LOOSE}`;
 
 /** A site's furniture. Text inside these keeps its look. */
 export const CHROME =
-  "nav, header, footer, menu, button, [role='navigation'], [role='menubar'], [role='toolbar'], [role='banner']";
+  "nav, header, footer, menu, button, label, time, [role='navigation'], [role='menubar'], [role='menu'], " +
+  "[role='toolbar'], [role='banner'], [role='button'], [role='tab'], [role='tablist'], [role='menuitem'], " +
+  "[role='option'], [role='heading'][aria-level='1']";
 
 /** Where bold word starts would break something or mean nothing. */
 export const NO_BOLD =
   "pre, code, kbd, samp, var, script, style, noscript, textarea, input, select, option, button, svg, math, " +
   "[contenteditable]:not([contenteditable='false']), [role='textbox'], nl-text";
 
-const prose = `:is(${PROSE}):not(:is(${CHROME}) *)`;
+const prose = `:is(${PROSE}, ${POSTS}, ${LOOSE}):not(:is(${CHROME}) *)`;
 const headings = `:is(h1, h2, h3, h4, h5, h6):not(:is(nav, menu, button, [role='navigation']) *)`;
-/** Only text with its own size; figcaptions and the like are meant to be small. */
-const sized = `:is(p, li, dd, dt, blockquote):not(:is(${CHROME}) *)`;
+/** Only text with its own size; figcaptions and labels are meant to be small. */
+const sized = `:is(p, li, dd, dt, blockquote, ${POSTS}):not(:is(${CHROME}) *)`;
+const paragraphs = `:is(p, li, blockquote):not(:is(${CHROME}) *)`;
 
 /** Everything is keyed to this attribute, so undoing is removing it. */
 const ON = "html[data-nl-ext]";
@@ -47,18 +82,24 @@ export function buildCss(look: Look, options: Options): string {
         `letter-spacing: ${round(look.letterSpacing)}em !important; ` +
         `word-spacing: ${round(look.wordSpacing)}em !important; }`,
     );
+    if (look.align === "justify") {
+      rules.push(`${ON} ${paragraphs} { text-align: justify !important; hyphens: auto; }`);
+    }
   }
   if (options.bold && look.bionicStrength > 0) {
     // The app's own fixation style, so a page looks as it does in the reader.
     rules.push(`${ON} nl-fx { font-weight: 700 !important; letter-spacing: -0.02em; }`);
-  }
-  if (options.colours) {
+  }  if (options.colours) {
     // For a page turned light-for-dark (see tintFor). Pictures are turned back,
     // except inside something already turned back, or they would flip twice.
     rules.push(`html[data-nl-ext][data-nl-flip] { filter: invert(1) hue-rotate(180deg) !important; }`);
+    // Pictures, and the layers that belong with them — a dimmed backdrop
+    // behind a pop-up, a dark fade over a photo — are turned back. Left turned,
+    // those layers are what reads as a white fog over the page. content.ts
+    // finds the layers and marks them, since only their computed style shows it.
+    const back = "img, video, canvas, iframe, embed, object, [style*='background-image'], [data-nl-unflip]";
     rules.push(
-      `html[data-nl-ext][data-nl-flip] :is(img, video, canvas, iframe, embed, object, [style*='background-image'])` +
-        `:not(:is(img, video, canvas, iframe, embed, object, [style*='background-image']) *) ` +
+      `html[data-nl-ext][data-nl-flip] :is(${back}):not(:is(${back}) *) ` +
         `{ filter: invert(1) hue-rotate(180deg) !important; }`,
     );
   }
@@ -107,15 +148,22 @@ export interface Tint {
  * layer (white × colour = colour, black stays black), on a dark page a screen
  * layer (black becomes the colour, white stays white).
  *
- * When the page and the palette disagree — a white site, a Night palette — the
- * page is turned first with `invert(1) hue-rotate(180deg)`, which swaps light
- * and dark but keeps hues. The layer sits inside the turned page, so its
- * colour is chosen to come out of the turn as the palette:
+ * A white site under a dark palette (Night, Ink, Dusk, Forest) is turned
+ * first with `invert(1) hue-rotate(180deg)`, which swaps light and dark but
+ * keeps hues. The layer sits inside the turned page, so its colour is chosen
+ * to come out of the turn as the palette:
  * hueRotate180(invert(c)) = bg, so c = invert(hueRotate180(bg)).
+ *
+ * The other way round — a dark site under a light palette — is left alone,
+ * and this returns null. Turning a dark site light washes out the photos,
+ * fades and video stills it is built around, and no amount of turning them
+ * back makes it look like anything but a negative. The typeface, spacing,
+ * bold word starts and mask still apply there.
  */
-export function tintFor(palette: PaletteId, pageDark: boolean): Tint {
+export function tintFor(palette: PaletteId, pageDark: boolean): Tint | null {
   const { bg, dark } = PALETTES[palette];
-  const flip = dark !== pageDark;
+  if (pageDark && !dark) return null;
+  const flip = dark && !pageDark;
   const color = flip ? toHex(hueRotate180(toRgb(bg)).map((c) => 255 - c) as Rgb) : bg;
   return { color, blend: pageDark ? "screen" : "multiply", flip };
 }

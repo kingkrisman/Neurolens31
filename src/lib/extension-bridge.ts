@@ -16,7 +16,8 @@ import type { ReadingProfile } from "./types.ts";
  *
  * Nothing is posted until the extension says hello, so without it installed
  * this does nothing at all. Only the settings that mean something on a website
- * are sent — typeface, sizes, spacing, bold strength and palette.
+ * are sent — typeface, sizes, spacing, alignment, bold strength, palette and
+ * the reading mask.
  */
 
 const FROM_APP = "neurolens-app";
@@ -25,12 +26,35 @@ const MAX_ARTICLE_CHARS = 2_000_000;
 
 type SharedSettings = Pick<
   ReadingProfile,
-  "fontFamily" | "fontSize" | "lineHeight" | "letterSpacing" | "wordSpacing" | "bionicStrength" | "theme"
+  | "fontFamily"
+  | "fontSize"
+  | "lineHeight"
+  | "letterSpacing"
+  | "wordSpacing"
+  | "bionicStrength"
+  | "theme"
+  | "align"
+  | "readingMask"
+  | "maskStrength"
+  | "focusBand"
 >;
 
 export function sharedSettings(profile: ReadingProfile): SharedSettings {
   const { fontFamily, fontSize, lineHeight, letterSpacing, wordSpacing, bionicStrength, theme } = profile;
-  return { fontFamily, fontSize, lineHeight, letterSpacing, wordSpacing, bionicStrength, theme };
+  const { align, readingMask, maskStrength, focusBand } = profile;
+  return {
+    fontFamily,
+    fontSize,
+    lineHeight,
+    letterSpacing,
+    wordSpacing,
+    bionicStrength,
+    theme,
+    align,
+    readingMask,
+    maskStrength,
+    focusBand,
+  };
 }
 
 export function startExtensionBridge(): () => void {

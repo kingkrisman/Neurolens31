@@ -22,17 +22,27 @@ export interface Look {
   wordSpacing: number;
   bionicStrength: number;
   theme: PaletteId;
+  align: "left" | "justify";
+  /** The reader's mask: everything but the line being read goes quiet. */
+  readingMask: boolean;
+  maskStrength: "soft" | "medium" | "strong";
+  /** How many lines the mask keeps lit. */
+  focusBand: 1 | 2 | 3;
   /** The reading mode's name, for the popup: "ADHD", "Dyslexia"… */
   modeName: string;
   /** When the app last sent it. */
   at: number;
 }
 
+/** Whether each site paints itself dark, as last seen, so colours apply before first paint. */
+export type Tones = Record<string, boolean>;
+
 export interface Options {
   typeface: boolean;
   spacing: boolean;
   bold: boolean;
   colours: boolean;
+  mask: boolean;
 }
 
 export const DEFAULT_OPTIONS: Options = {
@@ -40,6 +50,7 @@ export const DEFAULT_OPTIONS: Options = {
   spacing: true,
   bold: true,
   colours: true,
+  mask: true,
 };
 
 export interface PendingArticle {
@@ -57,6 +68,7 @@ export interface Stored {
   sites?: string[];
   options?: Partial<Options>;
   pendingArticle?: PendingArticle;
+  tones?: Tones;
 }
 
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
@@ -81,6 +93,10 @@ export function lookFromProfile(profile: unknown, modeName: unknown, now = Date.
     wordSpacing: clamp(p.wordSpacing, -0.05, 0.4, 0),
     bionicStrength: clamp(p.bionicStrength, 0, 1, 0),
     theme: isPaletteId(p.theme) ? p.theme : "paper",
+    align: p.align === "justify" ? "justify" : "left",
+    readingMask: p.readingMask === true,
+    maskStrength: p.maskStrength === "soft" || p.maskStrength === "medium" ? p.maskStrength : "strong",
+    focusBand: p.focusBand === 2 || p.focusBand === 3 ? p.focusBand : 1,
     modeName: typeof modeName === "string" && modeName.length <= 40 ? modeName : "",
     at: now,
   };

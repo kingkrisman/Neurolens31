@@ -277,8 +277,8 @@ function Privacy() {
         </p>
         <p>
           <Term>Your settings, on sites you choose.</Term> When you open NeuroLens with the
-          extension installed, the app gives it your typeface, text size, spacing, bold word starts
-          and palette — nothing else. Not your books, highlights, account or email. They pass
+          extension installed, the app gives it your typeface, text size, spacing, alignment, bold
+          word starts, palette and reading mask — nothing else. Not your books, highlights, account or email. They pass
           between two scripts on the same page, so no server is involved and the extension has no
           sign-in of its own. It keeps them in its own storage, in that browser only.
         </p>

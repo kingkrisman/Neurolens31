@@ -69,6 +69,8 @@ async function render(): Promise<void> {
   for (const input of els.options.querySelectorAll<HTMLInputElement>("input")) {
     input.checked = options[input.name as keyof Options];
   }
+  // Only offered when the mask is on in the app; there is nothing to switch otherwise.
+  $("mask-option").hidden = !look?.readingMask;
 }
 
 let shownFont = "";

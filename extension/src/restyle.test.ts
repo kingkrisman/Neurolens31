@@ -15,7 +15,7 @@ test("the stylesheet carries only the parts that are switched on", () => {
   assert.match(all, /nl-fx \{ font-weight: 700/);
   assert.match(all, /data-nl-flip/);
 
-  const none = buildCss(look, { typeface: false, spacing: false, bold: false, colours: false });
+  const none = buildCss(look, { typeface: false, spacing: false, bold: false, colours: false, mask: false });
   assert.equal(none, "");
 
   assert.doesNotMatch(buildCss({ ...look, bionicStrength: 0 }, DEFAULT_OPTIONS), /nl-fx/);
@@ -42,7 +42,7 @@ const rgb = (hex: string): Rgb => {
 
 /** What a pixel of the page becomes under the tint: blend, then the turn if any. */
 function composite(page: Rgb, palette: PaletteId, pageDark: boolean): Rgb {
-  const tint = tintFor(palette, pageDark);
+  const tint = tintFor(palette, pageDark)!;
   const layer = rgb(tint.color);
   let out = page.map((c, i) => {
     const a = c / 255;
@@ -53,34 +53,31 @@ function composite(page: Rgb, palette: PaletteId, pageDark: boolean): Rgb {
   return out.map((c) => Math.round(Math.min(255, Math.max(0, c)))) as Rgb;
 }
 
-test("every palette turns a page's background into the palette's, light site or dark", () => {
-  for (const id of Object.keys(PALETTES) as PaletteId[]) {
+/** Every pairing the extension paints: all palettes on light sites, dark palettes on dark ones. */
+const painted = (Object.keys(PALETTES) as PaletteId[]).flatMap((id) =>
+  PALETTES[id].dark ? [[id, false] as const, [id, true] as const] : [[id, false] as const],
+);
+
+test("every palette it paints turns a page's background into the palette's, exactly", () => {
+  for (const [id, pageDark] of painted) {
     const want = rgb(PALETTES[id].bg);
-    for (const [pageDark, background] of [
-      [false, [255, 255, 255]],
-      [true, [0, 0, 0]],
-    ] as const) {
-      const got = composite([...background] as Rgb, id, pageDark);
-      // Exact, except a light palette over a dark site: the turned colour can
-      // sit just outside what a screen can show and is clamped (Butter, the
-      // most saturated, by 13 of 255 in blue — a slightly paler yellow).
-      const slack = pageDark && !PALETTES[id].dark ? 16 : 1;
-      got.forEach((c, i) => assert.ok(Math.abs(c - want[i]!) <= slack, `${id} on a ${pageDark ? "dark" : "light"} page: ${got} vs ${want}`));
-    }
+    const got = composite(pageDark ? [0, 0, 0] : [255, 255, 255], id, pageDark);
+    got.forEach((c, i) => assert.ok(Math.abs(c - want[i]!) <= 1, `${id} on a ${pageDark ? "dark" : "light"} page: ${got} vs ${want}`));
+  }
+});
+
+test("a dark site under a light palette keeps its own colours", () => {
+  for (const id of Object.keys(PALETTES) as PaletteId[]) {
+    if (!PALETTES[id].dark) assert.equal(tintFor(id, true), null, id);
   }
 });
 
 test("text keeps its contrast under every palette", () => {
   const luminance = ([r, g, b]: Rgb) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  for (const id of Object.keys(PALETTES) as PaletteId[]) {
-    for (const [pageDark, text] of [
-      [false, [0, 0, 0]],
-      [true, [255, 255, 255]],
-    ] as const) {
-      const background = luminance(rgb(PALETTES[id].bg));
-      const ink = luminance(composite([...text] as Rgb, id, pageDark));
-      assert.ok(Math.abs(background - ink) > 0.6, `${id} on a ${pageDark ? "dark" : "light"} page`);
-    }
+  for (const [id, pageDark] of painted) {
+    const background = luminance(rgb(PALETTES[id].bg));
+    const ink = luminance(composite(pageDark ? [255, 255, 255] : [0, 0, 0], id, pageDark));
+    assert.ok(Math.abs(background - ink) > 0.6, `${id} on a ${pageDark ? "dark" : "light"} page`);
   }
 });
 

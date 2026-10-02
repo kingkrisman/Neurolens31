@@ -15,6 +15,10 @@ test("every reading mode the app ships comes across unchanged", () => {
       wordSpacing: profile.wordSpacing,
       bionicStrength: profile.bionicStrength,
       theme: profile.theme,
+      align: profile.align,
+      readingMask: profile.readingMask === true,
+      maskStrength: profile.maskStrength ?? "strong",
+      focusBand: profile.focusBand ?? 1,
       modeName: profile.name,
       at: 1,
     });

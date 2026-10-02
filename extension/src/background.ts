@@ -15,6 +15,8 @@ import { enableSite } from "./sites.ts";
  */
 
 const SCRIPT_ID = "nl-restyle";
+/** guard.ts, in the page's own world; see that file for why. */
+const GUARD_ID = "nl-guard";
 
 const FONT_FILES = new Set(
   (Object.keys(FONTS) as FontKey[]).flatMap((key) => fontFiles(key).map((font) => font.file)),
@@ -63,14 +65,21 @@ async function sync(): Promise<void> {
       patterns.push(pattern);
     }
   }
-  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
+  const existing = new Set(
+    (await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID, GUARD_ID] })).map((script) => script.id),
+  );
   if (!patterns.length) {
-    if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] });
+    if (existing.size) await chrome.scripting.unregisterContentScripts({ ids: [...existing] });
     return;
   }
-  const script = { id: SCRIPT_ID, js: ["content.js"], matches: patterns, runAt: "document_start" as const };
-  if (existing.length) await chrome.scripting.updateContentScripts([script]);
-  else await chrome.scripting.registerContentScripts([script]);
+  const scripts: chrome.scripting.RegisteredContentScript[] = [
+    { id: GUARD_ID, js: ["guard.js"], matches: patterns, runAt: "document_start", world: "MAIN" },
+    { id: SCRIPT_ID, js: ["content.js"], matches: patterns, runAt: "document_start" },
+  ];
+  const known = scripts.filter((script) => existing.has(script.id));
+  const fresh = scripts.filter((script) => !existing.has(script.id));
+  if (known.length) await chrome.scripting.updateContentScripts(known);
+  if (fresh.length) await chrome.scripting.registerContentScripts(fresh);
 }
 
 function readFont(file: string): Promise<string> {

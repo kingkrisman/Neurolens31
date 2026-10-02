@@ -43,7 +43,7 @@ const BRIDGE_MATCHES = dev
   ? ["http://localhost/*", "http://127.0.0.1/*"]
   : ["https://neurolens.space/*", "https://www.neurolens.space/*"];
 
-const ENTRIES = ["background", "bridge", "content", "extract", "popup"];
+const ENTRIES = ["background", "bridge", "content", "extract", "guard", "popup"];
 
 function manifest(browser) {
   const base = {

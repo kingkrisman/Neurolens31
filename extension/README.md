@@ -3,8 +3,10 @@
 Two things, both only when the reader asks:
 
 - **Use my settings here.** A switch per site. On a switched-on site, reading
-  text gets the reader's typeface and size, spacing, bold word starts and
-  colour palette. Menus, headers, buttons and code keep the site's own look.
+  text gets the reader's typeface and size, spacing and alignment, bold word
+  starts, colour palette and reading mask. Posts on X, Bluesky, Facebook,
+  Instagram, Threads, Reddit, YouTube comments, LinkedIn and Mastodon count as
+  reading text too. Menus, headers, buttons and code keep the site's own look.
   Switching off puts the page back exactly as it was, without a reload.
 - **Read this page in NeuroLens.** Takes the article from the open tab (or the
   part the reader selected), and opens it in the app's reader.
@@ -72,6 +74,7 @@ Data use: nothing is collected or sent. The privacy policy section is at
 | --- | --- | --- |
 | `src/bridge.ts` | On neurolens.space only | Receives the settings from the app (`src/lib/extension-bridge.ts`), hands over pages to read |
 | `src/content.ts` | On switched-on sites | Applies the look and undoes it; fonts arrive as bytes from the background, so no site policy can block them |
+| `src/guard.ts` | On switched-on sites, in the page's own world | Lets app-like sites (React and kin) keep updating and removing their text after bold word starts are added, instead of crashing the way Google Translate makes them |
 | `src/extract.ts` | In the open tab, on request | Mozilla Readability, the engine behind Firefox Reader View |
 | `src/background.ts` | Always | Registers the restyle script for exactly the sites that are on and permitted; serves font files |
 | `src/popup.*` | The toolbar popup | The switch, the options, the Read button |
@@ -79,10 +82,20 @@ Data use: nothing is collected or sent. The privacy policy section is at
 
 Colours work without touching the site's CSS: one fixed layer over the page,
 mixed so the page's background becomes the palette's and text keeps its
-contrast. When a dark palette meets a light site, or the other way round, the
-page is turned first (`invert` + `hue-rotate`, with pictures turned back). The
-layer's colour is chosen to come out of the turn as the palette. The maths is
-in `tintFor`, and `restyle.test.ts` checks every palette on light and dark sites.
+contrast. When a dark palette meets a light site, the page is turned first
+(`invert` + `hue-rotate`). Pictures are turned back, and so are the layers that
+belong with them: a pop-up's dimmed backdrop and the dark fade over a photo.
+Left turned, those read as a white fog. The layer's colour is chosen to come
+out of the turn as the palette. A dark site under a light palette keeps its own
+colours, because turning photo-heavy dark sites light washes them out. Whether
+a site is dark is remembered, so the next visit has its colours before the
+first frame. The maths is in `tintFor`, and `restyle.test.ts` checks it.
+
+Bold word starts keep the site's own text node, hidden, beside the bold copy.
+When the site edits it, the copy follows. When it removes it, the copy goes.
+Switching off puts the very same node back. A page's `textContent` therefore
+reads its words twice while bold is on; what is shown, selected, copied and
+read aloud is once.
 
 The palettes and typefaces are copies of the app's. `palettes.test.ts` reads
 `src/styles.css` and `src/lib/types.ts` and fails if they drift apart.

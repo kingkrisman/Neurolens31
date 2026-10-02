@@ -44,6 +44,52 @@ const ARTICLE = `<!doctype html>
 </body>
 </html>`;
 
+const SAID = "The quiet shelf is a book club for people who find long pages hard going, and it meets online.";
+
+/** Built the way social sites build pages: posts in divs, labels in spans, buttons in divs. */
+const SOCIAL = `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Feed</title>
+<style>body { margin: 0 auto; max-width: 40rem; font: 15px/1.4 Arial, sans-serif; background: #fff; color: #0f1419; }</style>
+</head>
+<body>
+  <article>
+    <span dir="auto" id="name">Quiet Shelf</span>
+    <div data-testid="tweetText" dir="auto" id="post"><span id="live">${SAID}</span></div>
+    <div role="button" id="like"><span dir="auto">Like this post and share it with friends</span></div>
+  </article>
+  <script>window.siteText = document.getElementById("live").firstChild;</script>
+</body>
+</html>`;
+
+/** A white page with a pop-up's dimmed backdrop, and a dark fade over a picture. */
+const MODAL = `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Modal</title>
+<style>
+  body { margin: 0; font: 16px/1.5 Georgia, serif; background: #fff; color: #111; }
+  #backdrop { position: fixed; inset: 0; background: #000; opacity: 0.5; }
+  #fade { position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0, 0, 0, 0.7)); }
+</style>
+</head>
+<body>
+  <p>${FIRST}</p>
+  <figure style="position: relative; width: 200px; height: 120px; margin: 0;"><img alt="" width="200" height="120" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs="><div id="fade"></div></figure>
+  <div id="backdrop"></div>
+</body>
+</html>`;
+
+/** A site that is dark already. */
+const DARK = `<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Dark</title>
+<style>body { margin: 0; min-height: 100vh; font: 16px/1.5 Georgia, serif; background: #111; color: #eee; }</style>
+</head>
+<body><p id="first">${FIRST}</p></body>
+</html>`;
+
+const PAGES: Record<string, string> = { "/article": ARTICLE, "/social": SOCIAL, "/modal": MODAL, "/dark": DARK };
+
 const LOOK = {
   fontFamily: "lexend",
   fontSize: 20,
@@ -52,6 +98,10 @@ const LOOK = {
   wordSpacing: 0.1,
   bionicStrength: 0.45,
   theme: "cream",
+  align: "left",
+  readingMask: false,
+  maskStrength: "medium",
+  focusBand: 2,
   modeName: "ADHD",
   at: 1,
 };
@@ -91,9 +141,9 @@ test.beforeAll(async () => {
   test.setTimeout(240_000);
   execFileSync(process.execPath, ["scripts/build-extension.mjs", "--test"], { stdio: "inherit" });
 
-  server = createServer((_request, response) => {
+  server = createServer((request, response) => {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(ARTICLE);
+    response.end(PAGES[new URL(request.url ?? "/", "http://x").pathname] ?? ARTICLE);
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   site = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -178,7 +228,7 @@ test("a switched-on site gets the reader's look, and switching off puts it back 
   expect(await style(page, "#first", "line-height")).toBe("36px");
   await expect(page.locator("#first nl-fx").first()).toHaveText("Rea");
   await expect(page.locator("#point nl-fx").first()).toBeAttached();
-  await expect(page.locator("#first")).toHaveText(FIRST);
+  await expect(page.locator("#first")).toHaveText(FIRST, { useInnerText: true });
   await expect
     .poll(() =>
       page.evaluate(() => [...document.fonts].some((face) => face.family.replace(/"/g, "") === "NL Lexend" && face.status === "loaded")),
@@ -204,7 +254,7 @@ test("a switched-on site gets the reader's look, and switching off puts it back 
   // Off: everything the extension added comes back off, text intact.
   await setStored({ look: LOOK, sites: [] });
   await expect(page.locator("html")).not.toHaveAttribute("data-nl-ext");
-  await expect(page.locator("nl-text, nl-fx, nl-tint")).toHaveCount(0);
+  await expect(page.locator("nl-text, nl-fx, nl-orig, nl-tint")).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-nl-flip");
   await expect(page.locator("#first")).toHaveText(FIRST);
   expect(await style(page, "#first", "font-family")).toContain("Georgia");
@@ -215,6 +265,74 @@ test("a switched-on site gets the reader's look, and switching off puts it back 
   await page.waitForTimeout(500);
   await expect(page.locator("html")).not.toHaveAttribute("data-nl-ext");
   await page.close();
+});
+
+test("social posts get the look, and the site's own code keeps working on its text", async () => {
+  await setStored({ look: LOOK, sites: [site], options: { typeface: true, spacing: true, bold: true, colours: true, mask: true } });
+  await expect.poll(registeredMatches).toContain("http://127.0.0.1/*");
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(`${site}/social`);
+
+  await expect(page.locator("#post nl-fx").first()).toHaveText("T");
+  expect(await style(page, "#post", "font-family")).toContain("NL Lexend");
+  expect(await style(page, "#post", "font-size")).toBe("20px");
+  // A short label and a button keep their text as it was.
+  await expect(page.locator("#name nl-fx, #like nl-fx")).toHaveCount(0);
+  await expect(page.locator("#post")).toHaveText(SAID, { useInnerText: true });
+
+  // The site changes its own words, through the node it made: the bold copy follows.
+  const moved = "Meeting moved to Thursday evening, with a reading from the new book.";
+  await page.evaluate((words) => {
+    (window as unknown as { siteText: Text }).siteText.nodeValue = words;
+  }, moved);
+  await expect(page.locator("#post")).toHaveText(moved, { useInnerText: true });
+  await expect(page.locator("#post nl-fx").first()).toHaveText("Mee");
+
+  // The site removes it the way React does: from the parent it put it in.
+  await page.evaluate(() => {
+    const live = document.getElementById("live")!;
+    live.removeChild((window as unknown as { siteText: Text }).siteText);
+    live.insertBefore(document.createTextNode("Posted again."), null);
+  });
+  await expect(page.locator("#live")).toHaveText("Posted again.", { useInnerText: true });
+  // The removed text and its bold copy are gone; the new text gets a copy of its own.
+  expect(await page.evaluate(() => document.getElementById("live")!.contains((window as unknown as { siteText: Text }).siteText))).toBe(false);
+  await expect(page.locator("#live nl-text")).toHaveCount(1);
+  expect(errors).toEqual([]);
+
+  // Off, and nothing of ours is left.
+  await setStored({ sites: [] });
+  await expect(page.locator("html")).not.toHaveAttribute("data-nl-ext");
+  await expect(page.locator("nl-text, nl-orig")).toHaveCount(0);
+  await page.close();
+});
+
+test("a dark palette turns a light site dark without fogging its backdrops; a dark site keeps its colours", async () => {
+  await setStored({ look: { ...LOOK, theme: "night" }, sites: [site], tones: {} });
+  await expect.poll(registeredMatches).toContain("http://127.0.0.1/*");
+  const page = await context.newPage();
+  await page.goto(`${site}/modal`);
+  await expect(page.locator("html")).toHaveAttribute("data-nl-flip", "");
+  // The dimmed backdrop and the fade over the picture are turned back, so they stay dark.
+  await expect(page.locator("#backdrop")).toHaveAttribute("data-nl-unflip", "");
+  await expect(page.locator("#fade")).toHaveAttribute("data-nl-unflip", "");
+  await page.screenshot({ path: test.info().outputPath("night-modal.png") });
+  // Remembered, so the next visit is dark from the first frame.
+  await expect.poll(() => getStored("tones")).toMatchObject({ [site]: false });
+  await page.close();
+
+  await setStored({ look: LOOK, tones: {} });
+  const dark = await context.newPage();
+  await dark.goto(`${site}/dark`);
+  await expect(dark.locator("html")).toHaveAttribute("data-nl-ext", "");
+  await expect(dark.locator("#first nl-fx").first()).toBeAttached();
+  await expect(dark.locator("html > nl-tint")).toHaveCount(0);
+  await expect(dark.locator("html")).not.toHaveAttribute("data-nl-flip");
+  await expect.poll(() => getStored("tones")).toMatchObject({ [site]: true });
+  await dark.close();
+  await setStored({ sites: [], tones: {} });
 });
 
 test("only the app itself can hand over settings", async () => {
@@ -258,10 +376,22 @@ test("the popup switches the open site on and off, and each part of the look sep
   await expect(article.locator("html > nl-tint")).toHaveCount(1);
   await expect(article.locator("#first nl-fx").first()).toBeAttached();
 
+  // The reading mask is only offered when it is on in the app.
+  await expect(popup.getByLabel("Reading mask")).toBeHidden();
+  await setStored({ look: { ...LOOK, readingMask: true } });
+  await expect(article.locator("html > nl-mask")).toHaveCount(1);
+  await popup.getByLabel("Reading mask").uncheck();
+  await expect(article.locator("html > nl-mask")).toHaveCount(0);
+  await popup.getByLabel("Reading mask").check();
+  await expect(article.locator("html > nl-mask")).toHaveCount(1);
+  await setStored({ look: LOOK });
+  await expect(article.locator("html > nl-mask")).toHaveCount(0);
+
   await toggle.click();
   await expect(toggle).not.toBeChecked();
   await expect(article.locator("html")).not.toHaveAttribute("data-nl-ext");
   await expect(article.locator("#first")).toHaveText(FIRST);
+  await expect(article.locator("nl-text, nl-orig, nl-mask")).toHaveCount(0);
   await popup.close();
   await article.close();
 });

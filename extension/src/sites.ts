@@ -13,6 +13,7 @@ export async function enableSite(site: string, tabId: number | undefined): Promi
   if (!sites.includes(site)) await chrome.storage.local.set({ sites: [...sites, site] });
   if (tabId === undefined) return;
   try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["guard.js"], world: "MAIN" });
     await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
   } catch {
     // The tab moved on or closed; the registered script covers its next visit.
