@@ -2,7 +2,7 @@ import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { ArrowUpRight, BarChart3, LoaderCircle, Lock, PenLine } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Mark } from "@/components/mark";
-import { useAuthStatus } from "@/lib/auth-ui/session";
+import { signInWith, useAuthStatus } from "@/lib/auth-ui/session";
 import { amAdmin } from "@/lib/blog";
 import { seo } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -88,12 +88,24 @@ function AdminLayout() {
                 ? "Sign in with the account that runs NeuroLens."
                 : "You are signed in, but this account is not an admin."}
             </p>
-            <Link
-              to={access === "signed-out" ? "/login" : "/"}
-              className="mt-5 inline-flex h-10 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg hover:opacity-90"
-            >
-              {access === "signed-out" ? "Sign in" : "Back to NeuroLens"}
-            </Link>
+            {access === "signed-out" ? (
+              // Signs in from here, so Google sends you back to /admin rather
+              // than to the reader's sign-in page and on into the app.
+              <button
+                type="button"
+                onClick={() => void signInWith("google").catch(() => {})}
+                className="mt-5 inline-flex h-10 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg hover:opacity-90"
+              >
+                Sign in with Google
+              </button>
+            ) : (
+              <Link
+                to="/"
+                className="mt-5 inline-flex h-10 items-center rounded-full bg-fg px-5 text-sm font-semibold text-bg hover:opacity-90"
+              >
+                Back to NeuroLens
+              </Link>
+            )}
           </div>
         )}
       </main>
