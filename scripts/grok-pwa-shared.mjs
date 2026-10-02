@@ -432,20 +432,29 @@ export function injectGrokPwaHead(html, ctx = {}) {
     host,
     documentTitle,
   );
-  let next = stripShareMetaTags(html);
+  // A page that describes itself for sharing keeps its own description. Each
+  // NeuroLens page sets its own title, summary and picture (src/lib/seo.ts);
+  // replacing them with one site-wide card made every shared link — a blog
+  // post, the extension page — look like the home page.
+  const ownsShareTags = /<meta\s[^>]*property=["']og:title["']/i.test(html);
+  let next = ownsShareTags ? html : stripShareMetaTags(html);
 
+  // Likewise its own manifest, home-screen icon and colours: the template's
+  // stand-ins are a placeholder icon on a black theme.
   const missing = grokPwaHeadTags(appName)
     .filter(([key]) => {
-      if (key === "manifest") return !next.includes('href="/__grok/manifest.webmanifest"');
-      if (key === "apple-touch-icon") return !next.includes('href="/__grok/icon-180.png"');
+      if (key === "manifest") return !/<link\s[^>]*rel=["']manifest["']/i.test(next);
+      if (key === "apple-touch-icon") return !/<link\s[^>]*rel=["']apple-touch-icon["']/i.test(next);
       return !next.includes(`name="${key}"`);
     })
     .map(([, tag]) => tag);
 
-  next = insertAfterHeadOpen(
-    next,
-    grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
-  );
+  if (!ownsShareTags) {
+    next = insertAfterHeadOpen(
+      next,
+      grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
+    );
+  }
 
   // The builder's extensions.js is no longer injected. It was third-party code
   // from grok.com running on every page of an app whose readers keep their

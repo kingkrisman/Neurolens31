@@ -113,17 +113,34 @@ test("does not duplicate x:creator tags", () => {
   assert.equal(twice.split('property="x:creator:id"').length - 1, 1);
 });
 
-test("platform chrome overwrites share-card metas and always sets og:title", () => {
+test("a page that describes itself for sharing keeps its own description", () => {
+  // NeuroLens pages set their own share title, summary and picture; the
+  // template's single site-wide card used to replace them on every page.
   const html =
-    '<html><head><title>Hello World</title><meta property="og:title" content="Old"><meta name="twitter:card" content="summary"></head></html>';
+    '<html><head><title>Hello World</title><meta property="og:title" content="A blog post"><meta name="twitter:card" content="summary"></head></html>';
   const out = injectGrokPwaHead(html, { appName: "Wild Race", ...HERMETIC, cwd: HERMETIC_CWD });
+  assert.match(out, /property="og:title" content="A blog post"/);
+  assert.equal(out.split('property="og:title"').length - 1, 1);
+  assert.equal(out.split('name="twitter:card"').length - 1, 1);
+});
+
+test("a page without share tags still gets the site card", () => {
+  const out = injectGrokPwaHead("<html><head><title>Hello World</title></head></html>", {
+    appName: "Wild Race",
+    ...HERMETIC,
+    cwd: HERMETIC_CWD,
+  });
   assert.match(out, /name="twitter:card" content="summary_large_image"/);
   assert.match(out, /property="og:title" content="Hello World"/);
-  assert.doesNotMatch(out, /content="Old"/);
-  assert.doesNotMatch(out, /content="summary"/);
-  assert.equal(out.split('name="twitter:card"').length - 1, 1);
-  assert.equal(out.split('property="og:title"').length - 1, 1);
-  assert.doesNotMatch(out, /property="og:image"/);
+});
+
+test("a page's own manifest and home-screen icon are not joined by the template's placeholders", () => {
+  const html =
+    '<html><head><title>x</title><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#F0E8DC"></head></html>';
+  const out = injectGrokPwaHead(html, { appName: "Wild Race", ...HERMETIC, cwd: HERMETIC_CWD });
+  assert.doesNotMatch(out, /__grok\/manifest/);
+  assert.doesNotMatch(out, /__grok\/icon-180/);
+  assert.doesNotMatch(out, /content="#000000"/);
 });
 
 test("does not duplicate twitter:card or og:title", () => {

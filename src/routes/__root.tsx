@@ -42,12 +42,16 @@ export const Route = createRootRoute({
       ],
       links: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        // For browsers and search results that will not take an SVG.
+        { rel: "icon", type: "image/png", sizes: "48x48", href: "/favicon-48.png" },
         { rel: "stylesheet", href: appCss },
         { rel: "preload", as: "image", href: "/images/hero-lens.jpg", fetchPriority: "high" },
         // Was pointing at a file that does not exist, so every install prompt
         // and every crawler asking for the manifest got a 404.
         { rel: "manifest", href: "/manifest.webmanifest" },
-        { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
+        // The NeuroLens mark on paper. Was the app template's placeholder,
+        // which is what "Add to Home Screen" put on people's phones.
+        { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       ],
       // Site-level identity, stated once. The app itself is described on the
       // page that is actually the app, not here.
