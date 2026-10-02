@@ -189,6 +189,9 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     host: "0.0.0.0",
     port: 8080,
     strictPort: true,
+    // The browser extension's build output is not part of the app; without
+    // this, every extension build reloads whatever page is open.
+    watch: { ignored: ["**/extension/dist/**"] },
   },
   preview: {
     host: "127.0.0.1",
