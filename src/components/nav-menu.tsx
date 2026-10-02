@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CircleHelp, UserRound } from "lucide-react";
+import { CircleHelp, Puzzle, UserRound } from "lucide-react";
 import { TABS } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { list, x } from "@/lib/ph-icons";
@@ -174,6 +174,14 @@ export function NavMenu() {
               >
                 <CircleHelp size={16} aria-hidden className="icon-motion icon-lift" />
                 Help
+              </Link>
+              <Link
+                to="/extension"
+                onClick={() => setOpen(false)}
+                className="hidden min-h-11 items-center gap-3 rounded-md px-3 text-sm text-muted hover:bg-fg/6 hover:text-fg sm:flex"
+              >
+                <Puzzle size={16} aria-hidden className="icon-motion icon-lift" />
+                Browser extension
               </Link>
             </div>
           </div>

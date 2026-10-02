@@ -25,6 +25,7 @@ const PUBLIC_PAGES = [
   { path: "/terms", name: "terms" },
   { path: "/support", name: "support" },
   { path: "/whats-new", name: "what's new" },
+  { path: "/extension", name: "browser extension" },
   { path: "/login", name: "sign in" },
   { path: "/signup", name: "sign up" },
 ] as const;

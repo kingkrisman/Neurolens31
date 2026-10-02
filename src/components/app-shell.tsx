@@ -18,6 +18,7 @@ import { NavMenu } from "@/components/nav-menu";
 import { HeaderAccount } from "@/components/auth/header-account";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { UploadPrompt } from "@/components/upload-prompt";
+import { ExtensionNudge } from "@/components/extension-nudge";
 import { SyncStatus } from "@/components/sync-status";
 import { useSmoothScroller } from "@/lib/smooth-scroll";
 import { GlassHeader } from "@/components/glass-header";
@@ -444,6 +445,9 @@ export function AppShell() {
               <Link to="/accessibility" className="hidden hover:text-fg sm:inline">
                 Accessibility
               </Link>
+              <Link to="/extension" className="hidden hover:text-fg sm:inline">
+                Extension
+              </Link>
               <Link to="/whats-new" className="hidden hover:text-fg sm:inline">
                 What's new
               </Link>
@@ -457,6 +461,7 @@ export function AppShell() {
         {/* Never while reading: that is the one moment an interruption costs most. */}
         <AnalyticsConsent hidden={reading} />
         <UploadPrompt />
+        <ExtensionNudge hidden={reading} />
         <SyncStatus hidden={reading} />
         <Neuro />
         <LiveAnnouncer />

@@ -39,6 +39,21 @@ type Release = {
  */
 const RELEASES: Release[] = [
   {
+    date: "2 October 2026",
+    title: "NeuroLens for your browser",
+    items: [
+      {
+        what: "A browser extension for Chrome, Edge and Firefox that brings your reading settings to the websites you choose.",
+        why: "Most reading happens outside any one app. Switch it on for a site and its text takes your typeface, spacing, bold word starts, colours and reading mask; switch it off and the site is exactly as it was.",
+      },
+      { what: "Posts on X, Bluesky, Facebook, Instagram, Threads, Reddit, LinkedIn and YouTube comments count as reading text too." },
+      { what: "Read this page in NeuroLens sends any article, or the part you selected, straight to the reader." },
+      {
+        what: "Your settings come across from the app on their own. There is no second account and nothing about the pages you visit leaves your browser.",
+      },
+    ],
+  },
+  {
     date: "14 September 2026",
     title: "Accounts, help, and a place to tell us things",
     items: [

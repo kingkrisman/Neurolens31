@@ -21,6 +21,8 @@ if (__APP_ORIGINS__.includes(location.origin)) {
     if (event.source !== window || event.origin !== location.origin) return;
     const data = event.data as { source?: unknown; kind?: unknown; profile?: unknown; modeName?: unknown } | null;
     if (!data || data.source !== FROM_APP) return;
+    // "Is it installed?" from the site's extension page and the app's notice.
+    if (data.kind === "ping") hello();
     if (data.kind === "ready") {
       hello();
       void deliver();
