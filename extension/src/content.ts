@@ -45,7 +45,10 @@ let applied: { look: Look; options: Options } | null = null;
 let tones: Tones = {};
 const loadedFonts = new Set<string>();
 
-if (!window.__nlExt) {
+// Never on the NeuroLens app itself: it already reads with these settings, and
+// its pages are drawn on the server and then taken over in the browser, so
+// text changed in between makes it throw the page away.
+if (!window.__nlExt && !__APP_ORIGINS__.includes(location.origin)) {
   window.__nlExt = true;
   void refresh();
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -117,7 +120,7 @@ function undo(): void {
   document.documentElement.removeAttribute("data-nl-ext");
 }
 
-/** Once the page has loaded, or two seconds after it appears, whichever is first. */
+/** Once the page has loaded, or five seconds after it appears, whichever is first. */
 function whenLoaded(run: () => void): void {
   let ran = false;
   const settled = () => {
@@ -127,7 +130,7 @@ function whenLoaded(run: () => void): void {
   };
   if (document.readyState === "complete") return settled();
   window.addEventListener("load", settled, { once: true });
-  whenReady(() => setTimeout(settled, 2000));
+  whenReady(() => setTimeout(settled, 5000));
 }
 
 function whenReady(run: () => void): void {

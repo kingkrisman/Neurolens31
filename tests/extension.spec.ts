@@ -422,6 +422,17 @@ test("Read this page in NeuroLens opens the article in the reader, without the s
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${extensionId}/popup.html?tab=${await tabIdOf(`${site}/article`)}`);
 
+  // Even with the app itself switched on, the extension leaves the app alone:
+  // rewriting its text while it starts up made it throw the page away.
+  await setStored({ sites: [APP] });
+  const errors: string[] = [];
+  context.on("page", (page) => {
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error" && /hydrat|removeChild/i.test(message.text())) errors.push(message.text());
+    });
+  });
+
   const opened = context.waitForEvent("page");
   await popup.getByRole("button", { name: "Read this page in NeuroLens" }).click();
   const app = await opened;
@@ -435,5 +446,10 @@ test("Read this page in NeuroLens opens the article in the reader, without the s
   expect(await appState(app, "return store.getState().tab")).toBe("read");
   expect(await appState(app, "return store.getState().sessions[0].title")).toBe("The quiet shelf");
   expect(await getStored("pendingArticle")).toBeUndefined();
+  await app.waitForTimeout(6000);
+  await expect(app.locator("nl-text, nl-tint")).toHaveCount(0);
+  await expect(app.locator("html")).not.toHaveAttribute("data-nl-ext");
+  expect(errors).toEqual([]);
+  await setStored({ sites: [] });
   await app.screenshot({ path: test.info().outputPath("opened-in-reader.png") });
 });

@@ -56,10 +56,12 @@ async function render(): Promise<void> {
   els.noLook.hidden = Boolean(look);
   if (look) showLook(look);
 
+  const onApp = Boolean(site && __APP_ORIGINS__.includes(site));
+  $("on-app").hidden = !onApp;
   els.restricted.hidden = Boolean(site);
-  els.site.hidden = !site;
-  els.read.disabled = !site;
-  if (!site) return;
+  els.site.hidden = !site || onApp;
+  els.read.disabled = !site || onApp;
+  if (!site || onApp) return;
 
   els.siteName.textContent = new URL(site).host;
   const permitted = await chrome.permissions.contains({ origins: [patternFor(site)] });

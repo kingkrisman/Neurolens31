@@ -60,6 +60,8 @@ async function sync(): Promise<void> {
   const { sites = [] } = (await chrome.storage.local.get("sites")) as Stored;
   const patterns: string[] = [];
   for (const site of sites) {
+    // The app itself is never restyled (see content.ts).
+    if (__APP_ORIGINS__.includes(site)) continue;
     const pattern = patternFor(site);
     if (!patterns.includes(pattern) && (await chrome.permissions.contains({ origins: [pattern] }))) {
       patterns.push(pattern);
