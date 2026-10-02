@@ -2867,3 +2867,84 @@ html {
     font-size: max(16px, 1em);
   }
 }
+
+/* Pages swiped natively on touch screens scroll sideways, but a page is not
+   something to drag a scrollbar across. Unlayered and doubled up so the
+   app-wide scrollbar styling above cannot bring it back. */
+.reader-scroll.no-scrollbar {
+  scrollbar-width: none;
+}
+.reader-scroll.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Blog posts. Written in Markdown, so they carry headings, quotes, numbered
+   lists and pictures that the document pages never needed. Larger body text
+   than the documents: a post is read, not consulted. */
+.blog-prose {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: color-mix(in oklab, var(--color-fg) 82%, var(--color-bg));
+  max-width: 68ch;
+}
+.blog-prose > * + * {
+  margin-top: 1.15rem;
+}
+.blog-prose h2,
+.blog-prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: var(--color-fg);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.blog-prose h2 {
+  margin-top: 2.6rem;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 1.9rem);
+  line-height: 1.2;
+}
+.blog-prose h3 {
+  margin-top: 2rem;
+  font-size: 1.3rem;
+  line-height: 1.3;
+}
+.blog-prose strong {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+.blog-prose blockquote {
+  margin-top: 1.8rem;
+  margin-bottom: 1.8rem;
+  padding-left: 1.1rem;
+  border-left: 3px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--color-fg);
+}
+.blog-prose ol {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+.blog-prose ol > li + li {
+  margin-top: 0.6rem;
+}
+.blog-prose ol > li::marker {
+  color: var(--color-accent);
+}
+.blog-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--color-fg) 7%, transparent);
+}
+.blog-prose hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid color-mix(in oklab, var(--color-fg) 12%, transparent);
+}
+.blog-prose > :first-child {
+  margin-top: 0;
+}

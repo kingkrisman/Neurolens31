@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BlogSitemapDotxmlRouteImport } from './routes/blog-sitemap[.]xml'
 import { Route as ExtensionRouteImport } from './routes/extension'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as LoginRouteImport } from './routes/login'
@@ -21,11 +23,16 @@ import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as WhatsNewRouteImport } from './routes/whats-new'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ApiAnalyticsRouteImport } from './routes/api/analytics'
 import { Route as ApiDictionaryRouteImport } from './routes/api/dictionary'
 import { Route as ApiErrorsRouteImport } from './routes/api/errors'
 import { Route as ApiGutenbergRouteImport } from './routes/api/gutenberg'
 import { Route as ApiOpdsRouteImport } from './routes/api/opds'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
+import { Route as AdminBlogIdRouteImport } from './routes/admin.blog.$id'
 import { Route as ApiGutendexSplatRouteImport } from './routes/api/gutendex.$'
 import { Route as ApiOpenlibrarySplatRouteImport } from './routes/api/openlibrary.$'
 
@@ -42,6 +49,16 @@ const AccessibilityRoute = AccessibilityRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSitemapDotxmlRoute = BlogSitemapDotxmlRouteImport.update({
+  id: '/blog-sitemap.xml',
+  path: '/blog-sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExtensionRoute = ExtensionRouteImport.update({
@@ -89,6 +106,11 @@ const WhatsNewRoute = WhatsNewRouteImport.update({
   path: '/whats-new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiAnalyticsRoute = ApiAnalyticsRouteImport.update({
   id: '/api/analytics',
   path: '/api/analytics',
@@ -114,6 +136,26 @@ const ApiOpdsRoute = ApiOpdsRouteImport.update({
   path: '/api/opds',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBlogIndexRoute = AdminBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogIdRoute = AdminBlogIdRouteImport.update({
+  id: '/blog/$id',
+  path: '/blog/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiGutendexSplatRoute = ApiGutendexSplatRouteImport.update({
   id: '/api/gutendex/$',
   path: '/api/gutendex/$',
@@ -129,6 +171,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/blog-sitemap.xml': typeof BlogSitemapDotxmlRoute
   '/extension': typeof ExtensionRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -143,13 +187,19 @@ export interface FileRoutesByFullPath {
   '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/opds': typeof ApiOpdsRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
+  '/blog-sitemap.xml': typeof BlogSitemapDotxmlRoute
   '/extension': typeof ExtensionRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -164,14 +214,21 @@ export interface FileRoutesByTo {
   '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/opds': typeof ApiOpdsRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/admin': typeof AdminIndexRoute
+  '/blog': typeof BlogIndexRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
+  '/admin/blog': typeof AdminBlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accessibility': typeof AccessibilityRoute
   '/account': typeof AccountRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/blog-sitemap.xml': typeof BlogSitemapDotxmlRoute
   '/extension': typeof ExtensionRoute
   '/help': typeof HelpRoute
   '/login': typeof LoginRoute
@@ -186,8 +243,13 @@ export interface FileRoutesById {
   '/api/errors': typeof ApiErrorsRoute
   '/api/gutenberg': typeof ApiGutenbergRoute
   '/api/opds': typeof ApiOpdsRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/api/gutendex/$': typeof ApiGutendexSplatRoute
   '/api/openlibrary/$': typeof ApiOpenlibrarySplatRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -195,6 +257,8 @@ export interface FileRouteTypes {
     | '/'
     | '/accessibility'
     | '/account'
+    | '/admin'
+    | '/blog-sitemap.xml'
     | '/extension'
     | '/help'
     | '/login'
@@ -209,13 +273,19 @@ export interface FileRouteTypes {
     | '/api/errors'
     | '/api/gutenberg'
     | '/api/opds'
+    | '/blog/$slug'
+    | '/admin/'
+    | '/blog/'
+    | '/admin/blog/$id'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
+    | '/admin/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/accessibility'
     | '/account'
+    | '/blog-sitemap.xml'
     | '/extension'
     | '/help'
     | '/login'
@@ -230,13 +300,20 @@ export interface FileRouteTypes {
     | '/api/errors'
     | '/api/gutenberg'
     | '/api/opds'
+    | '/blog/$slug'
+    | '/admin'
+    | '/blog'
+    | '/admin/blog/$id'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
+    | '/admin/blog'
   id:
     | '__root__'
     | '/'
     | '/accessibility'
     | '/account'
+    | '/admin'
+    | '/blog-sitemap.xml'
     | '/extension'
     | '/help'
     | '/login'
@@ -251,14 +328,21 @@ export interface FileRouteTypes {
     | '/api/errors'
     | '/api/gutenberg'
     | '/api/opds'
+    | '/blog/$slug'
+    | '/admin/'
+    | '/blog/'
+    | '/admin/blog/$id'
     | '/api/gutendex/$'
     | '/api/openlibrary/$'
+    | '/admin/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccessibilityRoute: typeof AccessibilityRoute
   AccountRoute: typeof AccountRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  BlogSitemapDotxmlRoute: typeof BlogSitemapDotxmlRoute
   ExtensionRoute: typeof ExtensionRoute
   HelpRoute: typeof HelpRoute
   LoginRoute: typeof LoginRoute
@@ -273,6 +357,8 @@ export interface RootRouteChildren {
   ApiErrorsRoute: typeof ApiErrorsRoute
   ApiGutenbergRoute: typeof ApiGutenbergRoute
   ApiOpdsRoute: typeof ApiOpdsRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   ApiGutendexSplatRoute: typeof ApiGutendexSplatRoute
   ApiOpenlibrarySplatRoute: typeof ApiOpenlibrarySplatRoute
 }
@@ -298,6 +384,20 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog-sitemap.xml': {
+      id: '/blog-sitemap.xml'
+      path: '/blog-sitemap.xml'
+      fullPath: '/blog-sitemap.xml'
+      preLoaderRoute: typeof BlogSitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/extension': {
@@ -363,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WhatsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/analytics': {
       id: '/api/analytics'
       path: '/api/analytics'
@@ -398,6 +505,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOpdsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/blog/': {
+      id: '/admin/blog/'
+      path: '/blog'
+      fullPath: '/admin/blog/'
+      preLoaderRoute: typeof AdminBlogIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/blog/$id': {
+      id: '/admin/blog/$id'
+      path: '/blog/$id'
+      fullPath: '/admin/blog/$id'
+      preLoaderRoute: typeof AdminBlogIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/gutendex/$': {
       id: '/api/gutendex/$'
       path: '/api/gutendex/$'
@@ -415,10 +550,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminBlogIdRoute: typeof AdminBlogIdRoute
+  AdminBlogIndexRoute: typeof AdminBlogIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminBlogIdRoute: AdminBlogIdRoute,
+  AdminBlogIndexRoute: AdminBlogIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccessibilityRoute: AccessibilityRoute,
   AccountRoute: AccountRoute,
+  AdminRoute: AdminRouteWithChildren,
+  BlogSitemapDotxmlRoute: BlogSitemapDotxmlRoute,
   ExtensionRoute: ExtensionRoute,
   HelpRoute: HelpRoute,
   LoginRoute: LoginRoute,
@@ -433,6 +584,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiErrorsRoute: ApiErrorsRoute,
   ApiGutenbergRoute: ApiGutenbergRoute,
   ApiOpdsRoute: ApiOpdsRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
   ApiGutendexSplatRoute: ApiGutendexSplatRoute,
   ApiOpenlibrarySplatRoute: ApiOpenlibrarySplatRoute,
 }

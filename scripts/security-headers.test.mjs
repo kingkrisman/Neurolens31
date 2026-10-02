@@ -44,6 +44,15 @@ describe("contentSecurityPolicy", () => {
     assert.ok(!connect.some((value) => value.includes("insecure.example.com")));
   });
 
+  it("shows pictures from the site's own Supabase project (blog images), and no other configured service", () => {
+    const withExtra = contentSecurityPolicy({
+      extraConnect: ["https://abc.supabase.co", "https://events.example.com"],
+    });
+    const images = directive(withExtra, "img-src");
+    assert.ok(images.includes("https://abc.supabase.co"));
+    assert.ok(!images.includes("https://events.example.com"));
+  });
+
   it("opens the hot-reload socket only in development", () => {
     assert.ok(!directive(policy, "connect-src").includes("ws:"));
     assert.ok(directive(contentSecurityPolicy({ dev: true }), "connect-src").includes("ws:"));

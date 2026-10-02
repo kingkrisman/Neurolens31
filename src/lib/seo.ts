@@ -14,14 +14,32 @@
  * and nobody notices for a year.
  */
 
+import { siteOrigin } from "../../scripts/site-origin.mjs";
+
 /** Absolute origin, needed because canonical and og:url cannot be relative. */
 const CONFIGURED_SITE_URL =
   (typeof import.meta !== "undefined" ? import.meta.env?.VITE_SITE_URL : undefined) ?? "";
 
+/**
+ * Search-console ownership tokens, set in the host's environment. Empty means
+ * no tag; a token is public by design (it sits in the page for anyone to read).
+ */
+const GOOGLE_VERIFICATION =
+  (typeof import.meta !== "undefined" ? import.meta.env?.VITE_GOOGLE_SITE_VERIFICATION : undefined) ?? "";
+const BING_VERIFICATION =
+  (typeof import.meta !== "undefined" ? import.meta.env?.VITE_BING_SITE_VERIFICATION : undefined) ?? "";
+
+/**
+ * The ways people type the name. Searching "neuro lens" with a space is how
+ * most people would say it aloud; naming the variants in the site's
+ * structured data is how a search engine learns they mean this site.
+ */
+export const NAME_VARIANTS = ["Neuro Lens", "Neurolens", "NeuroLens reader", "NeuroLens app"];
+
 export const SITE = {
   name: "NeuroLens",
-  /** Trailing slash trimmed so `${SITE.url}${path}` never doubles it. */
-  url: CONFIGURED_SITE_URL.replace(/\/+$/, "") || "https://neurolens.space",
+  /** The www address the site is served from; see scripts/site-origin.mjs. */
+  url: siteOrigin(CONFIGURED_SITE_URL),
   locale: "en",
   /** 1200×630, the size both Facebook and X crop least badly. */
   ogImage: "/og.jpg",
@@ -71,7 +89,7 @@ export function seo({
 }: SeoOptions = {}) {
   const fullTitle = title
     ? `${title} · ${SITE.name}`
-    : `${SITE.name} — adaptive reading for busy minds`;
+    : `${SITE.name} — adaptive reading app for ADHD & dyslexia`;
   const canonical = absolute(path);
   const imageUrl = absolute(image);
 
@@ -103,6 +121,8 @@ export function seo({
   ];
 
   if (modified) meta.push({ property: "article:modified_time", content: modified });
+  if (GOOGLE_VERIFICATION) meta.push({ name: "google-site-verification", content: GOOGLE_VERIFICATION });
+  if (BING_VERIFICATION) meta.push({ name: "msvalidate.01", content: BING_VERIFICATION });
 
   // `max-image-preview:large` is what allows a result to carry the card image;
   // without it Google shows a thumbnail or nothing at all.
@@ -138,6 +158,7 @@ export function appJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: SITE.name,
+    alternateName: NAME_VARIANTS,
     url: SITE.url,
     description: SITE.description,
     applicationCategory: "EducationalApplication",
@@ -181,8 +202,9 @@ export function organizationJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE.name,
+    alternateName: NAME_VARIANTS,
     url: SITE.url,
-    logo: absolute("/favicon.svg"),
+    logo: absolute("/logo-512.png"),
     description: SITE.description,
   };
 }
@@ -193,7 +215,8 @@ export function websiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE.name,
-    url: SITE.url,
+    alternateName: NAME_VARIANTS,
+    url: `${SITE.url}/`,
     inLanguage: "en",
     publisher: { "@type": "Organization", name: SITE.name, url: SITE.url },
   };

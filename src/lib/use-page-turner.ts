@@ -38,7 +38,43 @@ export function usePageNumber(turner: Pick<PageTurner, "getPage" | "subscribe">)
   return useSyncExternalStore(turner.subscribe, turner.getPage, () => 0);
 }
 
+/**
+ * Whether pages are swiped natively.
+ *
+ * On a touch screen the browser itself scrolls the pages sideways, snapping to
+ * each one. That is the only way a swipe is smooth on every phone: the browser
+ * moves the page on its own thread, with the phone's own feel, however busy
+ * the reader is. The earlier version moved the article under the finger with
+ * a transform; the article is every page of the chapter side by side, often
+ * dozens of screens wide, and phones could not keep a layer that size drawn —
+ * text broke up into patches mid-swipe, and the browser would take the gesture
+ * back part-way and leave the page stuck.
+ */
+const COARSE = "(hover: none) and (pointer: coarse)";
+
+function useTouchScreen(): boolean {
+  return useSyncExternalStore(
+    (notify) => {
+      if (typeof window === "undefined") return () => {};
+      const query = window.matchMedia(COARSE);
+      query.addEventListener("change", notify);
+      return () => query.removeEventListener("change", notify);
+    },
+    () => (typeof window !== "undefined" ? window.matchMedia(COARSE).matches : false),
+    () => false,
+  );
+}
+
+/**
+ * A deliberate swipe: this far sideways, and more sideways than up or down.
+ * Anything shorter is left to the browser's snapping, which returns a
+ * half-hearted drag to the page it started on.
+ */
+const SWIPE_PX = 40;
+
 export interface PageTurner {
+  /** Pages are swiped by the browser's own scrolling (touch screens). */
+  native: boolean;
   /**
    * The current page, read on demand. Deliberately not a value that
    * re-renders anything: the first version kept it in React state, and every
@@ -86,6 +122,7 @@ export function usePageTurner({
   onPastEnd: () => void;
   onPastStart: () => void;
 }): PageTurner {
+  const native = useTouchScreen() && on;
   const [width, setWidth] = useState(0);
   const [pages, setPages] = useState(1);
   const widthRef = useRef(0);
@@ -316,7 +353,9 @@ export function usePageTurner({
         const step = widthRef.current;
         if (step <= 0) return;
         if (draggingRef.current) return;
-        if (performance.now() - turnedAt.current < 900) return;
+        // In native mode the reader's own swipes move the page, and the page
+        // number must follow every one of them, however soon after a turn.
+        if (!native && performance.now() - turnedAt.current < 900) return;
         const at = Math.round(node.scrollLeft / step);
         const aligned = Math.abs(node.scrollLeft - at * step) <= 1;
         if (at === pageRef.current && aligned) return;
@@ -330,7 +369,84 @@ export function usePageTurner({
       node.removeEventListener("scroll", onScroll);
       window.clearTimeout(settle);
     };
-  }, [on, scrollRef, goTo]);
+  }, [on, native, scrollRef, goTo]);
+
+  // Native swiping: a snap point at the start of every page, and the edges of
+  // the chapter turning into the next or previous one.
+  useEffect(() => {
+    if (!native) return;
+    const node = scrollRef.current;
+    if (!node || width <= 0) return;
+    node.style.scrollSnapType = "x mandatory";
+    node.style.touchAction = "pan-x pan-y pinch-zoom";
+
+    const markers: HTMLElement[] = [];
+    for (let page = 0; page < pages; page += 1) {
+      const marker = document.createElement("div");
+      marker.setAttribute("aria-hidden", "true");
+      marker.dataset.pageSnap = String(page);
+      Object.assign(marker.style, {
+        position: "absolute",
+        top: "0",
+        left: `${page * width}px`,
+        width: `${width}px`,
+        height: "1px",
+        pointerEvents: "none",
+        scrollSnapAlign: "start",
+        scrollSnapStop: "always",
+      });
+      node.append(marker);
+      markers.push(marker);
+    }
+
+    let start: { x: number; y: number; page: number; atStart: boolean; atEnd: boolean } | null = null;
+    const touchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (event.touches.length !== 1 || !touch) {
+        start = null;
+        return;
+      }
+      draggingRef.current = true;
+      const max = node.scrollWidth - node.clientWidth;
+      start = {
+        x: touch.clientX,
+        y: touch.clientY,
+        page: Math.round(node.scrollLeft / width),
+        atStart: node.scrollLeft <= 1,
+        atEnd: node.scrollLeft >= max - 1,
+      };
+    };
+    const touchEnd = (event: TouchEvent) => {
+      draggingRef.current = event.touches.length > 0;
+      const began = start;
+      start = null;
+      const touch = event.changedTouches[0];
+      if (!began || !touch || isPinchZoomed()) return;
+      const dx = touch.clientX - began.x;
+      const dy = touch.clientY - began.y;
+      if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      if (dx < 0 && began.atEnd) return edges.current.onPastEnd();
+      if (dx > 0 && began.atStart) return edges.current.onPastStart();
+      // Every deliberate swipe turns exactly one page, whatever its speed:
+      // finish it from where the finger left the page. Snapping alone sends a
+      // slow swipe back where it came from, which reads as the page refusing.
+      const target = Math.min(pages - 1, Math.max(0, began.page + (dx < 0 ? 1 : -1)));
+      node.scrollTo({ left: target * width, behavior: reduceMotion ? "instant" : "smooth" });
+    };
+    node.addEventListener("touchstart", touchStart, { passive: true });
+    node.addEventListener("touchend", touchEnd, { passive: true });
+    node.addEventListener("touchcancel", touchEnd, { passive: true });
+
+    return () => {
+      for (const marker of markers) marker.remove();
+      node.style.scrollSnapType = "";
+      node.style.touchAction = "";
+      draggingRef.current = false;
+      node.removeEventListener("touchstart", touchStart);
+      node.removeEventListener("touchend", touchEnd);
+      node.removeEventListener("touchcancel", touchEnd);
+    };
+  }, [native, scrollRef, width, pages, reduceMotion]);
 
   // Swipes. Touch only: a mouse drag is how text gets selected to highlight,
   // and a pen draws.
@@ -342,7 +458,7 @@ export function usePageTurner({
   // composited: nothing else runs until the finger lifts, and then the turn is
   // committed as one instant scroll.
   useEffect(() => {
-    if (!on) return;
+    if (!on || native) return;
     const node = scrollRef.current;
     if (!node) return;
 
@@ -499,7 +615,7 @@ export function usePageTurner({
       node.removeEventListener("pointercancel", cancel);
       node.removeEventListener("click", click, true);
     };
-  }, [on, scrollRef, articleRef, goTo, reduceMotion]);
+  }, [on, native, scrollRef, articleRef, goTo, reduceMotion]);
 
   // Leaving pages: put the scroller back where scrolling expects it.
   useEffect(() => {
@@ -532,6 +648,7 @@ export function usePageTurner({
   }, [metrics, width]);
 
   return {
+    native,
     getPage,
     subscribe,
     pages,

@@ -1388,9 +1388,14 @@ export function Reader() {
           data-layout={pagesOn ? "pages" : "scroll"}
           className={cn(
             "reader-scroll h-full",
-            // Pages move sideways, one screen per turn, under program control;
-            // nothing should scroll natively in either direction.
-            pagesOn ? "overflow-hidden" : "overflow-y-auto",
+            // Pages move sideways, one screen per turn. On a touch screen the
+            // browser scrolls them itself, snapping to each page (see
+            // usePageTurner); elsewhere they move under program control only.
+            pagesOn
+              ? turner.native
+                ? "no-scrollbar overflow-x-auto overflow-y-hidden"
+                : "overflow-hidden"
+              : "overflow-y-auto",
             // The options panel is a 24rem drawer down the left. Shifting the
             // column out from under it is what makes the panel useful: you are
             // adjusting type against text you can still see, not text the panel

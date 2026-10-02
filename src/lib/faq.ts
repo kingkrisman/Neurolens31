@@ -9,6 +9,11 @@
  */
 export const FAQ = [
   {
+    question: "What is NeuroLens?",
+    answer:
+      "NeuroLens (sometimes written Neuro Lens) is a free reading app for ADHD, dyslexia and cognitive fatigue. It reshapes any text, PDF or ebook into a calmer page — bold word starts, readable fonts, spacing and colours that suit you — and a browser extension brings the same settings to the websites you read.",
+  },
+  {
     question: "Does it watch my eyes?",
     answer:
       "No camera. NeuroLens infers fixations and saccades from which line sits in the reading band, how long it is held, and how the page moves. That log stays in this browser.",

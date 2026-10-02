@@ -60,7 +60,16 @@ export function contentSecurityPolicy({ dev = false, extraConnect = [] } = {}) {
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
     // data: for generated avatars, blob: for exported files and PDF pages.
-    "img-src": ["'self'", "data:", "blob:", ...IMAGE_ORIGINS],
+    // Plus the site's own Supabase project, where blog pictures are stored.
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      ...IMAGE_ORIGINS,
+      ...extraConnect
+        .map((url) => (url ? originOf(url) : null))
+        .filter((origin) => origin && origin.endsWith(".supabase.co")),
+    ],
     "connect-src": connect,
     "worker-src": ["'self'", "blob:"],
     "media-src": ["'self'", "blob:"],

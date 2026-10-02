@@ -17,6 +17,7 @@ const RELATED = [
   { to: "/accessibility", label: "Accessibility" },
   { to: "/whats-new", label: "What's new" },
   { to: "/extension", label: "Browser extension" },
+  { to: "/blog", label: "Blog" },
 ] as const;
 
 /**

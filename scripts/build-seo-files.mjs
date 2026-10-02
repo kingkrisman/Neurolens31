@@ -10,7 +10,8 @@
  *
  *   node scripts/build-seo-files.mjs
  */
-import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
+import { siteOrigin } from "./site-origin.mjs";
+import { existsSync, readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,9 +20,9 @@ const ROUTES_DIR = join(ROOT, "src", "routes");
 const PUBLIC_DIR = join(ROOT, "public");
 
 /** Kept out of the index: private, or a duplicate of somewhere else. */
-export const PRIVATE_ROUTES = new Set(["account", "login", "signup"]);
+export const PRIVATE_ROUTES = new Set(["account", "admin", "login", "signup"]);
 
-const SITE_URL = (process.env.VITE_SITE_URL || "https://neurolens.space").replace(/\/+$/, "");
+const SITE_URL = siteOrigin(process.env.VITE_SITE_URL);
 
 /**
  * Priority is a hint, and only a relative one — every page at 1.0 says nothing.
@@ -30,6 +31,8 @@ const SITE_URL = (process.env.VITE_SITE_URL || "https://neurolens.space").replac
 const PRIORITY = {
   "/": "1.0",
   "/help": "0.8",
+  "/blog": "0.8",
+  "/extension": "0.7",
   "/accessibility": "0.7",
   "/whats-new": "0.7",
   "/support": "0.6",
@@ -45,8 +48,13 @@ export function collectRoutes(dir = ROUTES_DIR) {
     if (entry === "api" || entry.startsWith("__") || entry.startsWith("-")) continue;
     if (!entry.endsWith(".tsx")) continue;
     const name = entry.replace(/\.tsx$/, "");
-    if (PRIVATE_ROUTES.has(name)) continue;
-    pages.push(name === "index" ? "/" : `/${name}`);
+    // Flat route files: "blog.index" is /blog, "blog.$slug" is one page per
+    // post (listed in the blog's own sitemap, which knows the posts).
+    const segments = name.split(".");
+    if (PRIVATE_ROUTES.has(segments[0])) continue;
+    if (segments.some((segment) => segment.startsWith("$"))) continue;
+    if (segments.at(-1) === "index") segments.pop();
+    pages.push(segments.length ? `/${segments.join("/")}` : "/");
   }
   return pages.sort((a, b) => (a === "/" ? -1 : b === "/" ? 1 : a.localeCompare(b)));
 }
@@ -63,11 +71,13 @@ function lastModified(path) {
 export function buildSitemap(paths) {
   const entries = paths
     .map((path) => {
-      const file = join(ROUTES_DIR, path === "/" ? "index.tsx" : `${path.slice(1)}.tsx`);
+      const base = path === "/" ? "index" : path.slice(1).replaceAll("/", ".");
+      const file = join(ROUTES_DIR, path === "/" ? "index.tsx" : `${base}.tsx`);
+      const indexFile = join(ROUTES_DIR, `${base}.index.tsx`);
       return [
         "  <url>",
         `    <loc>${SITE_URL}${path === "/" ? "/" : path}</loc>`,
-        `    <lastmod>${lastModified(file)}</lastmod>`,
+        `    <lastmod>${lastModified(existsSync(file) ? file : indexFile)}</lastmod>`,
         `    <changefreq>${path === "/" ? "weekly" : "monthly"}</changefreq>`,
         `    <priority>${PRIORITY[path] ?? "0.5"}</priority>`,
         "  </url>",
@@ -99,6 +109,9 @@ export function buildRobots() {
     "Disallow: /*?view=",
     "",
     `Sitemap: ${SITE_URL}/sitemap.xml`,
+    // Built on request from the posts themselves, so a new post is listed
+    // the moment it is published (src/routes/blog-sitemap[.]xml.ts).
+    `Sitemap: ${SITE_URL}/blog-sitemap.xml`,
     "",
   ].join("\n");
 }
